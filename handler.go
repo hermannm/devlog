@@ -8,6 +8,8 @@ import (
 	"sync"
 )
 
+// Handler is a [slog.Handler] that outputs log records in a human-readable format, designed for
+// development builds. See the package-level documentation for more on the output format.
 type Handler struct {
 	output     io.Writer
 	outputLock *sync.Mutex
@@ -18,17 +20,30 @@ type Handler struct {
 	indentLevel       int
 }
 
+// Options configure a log [Handler].
 type Options struct {
-	Level         slog.Leveler
-	AddSource     bool
+	// Level is the minimum log record level that will be logged.
+	// If nil, defaults to slog.LevelInfo.
+	Level slog.Leveler
+
+	// AddSource adds a 'source' attribute to every log record, with the file name and line number
+	// where the log record was produced.
+	// Defaults to false.
+	AddSource bool
+
+	// DisableColors removes colors from log output.
+	// Defaults to false (i.e. colors enabled), except on Windows, where colors are always disabled
+	// to avoid polluting log output in Windows terminals that do not support ANSI colors.
 	DisableColors bool
 }
 
+// NewHandler creates a log [Handler] that writes to output, using the given options.
+// If options is nil, the default options are used.
 func NewHandler(output io.Writer, options *Options) *Handler {
 	handler := Handler{
 		output:            output,
-		options:           Options{},
 		outputLock:        &sync.Mutex{},
+		options:           Options{},
 		preformattedAttrs: nil,
 		unopenedGroups:    nil,
 		indentLevel:       0,
@@ -37,8 +52,6 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 		handler.options = *options
 	}
 
-	// Not all Windows terminals support ANSI colors by default, so we disable it here to avoid
-	// polluting log output for Windows users
 	if runtime.GOOS == "windows" {
 		handler.options.DisableColors = true
 	}
@@ -46,7 +59,8 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 	return &handler
 }
 
-func (handler *Handler) Enabled(ctx context.Context, level slog.Level) bool {
+// Enabled reports whether the handler is configured to log records at the given level.
+func (handler *Handler) Enabled(_ context.Context, level slog.Level) bool {
 	minLevel := slog.LevelInfo
 	if handler.options.Level != nil {
 		minLevel = handler.options.Level.Level()
@@ -54,7 +68,9 @@ func (handler *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 	return level >= minLevel
 }
 
-func (handler *Handler) Handle(ctx context.Context, record slog.Record) error {
+// Handle writes the given log record to the handler's output.
+// See the package-level documentation for more on the output format.
+func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	buf := newBuffer()
 	defer buf.free()
 
@@ -90,11 +106,11 @@ func (handler *Handler) Handle(ctx context.Context, record slog.Record) error {
 
 	handler.outputLock.Lock()
 	defer handler.outputLock.Unlock()
-
 	_, err := handler.output.Write(*buf)
 	return err
 }
 
+// WithAttrs returns a new Handler which adds the given attributes to every log record.
 func (handler *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	if len(attrs) == 0 {
 		return handler
@@ -115,6 +131,8 @@ func (handler *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &newHandler
 }
 
+// WithGroup returns a new Handler where all future log record attributes are nested under the given
+// group name.
 func (handler *Handler) WithGroup(name string) slog.Handler {
 	if name == "" {
 		return handler

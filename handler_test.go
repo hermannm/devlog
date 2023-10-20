@@ -32,7 +32,7 @@ func TestSlog(t *testing.T) {
 	}
 }
 
-// [testing/slogtest.TestHandler] requires us to parse our logging output to a []map[string]any.
+// slogtest.TestHandler requires us to parse our logging output to a []map[string]any.
 func parseLogEntries(data string) ([]map[string]any, error) {
 	entryStrings := strings.Split(data, "\n[")
 	entryStrings[0], _ = strings.CutPrefix(entryStrings[0], "[")
