@@ -48,10 +48,11 @@ slog.SetDefault(slog.New(handler))
 
 ## devlog/log
 
-To complement `devlog`'s output handling, the [`devlog/log`](https://pkg.go.dev/hermannm.dev/devlog)
-subpackage provides input handling. It is a thin wrapper over the `slog` package, with utility
-functions for log message formatting.
+To complement `devlog`'s output handling, the
+[`devlog/log`](https://pkg.go.dev/hermannm.dev/devlog/log) subpackage provides input handling. It is
+a thin wrapper over the `slog` package, with utility functions for log message formatting.
 
 ## Credits
 
-- [Jonathan Amsterdam](https://github.com/jba) for his fantastic [Guide to Writing `slog` Handlers](https://github.com/golang/example/blob/1d6d2400d4027025cb8edc86a139c9c581d672f7/slog-handler-guide/README.md)
+- [Jonathan Amsterdam](https://github.com/jba) for his fantastic
+  [Guide to Writing `slog` Handlers](https://github.com/golang/example/blob/1d6d2400d4027025cb8edc86a139c9c581d672f7/slog-handler-guide/README.md)
