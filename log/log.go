@@ -88,8 +88,8 @@ func Error(err error, message string, attributes ...slog.Attr) {
 	}
 }
 
-// Errorf wraps the given error with a formatted message using [hermannm.dev/wrap.Errorf], and logs it
-// at the ERROR log level.
+// Errorf wraps the given error with a formatted message using [hermannm.dev/wrap.Errorf], and logs
+// it at the ERROR log level.
 func Errorf(err error, messageFormat string, formatArgs ...any) {
 	if logger, enabled := getLogger(slog.LevelError); enabled {
 		logger.log(wrap.Errorf(err, messageFormat, formatArgs...).Error())
