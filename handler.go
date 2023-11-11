@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"runtime"
 	"sync"
+
+	"hermannm.dev/devlog/color"
 )
 
 // Handler is a [slog.Handler] that outputs log records in a human-readable format, designed for
@@ -75,7 +77,7 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	defer buf.free()
 
 	if !record.Time.IsZero() {
-		handler.setColor(buf, colorGray)
+		handler.setColor(buf, color.Gray)
 		buf.writeByte('[')
 		buf.writeTime(record.Time)
 		buf.writeByte(']')
@@ -84,7 +86,7 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	}
 
 	handler.writeLevel(buf, record.Level)
-	handler.writeByteWithColor(buf, ':', colorGray)
+	handler.writeByteWithColor(buf, ':', color.Gray)
 	buf.writeByte(' ')
 
 	buf.writeString(record.Message)
@@ -154,18 +156,18 @@ func (handler *Handler) writeLevel(buf *buffer, level slog.Level) {
 		return
 	}
 
-	var color color
+	var levelColor color.Color
 	if level >= slog.LevelError {
-		color = colorRed
+		levelColor = color.Red
 	} else if level >= slog.LevelWarn {
-		color = colorYellow
+		levelColor = color.Yellow
 	} else if level >= slog.LevelInfo {
-		color = colorGreen
+		levelColor = color.Green
 	} else {
-		color = colorMagenta
+		levelColor = color.Magenta
 	}
 
-	handler.setColor(buf, color)
+	handler.setColor(buf, levelColor)
 	buf.writeString(level.String())
 	handler.resetColor(buf)
 }
@@ -207,7 +209,7 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 		handler.writeAttributeKey(buf, attr.Key)
 		buf.writeByte(' ')
 
-		handler.setColor(buf, colorCyan)
+		handler.setColor(buf, color.Cyan)
 		buf.writeTime(attr.Value.Time())
 		handler.resetColor(buf)
 
@@ -215,16 +217,16 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 	default:
 		handler.writeAttributeKey(buf, attr.Key)
 		buf.writeByte(' ')
-		handler.writeStringWithColor(buf, attr.Value.String(), colorCyan)
+		handler.writeStringWithColor(buf, attr.Value.String(), color.Cyan)
 		buf.writeByte('\n')
 	}
 }
 
 func (handler *Handler) writeAttributeKey(buf *buffer, attrKey string) {
-	handler.writeByteWithColor(buf, '-', colorGray)
+	handler.writeByteWithColor(buf, '-', color.Gray)
 	buf.writeByte(' ')
 	buf.writeString(attrKey)
-	handler.writeByteWithColor(buf, ':', colorGray)
+	handler.writeByteWithColor(buf, ':', color.Gray)
 }
 
 func (handler *Handler) writeLogSource(buf *buffer, programCounter uintptr) {
@@ -234,7 +236,7 @@ func (handler *Handler) writeLogSource(buf *buffer, programCounter uintptr) {
 	handler.writeAttributeKey(buf, slog.SourceKey)
 	buf.writeByte(' ')
 
-	handler.setColor(buf, colorCyan)
+	handler.setColor(buf, color.Cyan)
 	buf.writeString(frame.File)
 	buf.writeByte(':')
 	buf.writeDecimal(frame.Line)

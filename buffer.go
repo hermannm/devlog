@@ -16,6 +16,10 @@ func (buf *buffer) writeByte(b byte) {
 	*buf = append(*buf, b)
 }
 
+func (buf *buffer) writeBytes(bytes []byte) {
+	*buf = append(*buf, bytes...)
+}
+
 func (buf *buffer) writeDecimal(decimal int) {
 	*buf = strconv.AppendInt(*buf, int64(decimal), 10)
 }
