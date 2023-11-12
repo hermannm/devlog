@@ -34,8 +34,8 @@ type Options struct {
 	AddSource bool
 
 	// DisableColors removes colors from log output.
-	// Defaults to false (i.e. colors enabled), except on Windows, where colors are always disabled
-	// to avoid polluting log output in Windows terminals that do not support ANSI colors.
+	// Defaults to false (i.e. colors enabled), but if [color.IsColorTerminal] returns false, then
+	// colors are disabled.
 	DisableColors bool
 }
 
@@ -54,7 +54,7 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 		handler.options = *options
 	}
 
-	if runtime.GOOS == "windows" {
+	if !handler.options.DisableColors && !color.IsColorTerminal(output) {
 		handler.options.DisableColors = true
 	}
 
