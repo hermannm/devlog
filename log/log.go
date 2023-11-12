@@ -3,12 +3,15 @@
 package log
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"runtime"
 	"time"
 
+	"github.com/neilotoole/jsoncolor"
+	"hermannm.dev/devlog/color"
 	"hermannm.dev/wrap"
 )
 
@@ -139,6 +142,48 @@ func Debug(message string, attributes ...slog.Attr) {
 func Debugf(messageFormat string, formatArgs ...any) {
 	if logger, enabled := getLogger(slog.LevelDebug); enabled {
 		logger.log(fmt.Sprintf(messageFormat, formatArgs...))
+	}
+}
+
+// DebugJSON serializes the given value to a prettified JSON format, and logs it at the DEBUG log
+// level, along with any given structured log attributes. If message is not blank, the JSON is
+// prefixed by the message and a colon. Uses colors if [ColorsEnabled] is true.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+func DebugJSON(value any, message string, attributes ...slog.Attr) {
+	if logger, enabled := getLogger(slog.LevelDebug); enabled {
+		var buffer bytes.Buffer
+
+		encoder := jsoncolor.NewEncoder(&buffer)
+		encoder.SetIndent("", "  ")
+
+		if ColorsEnabled {
+			encoder.SetColors(&jsonColors)
+
+			if message != "" {
+				buffer.WriteString(message)
+				buffer.Write(jsonColors.Punc)
+				buffer.WriteByte(':')
+				buffer.Write(color.Reset)
+				buffer.WriteByte(' ')
+			}
+		} else {
+			if message != "" {
+				buffer.WriteString(message)
+				buffer.WriteString(": ")
+			}
+		}
+
+		err := encoder.Encode(value)
+		if err == nil {
+			bytes := buffer.Bytes()
+			bytes = bytes[0 : len(bytes)-1] // Removes trailing newline
+			logger.log(string(bytes), attributes...)
+		} else {
+			fmt.Fprint(&buffer, value)
+			logger.log(buffer.String(), attributes...)
+		}
 	}
 }
 

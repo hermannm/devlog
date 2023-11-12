@@ -135,25 +135,30 @@ func TestErrorMessagef(t *testing.T) {
 }
 
 func TestDebug(t *testing.T) {
-	output := getLogOutput(
-		&slog.HandlerOptions{Level: slog.LevelDebug},
-		func() {
-			log.Debug("this is a test", slog.String("key", "value"))
-		},
-	)
+	output := getLogOutput(&slog.HandlerOptions{Level: slog.LevelDebug}, func() {
+		log.Debug("this is a test", slog.String("key", "value"))
+	})
 
 	assertContains(t, output, "this is a test", `"level":"DEBUG"`, `"key":"value"`)
 }
 
 func TestDebugf(t *testing.T) {
-	output := getLogOutput(
-		&slog.HandlerOptions{Level: slog.LevelDebug},
-		func() {
-			log.Debugf("this is a %s", "format arg")
-		},
-	)
+	output := getLogOutput(&slog.HandlerOptions{Level: slog.LevelDebug}, func() {
+		log.Debugf("this is a %s", "format arg")
+	})
 
 	assertContains(t, output, "this is a format arg", `"level":"DEBUG"`)
+}
+
+func TestDebugJSON(t *testing.T) {
+	output := getLogOutput(&slog.HandlerOptions{Level: slog.LevelDebug}, func() {
+		numbers := []int{1, 2, 3}
+		log.DebugJSON(numbers, "some numbers")
+	})
+
+	expected := "some numbers: [\\n  1,\\n  2,\\n  3\\n]"
+
+	assertContains(t, output, expected, `"level":"DEBUG"`)
 }
 
 func TestDisabledLogLevel(t *testing.T) {
