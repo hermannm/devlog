@@ -209,11 +209,7 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 	case slog.KindTime:
 		handler.writeAttributeKey(buf, attr.Key)
 		buf.writeByte(' ')
-
-		handler.setColor(buf, color.Cyan)
 		buf.writeTime(attr.Value.Time())
-		handler.resetColor(buf)
-
 		buf.writeByte('\n')
 	case slog.KindAny:
 		handler.writeAttributeKey(buf, attr.Key)
@@ -231,14 +227,13 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 	default:
 		handler.writeAttributeKey(buf, attr.Key)
 		buf.writeByte(' ')
-		handler.writeStringWithColor(buf, attr.Value.String(), color.Cyan)
+		buf.writeString(attr.Value.String())
 		buf.writeByte('\n')
 	}
 }
 
 func (handler *Handler) writeAttributeKey(buf *buffer, attrKey string) {
-	handler.writeByteWithColor(buf, '-', color.Gray)
-	buf.writeByte(' ')
+	handler.setColor(buf, color.Cyan)
 	buf.writeString(attrKey)
 	handler.writeByteWithColor(buf, ':', color.Gray)
 }
@@ -284,12 +279,8 @@ func (handler *Handler) writeLogSource(buf *buffer, programCounter uintptr) {
 
 	handler.writeAttributeKey(buf, slog.SourceKey)
 	buf.writeByte(' ')
-
-	handler.setColor(buf, color.Cyan)
 	buf.writeString(frame.File)
 	buf.writeByte(':')
 	buf.writeDecimal(frame.Line)
-	handler.resetColor(buf)
-
 	buf.writeByte('\n')
 }

@@ -26,7 +26,7 @@ func (buf *buffer) writeDecimal(decimal int) {
 }
 
 func (buf *buffer) writeIndent(indentLevel int) {
-	for i := 0; i < indentLevel; i++ {
+	for i := 0; i <= indentLevel; i++ {
 		buf.writeString("  ")
 	}
 }
