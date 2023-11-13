@@ -1,6 +1,7 @@
 package devlog
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -28,6 +29,10 @@ func (buf *buffer) writeIndent(indentLevel int) {
 	for i := 0; i < indentLevel; i++ {
 		buf.writeString("  ")
 	}
+}
+
+func (buf *buffer) writeAny(value any) {
+	*buf = fmt.Append(*buf, value)
 }
 
 // Adapted from standard library log package:

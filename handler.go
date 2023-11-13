@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"reflect"
 	"runtime"
 	"sync"
 
@@ -214,6 +215,19 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 		handler.resetColor(buf)
 
 		buf.writeByte('\n')
+	case slog.KindAny:
+		handler.writeAttributeKey(buf, attr.Key)
+
+		value := reflect.ValueOf(attr.Value.Any())
+		switch value.Kind() {
+		case reflect.Slice, reflect.Array:
+			handler.writeList(buf, value, indentLevel+1)
+		default:
+			buf.writeByte(' ')
+			buf.writeString(attr.Value.String())
+		}
+
+		buf.writeByte('\n')
 	default:
 		handler.writeAttributeKey(buf, attr.Key)
 		buf.writeByte(' ')
@@ -227,6 +241,41 @@ func (handler *Handler) writeAttributeKey(buf *buffer, attrKey string) {
 	buf.writeByte(' ')
 	buf.writeString(attrKey)
 	handler.writeByteWithColor(buf, ':', color.Gray)
+}
+
+func (handler *Handler) writeList(buf *buffer, list reflect.Value, indent int) {
+	length := list.Len()
+	switch length {
+	case 0:
+		buf.writeString(" []")
+	case 1:
+		buf.writeByte(' ')
+		buf.writeAny(list.Index(0))
+	default:
+		for i := 0; i < length; i++ {
+			value := list.Index(i)
+			if value.CanInterface() {
+				realValue := reflect.ValueOf(value.Interface())
+				switch realValue.Kind() {
+				case reflect.Slice, reflect.Array:
+					handler.writeList(buf, realValue, indent+1)
+				default:
+					handler.writeListItemPrefix(buf, indent)
+					buf.writeAny(realValue)
+				}
+			} else {
+				handler.writeListItemPrefix(buf, indent)
+				buf.writeAny(value)
+			}
+		}
+	}
+}
+
+func (handler *Handler) writeListItemPrefix(buf *buffer, indent int) {
+	buf.writeByte('\n')
+	buf.writeIndent(indent)
+	handler.writeByteWithColor(buf, '-', color.Gray)
+	buf.writeByte(' ')
 }
 
 func (handler *Handler) writeLogSource(buf *buffer, programCounter uintptr) {
