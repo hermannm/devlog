@@ -20,14 +20,14 @@ var (
 	// DefaultJSONColors are the default colors used for JSON highlighting in [DebugJSON], when
 	// colors are enabled. They can be changed by calling [SetJSONColors].
 	DefaultJSONColors = JSONColors{
-		Key:         color.NoColor,
+		Key:         color.Cyan,
 		Punctuation: color.Gray,
-		String:      color.Cyan,
-		Number:      color.Cyan,
-		Bool:        color.Cyan,
-		Bytes:       color.Cyan,
-		Time:        color.Cyan,
-		Null:        color.Cyan,
+		String:      color.NoColor,
+		Number:      color.NoColor,
+		Bool:        color.NoColor,
+		Bytes:       color.NoColor,
+		Time:        color.NoColor,
+		Null:        color.NoColor,
 	}
 
 	jsonColors = DefaultJSONColors.convert()
