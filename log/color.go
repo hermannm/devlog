@@ -8,8 +8,17 @@ import (
 )
 
 var (
+	// ColorsEnabled controls whether ANSI color codes should be used for JSON highlighting in
+	// [DebugJSON].
+	//
+	// It defaults to the output of [color.IsColorTerminal] for os.Stdout - if your logger uses a
+	// different output, you should call IsColorTerminal on it and set ColorsEnabled accordingly.
+	// Changing this value is not thread-safe, so should be set at the start of your program and
+	// then stay unchanged.
 	ColorsEnabled = color.IsColorTerminal(os.Stdout)
 
+	// DefaultJSONColors are the default colors used for JSON highlighting in [DebugJSON], when
+	// colors are enabled. They can be changed by calling [SetJSONColors].
 	DefaultJSONColors = JSONColors{
 		Key:         color.NoColor,
 		Punctuation: color.Gray,
@@ -24,10 +33,14 @@ var (
 	jsonColors = DefaultJSONColors.convert()
 )
 
+// SetJSONColors sets the colors to be used for JSON highlighting in [DebugJSON], when colors are
+// enabled. Calling this is not thread-safe, so it should be called at the start of your program.
 func SetJSONColors(colors JSONColors) {
 	jsonColors = colors.convert()
 }
 
+// JSONColors contain colors to be used for JSON highlighting in [DebugJSON], when colors are
+// enabled.
 type JSONColors struct {
 	Key         color.Color
 	Punctuation color.Color
