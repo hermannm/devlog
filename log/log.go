@@ -12,7 +12,6 @@ import (
 
 	"github.com/neilotoole/jsoncolor"
 	"hermannm.dev/devlog/color"
-	"hermannm.dev/wrap"
 )
 
 // Info logs the given message at the INFO log level, along with any given structured log
@@ -53,11 +52,7 @@ func Warnf(messageFormat string, formatArgs ...any) {
 // If message is not blank, wraps the error with the given message using [hermannm.dev/wrap.Error].
 func WarnError(err error, message string, attributes ...slog.Attr) {
 	if logger, enabled := getLogger(slog.LevelWarn); enabled {
-		if message != "" {
-			err = wrap.Error(err, message)
-		}
-
-		logger.log(err.Error(), attributes...)
+		logger.log(buildErrorString(err, message), attributes...)
 	}
 }
 
@@ -65,7 +60,7 @@ func WarnError(err error, message string, attributes ...slog.Attr) {
 // logs it at the WARN log level.
 func WarnErrorf(err error, messageFormat string, formatArgs ...any) {
 	if logger, enabled := getLogger(slog.LevelWarn); enabled {
-		logger.log(wrap.Errorf(err, messageFormat, formatArgs...).Error())
+		logger.log(buildWrappedErrorString(err, fmt.Sprintf(messageFormat, formatArgs...)))
 	}
 }
 
@@ -73,7 +68,7 @@ func WarnErrorf(err error, messageFormat string, formatArgs ...any) {
 // the WARN log level.
 func WarnErrors(message string, errs ...error) {
 	if logger, enabled := getLogger(slog.LevelWarn); enabled {
-		logger.log(wrap.Errors(message, errs...).Error())
+		logger.log(buildWrappedErrorsString(message, errs))
 	}
 }
 
@@ -83,11 +78,7 @@ func WarnErrors(message string, errs ...error) {
 // If message is not blank, wraps the error with the given message using [hermannm.dev/wrap.Error].
 func Error(err error, message string, attributes ...slog.Attr) {
 	if logger, enabled := getLogger(slog.LevelError); enabled {
-		if message != "" {
-			err = wrap.Error(err, message)
-		}
-
-		logger.log(err.Error(), attributes...)
+		logger.log(buildErrorString(err, message), attributes...)
 	}
 }
 
@@ -95,7 +86,7 @@ func Error(err error, message string, attributes ...slog.Attr) {
 // it at the ERROR log level.
 func Errorf(err error, messageFormat string, formatArgs ...any) {
 	if logger, enabled := getLogger(slog.LevelError); enabled {
-		logger.log(wrap.Errorf(err, messageFormat, formatArgs...).Error())
+		logger.log(buildWrappedErrorString(err, fmt.Sprintf(messageFormat, formatArgs...)))
 	}
 }
 
@@ -103,7 +94,7 @@ func Errorf(err error, messageFormat string, formatArgs ...any) {
 // ERROR log level.
 func Errors(message string, errs ...error) {
 	if logger, enabled := getLogger(slog.LevelError); enabled {
-		logger.log(wrap.Errors(message, errs...).Error())
+		logger.log(buildWrappedErrorsString(message, errs))
 	}
 }
 
