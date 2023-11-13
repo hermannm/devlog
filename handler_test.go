@@ -92,9 +92,8 @@ func parseLogEntry(entries *[]map[string]any, entryString string, includeTime bo
 		var openGroups []string
 		currentIndent := 0
 		for _, line := range strings.Split(entryString, "\n") {
-			split := strings.SplitN(line, "- ", 2)
-			indent := len(split[0]) / 2
-			attr := split[1]
+			attr := strings.TrimLeft(line, " ")
+			indent := (len(line) - len(attr) - 1) / 2
 
 			if indent < currentIndent {
 				openGroups = openGroups[0 : len(openGroups)-1]
