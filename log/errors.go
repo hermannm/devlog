@@ -1,93 +1,86 @@
 package log
 
 import (
-	"strings"
-
-	"hermannm.dev/devlog/color"
-	"hermannm.dev/wrap"
+	"log/slog"
 )
 
-func buildErrorString(err error, message string) string {
+type ErrorWithMessage interface {
+	Message() string
+	Unwrap() error
+}
+
+type ErrorsWithMessage interface {
+	Message() string
+	Unwrap() []error
+}
+
+func errorCauseAttribute(err error) slog.Attr {
+	return slog.Any("cause", buildErrorLogValue(err))
+}
+
+func errorsCauseAttribute(errs []error) slog.Attr {
+	return slog.Any("cause", buildErrorList(errs, false))
+}
+
+func buildErrorLog(err error, message string, attributes []slog.Attr) (string, []slog.Attr) {
+	if err == nil {
+		return message, attributes
+	}
+
 	if message != "" {
-		return buildWrappedErrorString(err, message)
+		return message, append([]slog.Attr{errorCauseAttribute(err)}, attributes...)
 	}
 
 	switch err := err.(type) {
-	case wrap.WrappedError:
-		return buildWrappedErrorString(err.Wrapped, err.Message)
-	case wrap.WrappedErrors:
-		return buildWrappedErrorsString(err.Message, err.Wrapped)
+	case ErrorWithMessage:
+		return err.Message(), append([]slog.Attr{errorCauseAttribute(err.Unwrap())}, attributes...)
+	case ErrorsWithMessage:
+		return err.Message(), append([]slog.Attr{errorsCauseAttribute(err.Unwrap())}, attributes...)
+	default:
+		return err.Error(), attributes
+	}
+}
+
+func buildErrorLogValue(err error) any {
+	switch err := err.(type) {
+	case ErrorWithMessage:
+		logValue := []any{err.Message()}
+		return appendError(logValue, err.Unwrap(), false)
+	case ErrorsWithMessage:
+		return [2]any{err.Message(), buildErrorList(err.Unwrap(), false)}
 	default:
 		return err.Error()
 	}
 }
 
-func buildWrappedErrorString(wrapped error, message string) string {
-	var errString strings.Builder
-	errString.WriteString(message)
-	writeErrorListItem(&errString, wrapped, 1, 1)
-	return errString.String()
-}
-
-func buildWrappedErrorsString(message string, wrapped []error) string {
-	var errString strings.Builder
-	errString.WriteString(message)
-	writeErrorList(&errString, wrapped, 1)
-	return errString.String()
-}
-
-func writeErrorListItem(
-	errString *strings.Builder,
-	wrappedErr error,
-	indent int,
-	siblingCount int,
-) {
-	errString.WriteRune('\n')
-	for i := 1; i < indent; i++ {
-		errString.WriteString("  ")
+func buildErrorList(errors []error, partOfList bool) any {
+	if !partOfList && len(errors) == 1 {
+		return buildErrorLogValue(errors[0])
 	}
 
-	if ColorsEnabled {
-		errString.Write(jsonColors.Punc)
-		errString.WriteByte('-')
-		errString.Write(color.Reset)
-		errString.WriteByte(' ')
-	} else {
-		errString.WriteString("- ")
+	logValue := make([]any, 0, len(errors))
+	for _, err := range errors {
+		logValue = appendError(logValue, err, true)
 	}
+	return logValue
+}
 
-	switch err := wrappedErr.(type) {
-	case wrap.WrappedError:
-		writeErrorMessage(errString, err.Message, indent)
-
-		nextIndent := indent
-		if siblingCount > 1 {
-			nextIndent++
-			siblingCount = 1
+func appendError(logValue []any, err error, partOfList bool) []any {
+	switch err := err.(type) {
+	case ErrorWithMessage:
+		logValue = append(logValue, err.Message())
+		if partOfList {
+			nested := appendError([]any{}, err.Unwrap(), false)
+			logValue = append(logValue, nested)
+		} else {
+			logValue = appendError(logValue, err.Unwrap(), false)
 		}
-		writeErrorListItem(errString, err.Wrapped, nextIndent, siblingCount)
-	case wrap.WrappedErrors:
-		writeErrorMessage(errString, err.Message, indent)
-		writeErrorList(errString, err.Wrapped, indent+1)
+	case ErrorsWithMessage:
+		logValue = append(logValue, err.Message())
+		logValue = append(logValue, buildErrorList(err.Unwrap(), partOfList))
 	default:
-		writeErrorMessage(errString, err.Error(), indent)
+		logValue = append(logValue, err.Error())
 	}
-}
 
-func writeErrorList(errString *strings.Builder, wrappedErrs []error, indent int) {
-	for _, wrappedErr := range wrappedErrs {
-		writeErrorListItem(errString, wrappedErr, indent, len(wrappedErrs))
-	}
-}
-
-func writeErrorMessage(errString *strings.Builder, message string, indent int) {
-	lines := strings.SplitAfter(message, "\n")
-	for i, line := range lines {
-		if i > 0 {
-			for j := 0; j < indent; j++ {
-				errString.WriteString("  ")
-			}
-		}
-		errString.WriteString(line)
-	}
+	return logValue
 }
