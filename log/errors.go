@@ -124,17 +124,6 @@ func splitLongErrorMessage(message string) (splits []any, firstSplit string) {
 	for i := minSplitLength; i < msgLength-1; i++ {
 		// Safe to index [i+1], since we loop until the second-to-last index
 		if msgBytes[i] == ':' && msgBytes[i+1] == ' ' {
-
-			remainderLength := msgLength - (i + 2) // +2 for ': '
-			if remainderLength < minSplitLength {
-				currentSplitLength := i - lastSplitIndex
-				if (currentSplitLength + remainderLength) < maxSplitLength {
-					// Stops split if remainder is shorter than minimum, and would not exceed the
-					// maximum if added together with the current split
-					break
-				}
-			}
-
 			split := string(msgBytes[lastSplitIndex:i])
 			splits = append(splits, split)
 			if firstSplit == "" {
