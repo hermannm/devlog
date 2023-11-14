@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"log/slog"
 )
 
@@ -21,11 +22,15 @@ type WrappedErrors interface {
 }
 
 func appendErrorCause(attributes []slog.Attr, err error) []slog.Attr {
-	return append([]slog.Attr{slog.Any("cause", buildErrorLogValue(err))}, attributes...)
+	return appendCause(attributes, buildErrorLogValue(err))
 }
 
 func appendErrorCauses(attributes []slog.Attr, errs []error) []slog.Attr {
-	return append([]slog.Attr{slog.Any("cause", buildErrorList(errs, false))}, attributes...)
+	return appendCause(attributes, buildErrorList(errs, false))
+}
+
+func appendCause(attributes []slog.Attr, cause any) []slog.Attr {
+	return append([]slog.Attr{slog.Any("cause", cause)}, attributes...)
 }
 
 func getErrorMessageAndCause(
@@ -38,7 +43,11 @@ func getErrorMessageAndCause(
 	case WrappedErrors:
 		return err.WrappingMessage(), appendErrorCauses(attributes, err.Unwrap())
 	default:
-		return err.Error(), attributes
+		splits, firstSplit := splitLongErrorMessage(err.Error())
+		if len(splits) > 1 {
+			attributes = appendCause(attributes, splits[1:])
+		}
+		return firstSplit, attributes
 	}
 }
 
@@ -50,7 +59,12 @@ func buildErrorLogValue(err error) any {
 	case WrappedErrors:
 		return [2]any{err.WrappingMessage(), buildErrorList(err.Unwrap(), false)}
 	default:
-		return err.Error()
+		splits, firstSplit := splitLongErrorMessage(err.Error())
+		if len(splits) > 1 {
+			return splits
+		} else {
+			return firstSplit
+		}
 	}
 }
 
@@ -80,8 +94,89 @@ func appendError(logValue []any, err error, partOfList bool) []any {
 		logValue = append(logValue, err.WrappingMessage())
 		logValue = append(logValue, buildErrorList(err.Unwrap(), partOfList))
 	default:
-		logValue = append(logValue, err.Error())
+		splits, firstSplit := splitLongErrorMessage(err.Error())
+		if partOfList {
+			logValue = append(logValue, firstSplit)
+			if len(splits) > 1 {
+				logValue = append(logValue, splits[1:])
+			}
+		} else {
+			logValue = append(logValue, splits...)
+		}
 	}
 
 	return logValue
+}
+
+// Splits error messages longer than 64 characters at ": " (typically used for error wrapping), if
+// present. Ensures that no splits are shorter than 24 characters.
+func splitLongErrorMessage(message string) (splits []any, firstSplit string) {
+	msgBytes := []byte(message)
+	msgLength := len(msgBytes)
+
+	const minSplitLength = 24
+	const maxSplitLength = 64
+
+	if msgLength <= maxSplitLength {
+		return []any{message}, message
+	}
+
+	lastSplitIndex := 0
+	for i := minSplitLength; i < msgLength-1; i++ {
+		// Safe to index [i+1], since we loop until the second-to-last index
+		if msgBytes[i] == ':' && msgBytes[i+1] == ' ' {
+			remainderLength := msgLength - (i + 2) // +2 for ': '
+			currentSplitLength := i - lastSplitIndex
+
+			fmt.Printf(
+				"{ remainderLength: %d, currentSplitLength: %d }\n",
+				remainderLength,
+				currentSplitLength,
+			)
+			if remainderLength < minSplitLength &&
+				(currentSplitLength+remainderLength) < maxSplitLength {
+				fmt.Printf(
+					"{msgLength: %d, i: %d, lastSplitIndex: %d, current: %d}\n",
+					msgLength,
+					i,
+					lastSplitIndex,
+					i-lastSplitIndex,
+				)
+				break
+			}
+
+			split := string(msgBytes[lastSplitIndex:i])
+
+			fmt.Printf(
+				"{msgLength: %d, i: %d, lastSplitIndex: %d, split: '%s'}\n",
+				msgLength,
+				i,
+				lastSplitIndex,
+				split,
+			)
+
+			splits = append(splits, split)
+			if firstSplit == "" {
+				firstSplit = split
+			}
+
+			lastSplitIndex = i + 2 // +2 for ': '
+			if msgLength-lastSplitIndex <= maxSplitLength {
+				break // Remaining message is short enough, we're done
+			}
+
+			// Skips ahead minSplitLength to avoid smaller splits
+			// (+2 for ': ', -1 for loop increment)
+			i += minSplitLength + 1
+		}
+	}
+
+	if firstSplit == "" {
+		return []any{message}, message
+	}
+
+	// Adds remainder after last split
+	splits = append(splits, string(msgBytes[lastSplitIndex:msgLength]))
+
+	return splits, firstSplit
 }
