@@ -2,6 +2,7 @@ package log_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"hermannm.dev/devlog/log"
@@ -89,6 +90,52 @@ func TestSingleWrappedErrors(t *testing.T) {
 		`"msg":"wrapping message"`,
 		`"cause":"wrapped error"`,
 	)
+}
+
+func TestLongErrorMessage(t *testing.T) {
+	output := getLogOutput(nil, func() {
+		log.Error(
+			errors.New(
+				"this error message is more than 24 characters: " +
+					"less than 24: " +
+					"now again longer than 24 characters: " +
+					"this is a long error message, of barely less than 64 characters: " +
+					"short message",
+			),
+		)
+	})
+
+	assertContains(
+		t,
+		output,
+		`"msg":"this error message is more than 24 characters"`,
+		`"cause":["less than 24: now again longer than 24 characters",`+
+			`"this is a long error message, of barely less than 64 characters",`+
+			`"short message"]`,
+	)
+}
+
+func TestUnsplittableErrorMessage(t *testing.T) {
+	output := getLogOutput(nil, func() {
+		log.Error(
+			errors.New(
+				"this is a super long error message of more than 64 characters in total",
+			),
+		)
+	})
+
+	assertContains(
+		t,
+		output,
+		`"msg":"this is a super long error message of more than 64 characters in total"`,
+	)
+
+	if strings.Contains(output, `"cause"`) {
+		t.Fatalf(
+			"expected unsplittable error message to give no 'cause' attribute, but got: %s",
+			output,
+		)
+	}
 }
 
 type wrappedError struct {
