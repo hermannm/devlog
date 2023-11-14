@@ -14,28 +14,23 @@ type ErrorsWithMessage interface {
 	Unwrap() []error
 }
 
-func errorCauseAttribute(err error) slog.Attr {
-	return slog.Any("cause", buildErrorLogValue(err))
+func appendErrorCause(attributes []slog.Attr, err error) []slog.Attr {
+	return append([]slog.Attr{slog.Any("cause", buildErrorLogValue(err))}, attributes...)
 }
 
-func errorsCauseAttribute(errs []error) slog.Attr {
-	return slog.Any("cause", buildErrorList(errs, false))
+func appendErrorCauses(attributes []slog.Attr, errs []error) []slog.Attr {
+	return append([]slog.Attr{slog.Any("cause", buildErrorList(errs, false))}, attributes...)
 }
 
-func buildErrorLog(err error, message string, attributes []slog.Attr) (string, []slog.Attr) {
-	if err == nil {
-		return message, attributes
-	}
-
-	if message != "" {
-		return message, append([]slog.Attr{errorCauseAttribute(err)}, attributes...)
-	}
-
+func getErrorMessageAndCause(
+	err error,
+	attributes []slog.Attr,
+) (message string, attributesWithCause []slog.Attr) {
 	switch err := err.(type) {
 	case ErrorWithMessage:
-		return err.Message(), append([]slog.Attr{errorCauseAttribute(err.Unwrap())}, attributes...)
+		return err.Message(), appendErrorCause(attributes, err.Unwrap())
 	case ErrorsWithMessage:
-		return err.Message(), append([]slog.Attr{errorsCauseAttribute(err.Unwrap())}, attributes...)
+		return err.Message(), appendErrorCauses(attributes, err.Unwrap())
 	default:
 		return err.Error(), attributes
 	}
