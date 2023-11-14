@@ -380,7 +380,7 @@ func (logger *Logger) withLevel(level slog.Level) (withLevel levelLogger, enable
 func buildDebugJSONString(value any, message string) string {
 	var buffer bytes.Buffer
 	encoder := jsoncolor.NewEncoder(&buffer)
-	encoder.SetIndent("", "  ")
+	encoder.SetIndent("  ", "  ")
 
 	if ColorsEnabled {
 		encoder.SetColors(&jsonColors)
