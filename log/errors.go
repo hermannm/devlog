@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"log/slog"
 )
 
@@ -109,12 +108,12 @@ func appendError(logValue []any, err error, partOfList bool) []any {
 }
 
 // Splits error messages longer than 64 characters at ": " (typically used for error wrapping), if
-// present. Ensures that no splits are shorter than 24 characters.
+// present. Ensures that no splits are shorter than 16 characters (except the last one).
 func splitLongErrorMessage(message string) (splits []any, firstSplit string) {
 	msgBytes := []byte(message)
 	msgLength := len(msgBytes)
 
-	const minSplitLength = 24
+	const minSplitLength = 16
 	const maxSplitLength = 64
 
 	if msgLength <= maxSplitLength {
@@ -125,36 +124,18 @@ func splitLongErrorMessage(message string) (splits []any, firstSplit string) {
 	for i := minSplitLength; i < msgLength-1; i++ {
 		// Safe to index [i+1], since we loop until the second-to-last index
 		if msgBytes[i] == ':' && msgBytes[i+1] == ' ' {
-			remainderLength := msgLength - (i + 2) // +2 for ': '
-			currentSplitLength := i - lastSplitIndex
 
-			fmt.Printf(
-				"{ remainderLength: %d, currentSplitLength: %d }\n",
-				remainderLength,
-				currentSplitLength,
-			)
-			if remainderLength < minSplitLength &&
-				(currentSplitLength+remainderLength) < maxSplitLength {
-				fmt.Printf(
-					"{msgLength: %d, i: %d, lastSplitIndex: %d, current: %d}\n",
-					msgLength,
-					i,
-					lastSplitIndex,
-					i-lastSplitIndex,
-				)
-				break
+			remainderLength := msgLength - (i + 2) // +2 for ': '
+			if remainderLength < minSplitLength {
+				currentSplitLength := i - lastSplitIndex
+				if (currentSplitLength + remainderLength) < maxSplitLength {
+					// Stops split if remainder is shorter than minimum, and would not exceed the
+					// maximum if added together with the current split
+					break
+				}
 			}
 
 			split := string(msgBytes[lastSplitIndex:i])
-
-			fmt.Printf(
-				"{msgLength: %d, i: %d, lastSplitIndex: %d, split: '%s'}\n",
-				msgLength,
-				i,
-				lastSplitIndex,
-				split,
-			)
-
 			splits = append(splits, split)
 			if firstSplit == "" {
 				firstSplit = split

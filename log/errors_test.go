@@ -96,9 +96,9 @@ func TestLongErrorMessage(t *testing.T) {
 	output := getLogOutput(nil, func() {
 		log.Error(
 			errors.New(
-				"this error message is more than 24 characters: " +
-					"less than 24: " +
-					"now again longer than 24 characters: " +
+				"this error message is more than 16 characters: " +
+					"less than 16: " +
+					"now again longer than 16 characters: " +
 					"this is a long error message, of barely less than 64 characters: " +
 					"short message",
 			),
@@ -108,8 +108,8 @@ func TestLongErrorMessage(t *testing.T) {
 	assertContains(
 		t,
 		output,
-		`"msg":"this error message is more than 24 characters"`,
-		`"cause":["less than 24: now again longer than 24 characters",`+
+		`"msg":"this error message is more than 16 characters"`,
+		`"cause":["less than 16: now again longer than 16 characters",`+
 			`"this is a long error message, of barely less than 64 characters",`+
 			`"short message"]`,
 	)
