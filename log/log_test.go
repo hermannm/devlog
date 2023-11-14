@@ -171,9 +171,7 @@ func TestDebugJSON(t *testing.T) {
 		log.DebugJSON(numbers, "some numbers")
 	})
 
-	expected := "some numbers: [\\n  1,\\n  2,\\n  3\\n]"
-
-	assertContains(t, output, expected, `"level":"DEBUG"`)
+	assertContains(t, output, `"level":"DEBUG"`, "some numbers: [\\n    1,\\n    2,\\n    3\\n  ]")
 }
 
 func TestDisabledLogLevel(t *testing.T) {
@@ -346,9 +344,7 @@ func TestLoggerDebugJSON(t *testing.T) {
 		},
 	)
 
-	expected := "some numbers: [\\n  1,\\n  2,\\n  3\\n]"
-
-	assertContains(t, output, expected, `"level":"DEBUG"`)
+	assertContains(t, output, `"level":"DEBUG"`, "some numbers: [\\n    1,\\n    2,\\n    3\\n  ]")
 }
 
 func TestLoggerDisabledLogLevel(t *testing.T) {
