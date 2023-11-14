@@ -110,11 +110,11 @@ func appendError(logValue []any, err error, partOfList bool) []any {
 // Splits error messages longer than 64 characters at ": " (typically used for error wrapping), if
 // present. Ensures that no splits are shorter than 16 characters (except the last one).
 func splitLongErrorMessage(message string) (splits []any, firstSplit string) {
-	msgBytes := []byte(message)
-	msgLength := len(msgBytes)
-
 	const minSplitLength = 16
 	const maxSplitLength = 64
+
+	msgBytes := []byte(message)
+	msgLength := len(msgBytes)
 
 	if msgLength <= maxSplitLength {
 		return []any{message}, message
