@@ -217,7 +217,7 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 		value := reflect.ValueOf(attr.Value.Any())
 		switch value.Kind() {
 		case reflect.Slice, reflect.Array:
-			handler.writeList(buf, value, indentLevel+1)
+			handler.writeListOrSingleElement(buf, value, indentLevel+1)
 		default:
 			buf.writeByte(' ')
 			buf.writeString(attr.Value.String())
@@ -238,30 +238,41 @@ func (handler *Handler) writeAttributeKey(buf *buffer, attrKey string) {
 	handler.writeByteWithColor(buf, ':', color.Gray)
 }
 
-func (handler *Handler) writeList(buf *buffer, list reflect.Value, indent int) {
-	length := list.Len()
-	switch length {
+func (handler *Handler) writeListOrSingleElement(buf *buffer, list reflect.Value, indent int) {
+	switch list.Len() {
 	case 0:
 		buf.writeString(" []")
 	case 1:
-		buf.writeByte(' ')
-		buf.writeAny(list.Index(0))
+		value := list.Index(0)
+		if value.CanInterface() {
+			value = reflect.ValueOf(value.Interface())
+		}
+
+		switch value.Kind() {
+		case reflect.Slice, reflect.Array:
+			handler.writeListOrSingleElement(buf, value, indent)
+		default:
+			buf.writeByte(' ')
+			buf.writeAny(value)
+		}
 	default:
-		for i := 0; i < length; i++ {
-			value := list.Index(i)
-			if value.CanInterface() {
-				realValue := reflect.ValueOf(value.Interface())
-				switch realValue.Kind() {
-				case reflect.Slice, reflect.Array:
-					handler.writeList(buf, realValue, indent+1)
-				default:
-					handler.writeListItemPrefix(buf, indent)
-					buf.writeAny(realValue)
-				}
-			} else {
-				handler.writeListItemPrefix(buf, indent)
-				buf.writeAny(value)
-			}
+		handler.writeList(buf, list, indent)
+	}
+}
+
+func (handler *Handler) writeList(buf *buffer, list reflect.Value, indent int) {
+	for i := 0; i < list.Len(); i++ {
+		value := list.Index(i)
+		if value.CanInterface() {
+			value = reflect.ValueOf(value.Interface())
+		}
+
+		switch value.Kind() {
+		case reflect.Slice, reflect.Array:
+			handler.writeList(buf, value, indent+1)
+		default:
+			handler.writeListItemPrefix(buf, indent)
+			buf.writeAny(value)
 		}
 	}
 }
