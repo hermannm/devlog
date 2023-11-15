@@ -251,9 +251,12 @@ func (handler *Handler) writeListOrSingleElement(buf *buffer, list reflect.Value
 		switch value.Kind() {
 		case reflect.Slice, reflect.Array:
 			handler.writeListOrSingleElement(buf, value, indent)
+		case reflect.String:
+			buf.writeByte(' ')
+			buf.writeBytesWithIndentedNewlines([]byte(value.String()), indent)
 		default:
 			buf.writeByte(' ')
-			buf.writeAny(value)
+			buf.writeAnyWithIndentedNewlines(value, indent)
 		}
 	default:
 		handler.writeList(buf, list, indent)
@@ -270,9 +273,12 @@ func (handler *Handler) writeList(buf *buffer, list reflect.Value, indent int) {
 		switch value.Kind() {
 		case reflect.Slice, reflect.Array:
 			handler.writeList(buf, value, indent+1)
+		case reflect.String:
+			handler.writeListItemPrefix(buf, indent)
+			buf.writeBytesWithIndentedNewlines([]byte(value.String()), indent+1)
 		default:
 			handler.writeListItemPrefix(buf, indent)
-			buf.writeAny(value)
+			buf.writeAnyWithIndentedNewlines(value, indent+1)
 		}
 	}
 }

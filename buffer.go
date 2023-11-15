@@ -35,6 +35,27 @@ func (buf *buffer) writeAny(value any) {
 	*buf = fmt.Append(*buf, value)
 }
 
+func (buf *buffer) writeBytesWithIndentedNewlines(bytes []byte, indent int) {
+	lastWriteIndex := 0
+	for i := 0; i < len(bytes)-1; i++ {
+		if bytes[i] == '\n' {
+			buf.writeBytes(bytes[lastWriteIndex : i+1])
+			buf.writeIndent(indent)
+			lastWriteIndex = i + 1
+		}
+	}
+
+	buf.writeBytes(bytes[lastWriteIndex:])
+}
+
+func (buf *buffer) writeAnyWithIndentedNewlines(value any, indent int) {
+	valueBuf := newSmallBuffer()
+	defer valueBuf.freeSmall()
+
+	valueBuf.writeAny(value)
+	buf.writeBytesWithIndentedNewlines(*valueBuf, indent)
+}
+
 // Adapted from standard library log package:
 // https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/log.go#L114
 func (buf *buffer) writeTime(t time.Time) {
@@ -86,8 +107,8 @@ func (buf buffer) copy() buffer {
 // https://github.com/golang/example/blob/1d6d2400d4027025cb8edc86a139c9c581d672f7/slog-handler-guide/README.md#speed
 var bufferPool = sync.Pool{
 	New: func() any {
-		b := make([]byte, 0, 1024)
-		return (*buffer)(&b)
+		buf := make([]byte, 0, 1024)
+		return (*buffer)(&buf)
 	},
 }
 
@@ -97,9 +118,28 @@ func newBuffer() *buffer {
 
 func (buf *buffer) free() {
 	// To reduce peak allocation, return only smaller buffers to the pool.
-	const maxBufferSize = 16 << 10
+	const maxBufferSize = 16 * 1024
 	if cap(*buf) <= maxBufferSize {
 		*buf = (*buf)[:0]
 		bufferPool.Put(buf)
+	}
+}
+
+var smallBufferPool = sync.Pool{
+	New: func() any {
+		buf := make([]byte, 0, 128)
+		return (*buffer)(&buf)
+	},
+}
+
+func newSmallBuffer() *buffer {
+	return smallBufferPool.Get().(*buffer)
+}
+
+func (buf *buffer) freeSmall() {
+	const maxBufferSize = 16 * 128
+	if cap(*buf) <= maxBufferSize {
+		*buf = (*buf)[:0]
+		smallBufferPool.Put(buf)
 	}
 }
