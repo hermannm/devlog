@@ -138,6 +138,25 @@ func TestUnsplittableErrorMessage(t *testing.T) {
 	}
 }
 
+func TestLongMultilineErrorMessage(t *testing.T) {
+	output := getLogOutput(nil, func() {
+		log.Error(
+			errors.New(`this error message ends in a newline and colon:
+more than 16 characters: this message ends in a newline
+another message ending in a newline and colon:
+another newline message`),
+		)
+	})
+
+	assertContains(
+		t,
+		output,
+		`"msg":"this error message ends in a newline and colon"`,
+		`"cause":["more than 16 characters",`+
+			`"this message ends in a newline\nanother message ending in a newline and colon:\nanother newline message"]`,
+	)
+}
+
 type wrappedError struct {
 	msg   string
 	cause error
