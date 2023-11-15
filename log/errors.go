@@ -120,24 +120,36 @@ func splitLongErrorMessage(message string) (splits []any, firstSplit string) {
 		return []any{message}, message
 	}
 
-	lastSplitIndex := 0
-	for i := minSplitLength; i < msgLength-1; i++ {
-		// Safe to index [i+1], since we loop until the second-to-last index
-		if msgBytes[i] == ':' && msgBytes[i+1] == ' ' {
-			split := string(msgBytes[lastSplitIndex:i])
-			splits = append(splits, split)
-			if firstSplit == "" {
-				firstSplit = split
-			}
+	lastWriteIndex := 0
 
-			lastSplitIndex = i + 2 // +2 for ': '
-			if msgLength-lastSplitIndex <= maxSplitLength {
-				break // Remaining message is short enough, we're done
-			}
+MessageLoop:
+	for i := 0; i < msgLength-1; i++ {
+		switch msgBytes[i] {
+		case ':':
+			// Safe to index [i+1], since we loop until the second-to-last index
+			switch msgBytes[i+1] {
+			case ' ', '\n':
+				if i-lastWriteIndex < minSplitLength {
+					continue MessageLoop // This split is too short, include in next split instead
+				}
 
-			// Skips ahead minSplitLength to avoid smaller splits
-			// (+2 for ': ', -1 for loop increment)
-			i += minSplitLength + 1
+				split := string(msgBytes[lastWriteIndex:i])
+				splits = append(splits, split)
+				if firstSplit == "" {
+					firstSplit = split
+				}
+
+				lastWriteIndex = i + 2 // +2 for ': '
+				if msgLength-lastWriteIndex <= maxSplitLength {
+					break MessageLoop // Remaining message is short enough, we're done
+				}
+
+				i++ // Skips next character, since we already looked at it
+			}
+		case '\n':
+			// Once we hit a newline (not preceded by ':'), we stop splitting, as doing so may lead
+			// to weird formatting
+			break MessageLoop
 		}
 	}
 
@@ -146,7 +158,7 @@ func splitLongErrorMessage(message string) (splits []any, firstSplit string) {
 	}
 
 	// Adds remainder after last split
-	splits = append(splits, string(msgBytes[lastSplitIndex:msgLength]))
+	splits = append(splits, string(msgBytes[lastWriteIndex:]))
 
 	return splits, firstSplit
 }
