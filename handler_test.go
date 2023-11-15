@@ -32,6 +32,79 @@ func TestSlog(t *testing.T) {
 	}
 }
 
+func TestListAttributes(t *testing.T) {
+	type testStruct struct {
+		text string
+	}
+
+	testCases := []struct {
+		attribute      slog.Attr
+		expectedOutput string
+	}{
+		{
+			attribute: slog.Any("stringList", []string{"test1", "test2", "test3"}),
+			expectedOutput: `  stringList:
+    - test1
+    - test2
+    - test3`,
+		},
+		{
+			attribute: slog.Any("structList", []testStruct{{"test1"}, {"test2"}}),
+			expectedOutput: `  structList:
+    - {test1}
+    - {test2}`,
+		},
+		{
+			attribute: slog.Any("multilineStringList", []string{`multiline
+string 1`, `multiline
+string 2`}),
+			expectedOutput: `  multilineStringList:
+    - multiline
+      string 1
+    - multiline
+      string 2`,
+		},
+		{
+			attribute: slog.Any("multilineStructList", []testStruct{{`multiline
+string 1`}, {`multiline
+string 2`}}),
+			expectedOutput: `  multilineStructList:
+    - {multiline
+      string 1}
+    - {multiline
+      string 2}`,
+		},
+		{
+			attribute:      slog.Any("singleListItem", []string{"single"}),
+			expectedOutput: "  singleListItem: single",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.attribute.Key, func(t *testing.T) {
+			var buf bytes.Buffer
+			logger := slog.New(devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}))
+			logger.Info("", testCase.attribute)
+
+			output := buf.String()
+			t.Log(output)
+			if !strings.Contains(output, testCase.expectedOutput) {
+				t.Errorf(`log output did not contain list attribute as expected
+got:
+----------------------------------------
+%s
+----------------------------------------
+
+want:
+----------------------------------------
+%s
+----------------------------------------
+`, output, testCase.expectedOutput)
+			}
+		})
+	}
+}
+
 // slogtest.TestHandler requires us to parse our logging output to a []map[string]any.
 func parseLogEntries(data string) ([]map[string]any, error) {
 	entryStrings := strings.Split(data, "\n[")
