@@ -17,7 +17,7 @@ func getLogOutput(handlerOptions *slog.HandlerOptions, logFunc func()) string {
 	return buffer.String()
 }
 
-func getLoggerOutput(handlerOptions *slog.HandlerOptions, loggerFunc func(*log.Logger)) string {
+func getLoggerOutput(handlerOptions *slog.HandlerOptions, loggerFunc func(log.Logger)) string {
 	var buffer bytes.Buffer
 	logger := log.New(slog.NewJSONHandler(&buffer, handlerOptions))
 	loggerFunc(logger)
@@ -199,7 +199,7 @@ func TestLogSource(t *testing.T) {
 }
 
 func TestLoggerInfo(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		logger.Info("this is a test", slog.String("key", "value"))
 	})
 
@@ -207,7 +207,7 @@ func TestLoggerInfo(t *testing.T) {
 }
 
 func TestLoggerInfof(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		logger.Infof("this is a %s", "format arg")
 	})
 
@@ -215,7 +215,7 @@ func TestLoggerInfof(t *testing.T) {
 }
 
 func TestLoggerWarn(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		logger.Warn("this is a test", slog.String("key", "value"))
 	})
 
@@ -223,7 +223,7 @@ func TestLoggerWarn(t *testing.T) {
 }
 
 func TestLoggerWarnf(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		logger.Warnf("this is a %s", "format arg")
 	})
 
@@ -231,7 +231,7 @@ func TestLoggerWarnf(t *testing.T) {
 }
 
 func TestLoggerError(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error!")
 		logger.Error(err, slog.Int("errorCode", 6))
 	})
@@ -240,7 +240,7 @@ func TestLoggerError(t *testing.T) {
 }
 
 func TestLoggerErrorCause(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error!")
 		logger.ErrorCause(err, "an error occurred", slog.Int("errorCode", 6))
 	})
@@ -249,7 +249,7 @@ func TestLoggerErrorCause(t *testing.T) {
 }
 
 func TestLoggerErrorCausef(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error!")
 		logger.ErrorCausef(err, "a %s error occurred", "formatted")
 	})
@@ -258,7 +258,7 @@ func TestLoggerErrorCausef(t *testing.T) {
 }
 
 func TestLoggerErrors(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err1 := errors.New("error 1!")
 		err2 := errors.New("error 2!")
 		logger.Errors("multiple errors occurred", err1, err2)
@@ -268,7 +268,7 @@ func TestLoggerErrors(t *testing.T) {
 }
 
 func TestLoggerErrorMessage(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		logger.ErrorMessage("this is a test", slog.String("key", "value"))
 	})
 
@@ -276,7 +276,7 @@ func TestLoggerErrorMessage(t *testing.T) {
 }
 
 func TestLoggerErrorMessagef(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		logger.ErrorMessagef("this is a %s", "format arg")
 	})
 
@@ -284,7 +284,7 @@ func TestLoggerErrorMessagef(t *testing.T) {
 }
 
 func TestLoggerErrorWarning(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error!")
 		logger.ErrorWarning(err, "an error occurred", slog.Int("errorCode", 6))
 	})
@@ -293,7 +293,7 @@ func TestLoggerErrorWarning(t *testing.T) {
 }
 
 func TestLoggerErrorWarningf(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error!")
 		logger.ErrorWarningf(err, "a %s error occurred", "formatted")
 	})
@@ -302,7 +302,7 @@ func TestLoggerErrorWarningf(t *testing.T) {
 }
 
 func TestLoggerErrorsWarning(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger *log.Logger) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err1 := errors.New("error 1!")
 		err2 := errors.New("error 2!")
 		logger.ErrorsWarning("multiple errors occurred", err1, err2)
@@ -314,7 +314,7 @@ func TestLoggerErrorsWarning(t *testing.T) {
 func TestLoggerDebug(t *testing.T) {
 	output := getLoggerOutput(
 		&slog.HandlerOptions{Level: slog.LevelDebug},
-		func(logger *log.Logger) {
+		func(logger log.Logger) {
 			logger.Debug("this is a test", slog.String("key", "value"))
 		},
 	)
@@ -325,7 +325,7 @@ func TestLoggerDebug(t *testing.T) {
 func TestLoggerDebugf(t *testing.T) {
 	output := getLoggerOutput(
 		&slog.HandlerOptions{Level: slog.LevelDebug},
-		func(logger *log.Logger) {
+		func(logger log.Logger) {
 			logger.Debugf("this is a %s", "format arg")
 		},
 	)
@@ -338,7 +338,7 @@ func TestLoggerDebugJSON(t *testing.T) {
 
 	output := getLoggerOutput(
 		&slog.HandlerOptions{Level: slog.LevelDebug},
-		func(logger *log.Logger) {
+		func(logger log.Logger) {
 			numbers := []int{1, 2, 3}
 			logger.DebugJSON(numbers, "some numbers")
 		},
@@ -350,7 +350,7 @@ func TestLoggerDebugJSON(t *testing.T) {
 func TestLoggerDisabledLogLevel(t *testing.T) {
 	output := getLoggerOutput(
 		&slog.HandlerOptions{Level: slog.LevelInfo},
-		func(logger *log.Logger) {
+		func(logger log.Logger) {
 			logger.Debug("this is a test")
 		},
 	)
@@ -363,7 +363,7 @@ func TestLoggerDisabledLogLevel(t *testing.T) {
 func TestLoggerSource(t *testing.T) {
 	output := getLoggerOutput(
 		&slog.HandlerOptions{AddSource: true},
-		func(logger *log.Logger) {
+		func(logger log.Logger) {
 			logger.Info("this is a test")
 		},
 	)
