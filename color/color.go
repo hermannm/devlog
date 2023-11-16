@@ -1,3 +1,4 @@
+// Package color defines ANSI color codes, and a function to check for color support in a terminal.
 package color
 
 type Color []byte
