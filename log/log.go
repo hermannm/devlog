@@ -164,7 +164,8 @@ func DebugJSON(value any, message string, attributes ...slog.Attr) {
 // A Logger provides methods to produce structured log records for its output handler.
 // It is analogous to [slog.Logger], but provides more utilities for log message formatting.
 //
-// The logger must be initialized with [New]. An uninitialized logger will panic on every method.
+// The logger must be initialized with [New] or [Default]. An uninitialized logger will panic on
+// every method.
 type Logger struct {
 	handler slog.Handler
 }
@@ -172,6 +173,12 @@ type Logger struct {
 // New creates a Logger to produce structured log records for the given output handler.
 func New(outputHandler slog.Handler) Logger {
 	return Logger{handler: outputHandler}
+}
+
+// Default creates a Logger with the same output handler as the one currently used by
+// [slog.Default].
+func Default() Logger {
+	return Logger{handler: slog.Default().Handler()}
 }
 
 // With returns a Logger that includes the given attributes in each log.
