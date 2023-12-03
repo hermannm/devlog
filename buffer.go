@@ -27,8 +27,8 @@ func (buf *buffer) writeDecimal(decimal int) {
 	*buf = strconv.AppendInt(*buf, int64(decimal), 10)
 }
 
-func (buf *buffer) writeIndent(indentLevel int) {
-	for i := 0; i <= indentLevel; i++ {
+func (buf *buffer) writeIndent(indent int) {
+	for i := 0; i <= indent; i++ {
 		buf.writeString("  ")
 	}
 }

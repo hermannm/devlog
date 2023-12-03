@@ -23,7 +23,7 @@ type Handler struct {
 
 	preformattedAttrs buffer
 	unopenedGroups    []string
-	indentLevel       int
+	indent            int
 }
 
 // Options configure a log [Handler].
@@ -56,7 +56,7 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 		options:           Options{},
 		preformattedAttrs: nil,
 		unopenedGroups:    nil,
-		indentLevel:       0,
+		indent:            0,
 	}
 	if options != nil {
 		handler.options = *options
@@ -111,7 +111,7 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	if record.NumAttrs() > 0 {
 		handler.writeUnopenedGroups(buf)
 		record.Attrs(func(attr slog.Attr) bool {
-			handler.writeAttribute(buf, attr, handler.indentLevel)
+			handler.writeAttribute(buf, attr, handler.indent)
 			return true
 		})
 	}
@@ -137,7 +137,7 @@ func (handler *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	newHandler.unopenedGroups = nil
 
 	for _, attr := range attrs {
-		newHandler.writeAttribute(&newHandler.preformattedAttrs, attr, newHandler.indentLevel)
+		newHandler.writeAttribute(&newHandler.preformattedAttrs, attr, newHandler.indent)
 	}
 
 	return &newHandler
@@ -184,20 +184,20 @@ func (handler *Handler) writeLevel(buf *buffer, level slog.Level) {
 
 func (handler *Handler) writeUnopenedGroups(buf *buffer) {
 	for _, group := range handler.unopenedGroups {
-		buf.writeIndent(handler.indentLevel)
+		buf.writeIndent(handler.indent)
 		handler.writeAttributeKey(buf, group)
 		buf.writeByte('\n')
-		handler.indentLevel++
+		handler.indent++
 	}
 }
 
-func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel int) {
+func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) {
 	attr.Value = attr.Value.Resolve()
 	if attr.Equal(slog.Attr{}) {
 		return
 	}
 
-	buf.writeIndent(indentLevel)
+	buf.writeIndent(indent)
 
 	switch attr.Value.Kind() {
 	case slog.KindGroup:
@@ -209,11 +209,11 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 		if attr.Key != "" {
 			handler.writeAttributeKey(buf, attr.Key)
 			buf.writeByte('\n')
-			indentLevel++
+			indent++
 		}
 
 		for _, groupAttr := range attrs {
-			handler.writeAttribute(buf, groupAttr, indentLevel)
+			handler.writeAttribute(buf, groupAttr, indent)
 		}
 	case slog.KindTime:
 		handler.writeAttributeKey(buf, attr.Key)
@@ -226,14 +226,14 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 		value := attr.Value.Any()
 		if json, ok := value.(log.JSONValue); ok {
 			buf.writeByte(' ')
-			handler.writeJSON(buf, json.Value, attr.Value, indentLevel)
+			handler.writeJSON(buf, json.Value, attr.Value, indent)
 			return
 		}
 
 		reflectValue := reflect.ValueOf(value)
 		switch reflectValue.Kind() {
 		case reflect.Slice, reflect.Array:
-			handler.writeListOrSingleElement(buf, reflectValue, indentLevel+1)
+			handler.writeListOrSingleElement(buf, reflectValue, indent+1)
 		default:
 			buf.writeByte(' ')
 			buf.writeString(attr.Value.String())
