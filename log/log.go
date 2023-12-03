@@ -350,6 +350,14 @@ func (logger Logger) DebugJSON(value any, message string, attributes ...slog.Att
 	}
 }
 
+func JSON(key string, value any) slog.Attr {
+	return slog.Any(key, JSONValue{value})
+}
+
+type JSONValue struct {
+	Value any
+}
+
 type levelLogger struct {
 	handler slog.Handler
 	level   slog.Level

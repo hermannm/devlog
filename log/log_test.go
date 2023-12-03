@@ -365,6 +365,27 @@ func TestLoggerDebugJSON(t *testing.T) {
 	assertContains(t, output, `"level":"DEBUG"`, "some numbers: [\\n    1,\\n    2,\\n    3\\n  ]")
 }
 
+func TestJSON(t *testing.T) {
+	user := struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}{
+		Name:  "hermannm",
+		Email: "test@example.com",
+	}
+
+	output := getLogOutput(nil, func() {
+		log.Info("user created", log.JSON("user", user))
+	})
+
+	assertContains(
+		t,
+		output,
+		`"user created"`,
+		`"user":{"name":"hermannm","email":"test@example.com"}`,
+	)
+}
+
 func TestLoggerDisabledLogLevel(t *testing.T) {
 	output := getLoggerOutput(
 		&slog.HandlerOptions{Level: slog.LevelInfo},
