@@ -3,6 +3,8 @@ package devlog
 import (
 	"io"
 	"os"
+
+	"golang.org/x/sys/windows"
 )
 
 // IsColorTerminal checks if the given writer is a terminal with ANSI color support.
