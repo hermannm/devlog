@@ -3,15 +3,11 @@
 package log
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"runtime"
 	"time"
-
-	"github.com/neilotoole/jsoncolor"
-	"hermannm.dev/devlog/color"
 )
 
 // Info logs the given message at the INFO log level, along with any given log attributes.
@@ -145,20 +141,6 @@ func Debug(message string, attributes ...slog.Attr) {
 func Debugf(messageFormat string, formatArgs ...any) {
 	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
 		logger.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
-}
-
-// DebugJSON marshals the given value to a prettified JSON format, and logs it at the DEBUG log
-// level, along with any given log attributes. It uses the [slog.Default] logger.
-//
-// If message is not blank, the JSON is prefixed by the message and a colon. The output is colorized
-// if [ColorsEnabled] is true.
-//
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
-// case no output will be produced.
-func DebugJSON(value any, message string, attributes ...slog.Attr) {
-	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(buildDebugJSONString(value, message), attributes)
 	}
 }
 
@@ -336,20 +318,6 @@ func (logger Logger) Debugf(messageFormat string, formatArgs ...any) {
 	}
 }
 
-// DebugJSON marshals the given value to a prettified JSON format, and logs it at the DEBUG log
-// level, along with any given log attributes.
-//
-// If message is not blank, the JSON is prefixed by the message and a colon. The output is colorized
-// if [ColorsEnabled] is true.
-//
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
-// case no output will be produced.
-func (logger Logger) DebugJSON(value any, message string, attributes ...slog.Attr) {
-	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(buildDebugJSONString(value, message), attributes)
-	}
-}
-
 func JSON(key string, value any) slog.Attr {
 	return slog.Any(key, JSONValue{value})
 }
@@ -389,37 +357,4 @@ func defaultLogger(level slog.Level) (logger levelLogger, enabled bool) {
 func (logger Logger) withLevel(level slog.Level) (withLevel levelLogger, enabled bool) {
 	return levelLogger{handler: logger.handler, level: level},
 		logger.handler.Enabled(context.Background(), level)
-}
-
-func buildDebugJSONString(value any, message string) string {
-	var buffer bytes.Buffer
-	encoder := jsoncolor.NewEncoder(&buffer)
-	encoder.SetIndent("  ", "  ")
-
-	if ColorsEnabled {
-		encoder.SetColors(&jsonColors)
-
-		if message != "" {
-			buffer.WriteString(message)
-			buffer.Write(jsonColors.Punc)
-			buffer.WriteByte(':')
-			buffer.Write(color.Reset)
-			buffer.WriteByte(' ')
-		}
-	} else {
-		if message != "" {
-			buffer.WriteString(message)
-			buffer.WriteString(": ")
-		}
-	}
-
-	err := encoder.Encode(value)
-	if err == nil {
-		bytes := buffer.Bytes()
-		bytes = bytes[0 : len(bytes)-1] // Removes trailing newline
-		return string(bytes)
-	} else {
-		fmt.Fprint(&buffer, value)
-		return buffer.String()
-	}
 }

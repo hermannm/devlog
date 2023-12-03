@@ -172,17 +172,6 @@ func TestDebugf(t *testing.T) {
 	assertContains(t, output, "this is a format arg", `"level":"DEBUG"`)
 }
 
-func TestDebugJSON(t *testing.T) {
-	log.ColorsEnabled = false
-
-	output := getLogOutput(&slog.HandlerOptions{Level: slog.LevelDebug}, func() {
-		numbers := []int{1, 2, 3}
-		log.DebugJSON(numbers, "some numbers")
-	})
-
-	assertContains(t, output, `"level":"DEBUG"`, "some numbers: [\\n    1,\\n    2,\\n    3\\n  ]")
-}
-
 func TestDisabledLogLevel(t *testing.T) {
 	output := getLogOutput(
 		&slog.HandlerOptions{Level: slog.LevelInfo},
@@ -349,20 +338,6 @@ func TestLoggerDebugf(t *testing.T) {
 	)
 
 	assertContains(t, output, "this is a format arg", `"level":"DEBUG"`)
-}
-
-func TestLoggerDebugJSON(t *testing.T) {
-	log.ColorsEnabled = false
-
-	output := getLoggerOutput(
-		&slog.HandlerOptions{Level: slog.LevelDebug},
-		func(logger log.Logger) {
-			numbers := []int{1, 2, 3}
-			logger.DebugJSON(numbers, "some numbers")
-		},
-	)
-
-	assertContains(t, output, `"level":"DEBUG"`, "some numbers: [\\n    1,\\n    2,\\n    3\\n  ]")
 }
 
 func TestJSON(t *testing.T) {
