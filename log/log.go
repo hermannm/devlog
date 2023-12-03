@@ -4,6 +4,7 @@ package log
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"runtime"
@@ -324,6 +325,10 @@ func JSON(key string, value any) slog.Attr {
 
 type JSONValue struct {
 	Value any
+}
+
+func (jsonValue JSONValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(jsonValue.Value)
 }
 
 type levelLogger struct {
