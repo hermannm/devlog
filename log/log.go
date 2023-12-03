@@ -94,32 +94,33 @@ func ErrorMessagef(messageFormat string, formatArgs ...any) {
 	}
 }
 
-// ErrorWarning logs the given error and message at the WARN log level, along with any given log
-// attributes. It uses the [slog.Default] logger.
-//
-// If message is not blank, it is used as the main log message, while the error is included in a
-// 'cause' attribute. If message is blank, the error is used as the main message instead.
-func ErrorWarning(err error, message string, attributes ...slog.Attr) {
+// WarnError logs the given error at the WARN log level, along with any given log attributes.
+// It uses the [slog.Default] logger.
+func WarnError(err error, attributes ...slog.Attr) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		if message == "" {
-			logger.log(getErrorMessageAndCause(err, attributes))
-		} else {
-			logger.log(message, appendErrorCause(attributes, err))
-		}
+		logger.log(getErrorMessageAndCause(err, attributes))
 	}
 }
 
-// ErrorWarningf logs a formatted message (using [fmt.Sprintf]) at the WARN log level, and adds a
+// WarnErrorCause logs the given message at the WARN log level, and adds a 'cause' attribute with
+// the given error, along with any other log attributes. It uses the [slog.Default] logger.
+func WarnErrorCause(err error, message string, attributes ...slog.Attr) {
+	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
+		logger.log(message, appendErrorCause(attributes, err))
+	}
+}
+
+// WarnErrorCausef logs a formatted message (using [fmt.Sprintf]) at the WARN log level, and adds a
 // 'cause' attribute with the given error. It uses the [slog.Default] logger.
-func ErrorWarningf(err error, messageFormat string, formatArgs ...any) {
+func WarnErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
 		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
 	}
 }
 
-// ErrorsWarning logs the given message at the WARN log level, and adds a 'cause' attribute with the
+// WarnErrors logs the given message at the WARN log level, and adds a 'cause' attribute with the
 // given errors. It uses the [slog.Default] logger.
-func ErrorsWarning(message string, errs ...error) {
+func WarnErrors(message string, errs ...error) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
 		logger.log(message, appendErrorCauses(nil, errs))
 	}
@@ -283,32 +284,32 @@ func (logger Logger) ErrorMessagef(messageFormat string, formatArgs ...any) {
 	}
 }
 
-// ErrorWarning logs the given error and message at the WARN log level, along with any given log
-// attributes.
-//
-// If message is not blank, it is used as the main log message, while the error is included in a
-// 'cause' attribute. If message is blank, the error is used as the main message instead.
-func (logger Logger) ErrorWarning(err error, message string, attributes ...slog.Attr) {
+// WarnError logs the given error at the WARN log level, along with any given log attributes.
+func (logger Logger) WarnError(err error, attributes ...slog.Attr) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		if message == "" {
-			level.log(getErrorMessageAndCause(err, attributes))
-		} else {
-			level.log(message, appendErrorCause(attributes, err))
-		}
+		level.log(getErrorMessageAndCause(err, attributes))
 	}
 }
 
-// ErrorWarningf logs a formatted message (using [fmt.Sprintf]) at the WARN log level, and adds a
+// WarnErrorCause logs the given message at the WARN log level, and adds a 'cause' attribute with
+// the given error, along with any other log attributes.
+func (logger Logger) WarnErrorCause(err error, message string, attributes ...slog.Attr) {
+	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
+		level.log(message, appendErrorCause(attributes, err))
+	}
+}
+
+// WarnErrorCausef logs a formatted message (using [fmt.Sprintf]) at the WARN log level, and adds a
 // 'cause' attribute with the given error.
-func (logger Logger) ErrorWarningf(err error, messageFormat string, formatArgs ...any) {
+func (logger Logger) WarnErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
 		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
 	}
 }
 
-// ErrorsWarning logs the given message at the WARN log level, and adds a 'cause' attribute with the
+// WarnErrors logs the given message at the WARN log level, and adds a 'cause' attribute with the
 // given errors.
-func (logger Logger) ErrorsWarning(message string, errs ...error) {
+func (logger Logger) WarnErrors(message string, errs ...error) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
 		level.log(message, appendErrorCauses(nil, errs))
 	}

@@ -119,29 +119,38 @@ func TestErrorMessagef(t *testing.T) {
 	assertContains(t, output, "this is a format arg", `"level":"ERROR"`)
 }
 
-func TestErrorWarning(t *testing.T) {
+func TestWarnError(t *testing.T) {
 	output := getLogOutput(nil, func() {
 		err := errors.New("error!")
-		log.ErrorWarning(err, "an error occurred", slog.Int("errorCode", 6))
+		log.WarnError(err, slog.Int("errorCode", 6))
+	})
+
+	assertContains(t, output, "error!", `"level":"WARN"`, `"errorCode":6`)
+}
+
+func TestWarnErrorCause(t *testing.T) {
+	output := getLogOutput(nil, func() {
+		err := errors.New("error!")
+		log.WarnErrorCause(err, "an error occurred", slog.Int("errorCode", 6))
 	})
 
 	assertContains(t, output, "error!", "an error occurred", `"level":"WARN"`, `"errorCode":6`)
 }
 
-func TestErrorWarningf(t *testing.T) {
+func TestWarnErrorCausef(t *testing.T) {
 	output := getLogOutput(nil, func() {
 		err := errors.New("error!")
-		log.ErrorWarningf(err, "a %s error occurred", "formatted")
+		log.WarnErrorCausef(err, "a %s error occurred", "formatted")
 	})
 
 	assertContains(t, output, "error!", "a formatted error occurred", `"level":"WARN"`)
 }
 
-func TestErrorsWarning(t *testing.T) {
+func TestWarnErrors(t *testing.T) {
 	output := getLogOutput(nil, func() {
 		err1 := errors.New("error 1!")
 		err2 := errors.New("error 2!")
-		log.ErrorsWarning("multiple errors occurred", err1, err2)
+		log.WarnErrors("multiple errors occurred", err1, err2)
 	})
 
 	assertContains(t, output, "error 1!", "error 2!", "multiple errors occurred", `"level":"WARN"`)
@@ -283,29 +292,38 @@ func TestLoggerErrorMessagef(t *testing.T) {
 	assertContains(t, output, "this is a format arg", `"level":"ERROR"`)
 }
 
-func TestLoggerErrorWarning(t *testing.T) {
+func TestLoggerWarnError(t *testing.T) {
 	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error!")
-		logger.ErrorWarning(err, "an error occurred", slog.Int("errorCode", 6))
+		logger.WarnError(err, slog.Int("errorCode", 6))
+	})
+
+	assertContains(t, output, "error!", `"level":"WARN"`, `"errorCode":6`)
+}
+
+func TestLoggerWarnErrorCause(t *testing.T) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
+		err := errors.New("error!")
+		logger.WarnErrorCause(err, "an error occurred", slog.Int("errorCode", 6))
 	})
 
 	assertContains(t, output, "error!", "an error occurred", `"level":"WARN"`, `"errorCode":6`)
 }
 
-func TestLoggerErrorWarningf(t *testing.T) {
+func TestLoggerWarnErrorCausef(t *testing.T) {
 	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error!")
-		logger.ErrorWarningf(err, "a %s error occurred", "formatted")
+		logger.WarnErrorCausef(err, "a %s error occurred", "formatted")
 	})
 
 	assertContains(t, output, "error!", "a formatted error occurred", `"level":"WARN"`)
 }
 
-func TestLoggerErrorsWarning(t *testing.T) {
+func TestLoggerWarnErrors(t *testing.T) {
 	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err1 := errors.New("error 1!")
 		err2 := errors.New("error 2!")
-		logger.ErrorsWarning("multiple errors occurred", err1, err2)
+		logger.WarnErrors("multiple errors occurred", err1, err2)
 	})
 
 	assertContains(t, output, "error 1!", "error 2!", "multiple errors occurred", `"level":"WARN"`)
