@@ -76,7 +76,7 @@ func main() {
 
 This gives the following output:
 
-![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/ac14f0dc1823316c983fb9cef6f1cf73a0bbb923/devlog-example-output-2.png?raw=true)
+![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/90cddb67221a246937d472067374a00b4767a12b/devlog-example-output-2.png?raw=true)
 
 ## Credits
 
