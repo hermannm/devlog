@@ -38,18 +38,18 @@ func TestJSON(t *testing.T) {
 	logger := slog.New(devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}))
 
 	user := struct {
-		Name  string `json:"name"`
-		Email string `json:"email"`
+		ID   int    `json:"id"`
+		Name string `json:"name"`
 	}{
-		Name:  "hermannm",
-		Email: "test@example.com",
+		ID:   1,
+		Name: "hermannm",
 	}
 
 	logger.Info("user created", log.JSON("user", user))
 
 	expectedOutput := `user: {
-    "name": "hermannm",
-    "email": "test@example.com"
+    "id": 1,
+    "name": "hermannm"
   }`
 
 	assertContains(t, buf.String(), expectedOutput)

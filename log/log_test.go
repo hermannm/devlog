@@ -351,11 +351,11 @@ func TestLoggerDebugf(t *testing.T) {
 
 func TestJSON(t *testing.T) {
 	user := struct {
-		Name  string `json:"name"`
-		Email string `json:"email"`
+		ID   int    `json:"id"`
+		Name string `json:"name"`
 	}{
-		Name:  "hermannm",
-		Email: "test@example.com",
+		ID:   1,
+		Name: "hermannm",
 	}
 
 	output := getLogOutput(nil, func() {
@@ -366,7 +366,7 @@ func TestJSON(t *testing.T) {
 		t,
 		output,
 		`"user created"`,
-		`"user":{"name":"hermannm","email":"test@example.com"}`,
+		`"user":{"id":1,"name":"hermannm"}`,
 	)
 }
 
