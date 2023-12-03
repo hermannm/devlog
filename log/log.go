@@ -319,14 +319,21 @@ func (logger Logger) Debugf(messageFormat string, formatArgs ...any) {
 	}
 }
 
+// JSON returns a log attribute with the given key, and the value wrapped in [JSONValue].
+// Your log output handler can then handle it appropriately:
+//   - [slog.JSONHandler] logs it as JSON as normal
+//   - [hermannm.dev/devlog.Handler] logs it in a prettified format, with colors if enabled
 func JSON(key string, value any) slog.Attr {
 	return slog.Any(key, JSONValue{value})
 }
 
+// JSONValue is a wrapper type to allow log output handlers to check for log attribute values of
+// this type.
 type JSONValue struct {
 	Value any
 }
 
+// MarshalJSON implements [json.Marshaler].
 func (jsonValue JSONValue) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonValue.Value)
 }
