@@ -38,6 +38,10 @@ type Options struct {
 	// Defaults to false (i.e. colors enabled), but if [color.IsColorTerminal] returns false, then
 	// colors are disabled.
 	DisableColors bool
+
+	// ForceColors skips checking [color.IsColorTerminal] for color support, and includes colors
+	// in log output regardless. It overrides DisableColors.
+	ForceColors bool
 }
 
 // NewHandler creates a log [Handler] that writes to output, using the given options.
@@ -55,7 +59,9 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 		handler.options = *options
 	}
 
-	if !handler.options.DisableColors && !color.IsColorTerminal(output) {
+	if handler.options.ForceColors {
+		handler.options.DisableColors = false
+	} else if !handler.options.DisableColors && !color.IsColorTerminal(output) {
 		handler.options.DisableColors = true
 	}
 
