@@ -65,14 +65,12 @@ import (
 )
 
 func main() {
-	logHandler := devlog.NewHandler(os.Stdout, &devlog.Options{Level: slog.LevelDebug})
+	logHandler := devlog.NewHandler(os.Stdout, nil)
 	slog.SetDefault(slog.New(logHandler))
 
-	err := errors.New("invalid username")
-	log.ErrorCause(err, "failed to create user") // Uses slog.Default()
-
-	userJSON := map[string]any{"id": 1, "username": "hermannm"}
-	log.DebugJSON(userJSON, "user")
+	user := map[string]any{"id": 2, "username": "hermannm"}
+	err := errors.New("username taken")
+	log.ErrorCause(err, "failed to create user", log.JSON("user", user)) // Uses slog.Default()
 }
 ```
 
