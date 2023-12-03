@@ -120,11 +120,10 @@ func assertContains(t *testing.T, output string, expectedOutput string) {
 	t.Helper()
 
 	if !strings.Contains(output, expectedOutput) {
-		t.Errorf(`log did not contain expected output
+		t.Errorf(`unexpected log output
 got:
 ----------------------------------------
-%s
-----------------------------------------
+%s----------------------------------------
 
 want:
 ----------------------------------------

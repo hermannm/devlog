@@ -29,7 +29,16 @@ func assertContains(t *testing.T, output string, expectedInOutput ...string) {
 
 	for _, expected := range expectedInOutput {
 		if !strings.Contains(output, expected) {
-			t.Errorf("expected output to contain `%s`, but got: %s", expected, output)
+			t.Errorf(`unexpected log output
+got:
+----------------------------------------
+%s----------------------------------------
+
+want:
+----------------------------------------
+%s
+----------------------------------------
+`, output, expected)
 		}
 	}
 }
