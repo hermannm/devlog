@@ -70,7 +70,7 @@ func main() {
 
 	user := map[string]any{"id": 2, "username": "hermannm"}
 	err := errors.New("username taken")
-	log.ErrorCause(err, "failed to create user", log.JSON("user", user)) // Uses slog.Default()
+	log.ErrorCause(err, "failed to create user", log.JSON("user", user))
 }
 ```
 
