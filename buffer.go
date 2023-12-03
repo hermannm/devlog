@@ -9,16 +9,18 @@ import (
 
 type buffer []byte
 
+// Always returns nil error (still has error in signature, to satisfy [io.Writer] interface).
+func (buf *buffer) Write(bytes []byte) (bytesWritten int, err error) {
+	*buf = append(*buf, bytes...)
+	return len(bytes), nil
+}
+
 func (buf *buffer) writeString(str string) {
 	*buf = append(*buf, str...)
 }
 
 func (buf *buffer) writeByte(b byte) {
 	*buf = append(*buf, b)
-}
-
-func (buf *buffer) writeBytes(bytes []byte) {
-	*buf = append(*buf, bytes...)
 }
 
 func (buf *buffer) writeDecimal(decimal int) {
@@ -39,13 +41,13 @@ func (buf *buffer) writeBytesWithIndentedNewlines(bytes []byte, indent int) {
 	lastWriteIndex := 0
 	for i := 0; i < len(bytes)-1; i++ {
 		if bytes[i] == '\n' {
-			buf.writeBytes(bytes[lastWriteIndex : i+1])
+			buf.Write(bytes[lastWriteIndex : i+1])
 			buf.writeIndent(indent)
 			lastWriteIndex = i + 1
 		}
 	}
 
-	buf.writeBytes(bytes[lastWriteIndex:])
+	buf.Write(bytes[lastWriteIndex:])
 }
 
 func (buf *buffer) writeAnyWithIndentedNewlines(value any, indent int) {

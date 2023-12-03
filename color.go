@@ -9,7 +9,7 @@ func (handler *Handler) setColor(buf *buffer, color color.Color) {
 		return
 	}
 
-	buf.writeBytes(color)
+	buf.Write(color)
 }
 
 func (handler *Handler) resetColor(buf *buffer) {
