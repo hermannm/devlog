@@ -21,7 +21,9 @@ func String[T ~string](key string, value T) slog.Attr {
 }
 
 func JSON(key string, value any) slog.Attr {
-	return slog.Any(key, JSONValue(value))
+	return slog.Any(key, JSONValue{value})
 }
 
-type JSONValue any
+type JSONValue struct {
+	Value any
+}

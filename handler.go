@@ -6,9 +6,12 @@ import (
 	"log/slog"
 	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 
+	"github.com/neilotoole/jsoncolor"
 	"hermannm.dev/devlog/color"
+	"hermannm.dev/devlog/log"
 )
 
 // Handler is a [slog.Handler] that outputs log records in a human-readable format, designed for
@@ -220,15 +223,21 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indentLevel 
 	case slog.KindAny:
 		handler.writeAttributeKey(buf, attr.Key)
 
-		value := reflect.ValueOf(attr.Value.Any())
-		switch value.Kind() {
+		value := attr.Value.Any()
+		if json, ok := value.(log.JSONValue); ok {
+			buf.writeByte(' ')
+			handler.writeJSON(buf, json.Value, attr.Value, indentLevel)
+			return
+		}
+
+		reflectValue := reflect.ValueOf(value)
+		switch reflectValue.Kind() {
 		case reflect.Slice, reflect.Array:
-			handler.writeListOrSingleElement(buf, value, indentLevel+1)
+			handler.writeListOrSingleElement(buf, reflectValue, indentLevel+1)
 		default:
 			buf.writeByte(' ')
 			buf.writeString(attr.Value.String())
 		}
-
 		buf.writeByte('\n')
 	default:
 		handler.writeAttributeKey(buf, attr.Key)
@@ -242,6 +251,37 @@ func (handler *Handler) writeAttributeKey(buf *buffer, attrKey string) {
 	handler.setColor(buf, color.Cyan)
 	buf.writeString(attrKey)
 	handler.writeByteWithColor(buf, ':', color.Gray)
+}
+
+var jsonColors = jsoncolor.Colors{
+	Key:           jsoncolor.Color(color.Cyan),
+	Punc:          jsoncolor.Color(color.Gray),
+	String:        jsoncolor.Color(color.NoColor),
+	Number:        jsoncolor.Color(color.NoColor),
+	Bool:          jsoncolor.Color(color.NoColor),
+	Bytes:         jsoncolor.Color(color.NoColor),
+	Time:          jsoncolor.Color(color.NoColor),
+	Null:          jsoncolor.Color(color.NoColor),
+	TextMarshaler: jsoncolor.Color(color.NoColor),
+}
+
+func (handler *Handler) writeJSON(buf *buffer, jsonValue any, slogValue slog.Value, indent int) {
+	encoder := jsoncolor.NewEncoder(buf)
+
+	var prefix strings.Builder
+	for i := 0; i <= indent; i++ {
+		prefix.WriteString("  ")
+	}
+	encoder.SetIndent(prefix.String(), "  ")
+
+	if !handler.options.DisableColors {
+		encoder.SetColors(&jsonColors)
+	}
+
+	if err := encoder.Encode(jsonValue); err != nil {
+		buf.writeString(slogValue.String())
+		buf.writeByte('\n')
+	}
 }
 
 func (handler *Handler) writeListOrSingleElement(buf *buffer, list reflect.Value, indent int) {

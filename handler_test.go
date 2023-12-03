@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"hermannm.dev/devlog"
+	"hermannm.dev/devlog/log"
 )
 
 // Tests our handler against the standard library test suite for structured logging handlers.
@@ -30,6 +31,28 @@ func TestSlog(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestJSON(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}))
+
+	user := struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}{
+		Name:  "hermannm",
+		Email: "test@example.com",
+	}
+
+	logger.Info("user created", log.JSON("user", user))
+
+	expectedOutput := `user: {
+    "name": "hermannm",
+    "email": "test@example.com"
+  }`
+
+	assertContains(t, buf.String(), expectedOutput)
 }
 
 func TestListAttributes(t *testing.T) {
@@ -88,8 +111,16 @@ string 2`}}),
 
 			output := buf.String()
 			t.Log(output)
-			if !strings.Contains(output, testCase.expectedOutput) {
-				t.Errorf(`log output did not contain list attribute as expected
+			assertContains(t, output, testCase.expectedOutput)
+		})
+	}
+}
+
+func assertContains(t *testing.T, output string, expectedOutput string) {
+	t.Helper()
+
+	if !strings.Contains(output, expectedOutput) {
+		t.Errorf(`log did not contain expected output
 got:
 ----------------------------------------
 %s
@@ -99,9 +130,7 @@ want:
 ----------------------------------------
 %s
 ----------------------------------------
-`, output, testCase.expectedOutput)
-			}
-		})
+`, output, expectedOutput)
 	}
 }
 
