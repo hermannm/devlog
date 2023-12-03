@@ -1,12 +1,8 @@
-//go:build !windows
-
-package color
+package devlog
 
 import (
 	"io"
 	"os"
-
-	"golang.org/x/term"
 )
 
 // IsColorTerminal checks if the given writer is a terminal with ANSI color support.
@@ -34,7 +30,19 @@ func IsColorTerminal(output io.Writer) bool {
 		return false
 	}
 
-	if !term.IsTerminal(int(file.Fd())) {
+	console := windows.Handle(file.Fd())
+	var consoleMode uint32
+	if err := windows.GetConsoleMode(console, &consoleMode); err != nil {
+		return false
+	}
+
+	var wantedMode uint32 = windows.ENABLE_PROCESSED_OUTPUT | windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING
+	if (consoleMode & wantedMode) == wantedMode {
+		return true
+	}
+
+	consoleMode |= wantedMode
+	if err := windows.SetConsoleMode(console, consoleMode); err != nil {
 		return false
 	}
 

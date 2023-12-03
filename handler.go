@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/neilotoole/jsoncolor"
-	"hermannm.dev/devlog/color"
 	"hermannm.dev/devlog/log"
 )
 
@@ -64,7 +63,7 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 
 	if handler.options.ForceColors {
 		handler.options.DisableColors = false
-	} else if !handler.options.DisableColors && !color.IsColorTerminal(output) {
+	} else if !handler.options.DisableColors && !IsColorTerminal(output) {
 		handler.options.DisableColors = true
 	}
 
@@ -87,7 +86,7 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	defer buf.free()
 
 	if !record.Time.IsZero() {
-		handler.setColor(buf, color.Gray)
+		handler.setColor(buf, colorGray)
 		buf.writeByte('[')
 		buf.writeTime(record.Time)
 		buf.writeByte(']')
@@ -96,7 +95,7 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	}
 
 	handler.writeLevel(buf, record.Level)
-	handler.writeByteWithColor(buf, ':', color.Gray)
+	handler.writeByteWithColor(buf, ':', colorGray)
 	buf.writeByte(' ')
 
 	buf.writeString(record.Message)
@@ -166,15 +165,15 @@ func (handler *Handler) writeLevel(buf *buffer, level slog.Level) {
 		return
 	}
 
-	var levelColor color.Color
+	var levelColor color
 	if level >= slog.LevelError {
-		levelColor = color.Red
+		levelColor = colorRed
 	} else if level >= slog.LevelWarn {
-		levelColor = color.Yellow
+		levelColor = colorYellow
 	} else if level >= slog.LevelInfo {
-		levelColor = color.Green
+		levelColor = colorGreen
 	} else {
-		levelColor = color.Magenta
+		levelColor = colorMagenta
 	}
 
 	handler.setColor(buf, levelColor)
@@ -248,21 +247,21 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) 
 }
 
 func (handler *Handler) writeAttributeKey(buf *buffer, attrKey string) {
-	handler.setColor(buf, color.Cyan)
+	handler.setColor(buf, colorCyan)
 	buf.writeString(attrKey)
-	handler.writeByteWithColor(buf, ':', color.Gray)
+	handler.writeByteWithColor(buf, ':', colorGray)
 }
 
 var jsonColors = jsoncolor.Colors{
-	Key:           jsoncolor.Color(color.Cyan),
-	Punc:          jsoncolor.Color(color.Gray),
-	String:        jsoncolor.Color(color.NoColor),
-	Number:        jsoncolor.Color(color.NoColor),
-	Bool:          jsoncolor.Color(color.NoColor),
-	Bytes:         jsoncolor.Color(color.NoColor),
-	Time:          jsoncolor.Color(color.NoColor),
-	Null:          jsoncolor.Color(color.NoColor),
-	TextMarshaler: jsoncolor.Color(color.NoColor),
+	Key:           jsoncolor.Color(colorCyan),
+	Punc:          jsoncolor.Color(colorGray),
+	String:        jsoncolor.Color(noColor),
+	Number:        jsoncolor.Color(noColor),
+	Bool:          jsoncolor.Color(noColor),
+	Bytes:         jsoncolor.Color(noColor),
+	Time:          jsoncolor.Color(noColor),
+	Null:          jsoncolor.Color(noColor),
+	TextMarshaler: jsoncolor.Color(noColor),
 }
 
 func (handler *Handler) writeJSON(buf *buffer, jsonValue any, slogValue slog.Value, indent int) {
@@ -332,7 +331,7 @@ func (handler *Handler) writeList(buf *buffer, list reflect.Value, indent int) {
 func (handler *Handler) writeListItemPrefix(buf *buffer, indent int) {
 	buf.writeByte('\n')
 	buf.writeIndent(indent)
-	handler.writeByteWithColor(buf, '-', color.Gray)
+	handler.writeByteWithColor(buf, '-', colorGray)
 	buf.writeByte(' ')
 }
 
