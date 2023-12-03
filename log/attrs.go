@@ -19,3 +19,9 @@ import "log/slog"
 func String[T ~string](key string, value T) slog.Attr {
 	return slog.String(key, string(value))
 }
+
+func JSON(key string, value any) slog.Attr {
+	return slog.Any(key, JSONValue(value))
+}
+
+type JSONValue any
