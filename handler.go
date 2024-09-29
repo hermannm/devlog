@@ -27,7 +27,7 @@ type Handler struct {
 // Options configure a log [Handler].
 type Options struct {
 	// Level is the minimum log record level that will be logged.
-	// If nil, defaults to slog.LevelInfo.
+	// If nil, defaults to [slog.LevelInfo].
 	Level slog.Leveler
 
 	// AddSource adds a 'source' attribute to every log record, with the file name and line number
@@ -36,12 +36,13 @@ type Options struct {
 	AddSource bool
 
 	// DisableColors removes colors from log output.
-	// Defaults to false (i.e. colors enabled), but if [IsColorTerminal] returns false, then colors
-	// are disabled.
+	//
+	// Colors are enabled by default when the [io.Writer] given to [NewHandler] is a terminal with
+	// color support (see [IsColorTerminal]).
 	DisableColors bool
 
 	// ForceColors skips checking [IsColorTerminal] for color support, and includes colors in log
-	// output regardless. It overrides DisableColors.
+	// output regardless. It overrides [Options.DisableColors].
 	ForceColors bool
 
 	// TimeFormat controls how time is formatted for each log entry. It defaults to
@@ -87,7 +88,7 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 	return &handler
 }
 
-// NewDefaultHandler is short-hand for:
+// NewDefaultHandler is shorthand for:
 //   - Calling [NewHandler] with the given arguments
 //   - Setting it as the default log handler with [slog.SetDefault]
 func NewDefaultHandler(output io.Writer, options *Options) {
