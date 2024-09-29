@@ -19,7 +19,7 @@ type Handler struct {
 	outputLock *sync.Mutex
 	options    Options
 
-	preformattedAttrs buffer
+	preformattedAttrs byteBuffer
 	unopenedGroups    []string
 	indent            int
 }
@@ -107,51 +107,51 @@ func (handler *Handler) Enabled(_ context.Context, level slog.Level) bool {
 // Handle writes the given log record to the handler's output.
 // See the package-level documentation for more on the output format.
 func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
-	buf := newBuffer()
-	defer buf.free()
+	buffer := newBuffer()
+	defer buffer.free()
 
 	if !record.Time.IsZero() {
-		handler.setColor(buf, colorGray)
-		buf.writeByte('[')
+		handler.setColor(buffer, colorGray)
+		buffer.writeByte('[')
 
 		switch handler.options.TimeFormat {
 		case TimeFormatFull:
-			buf.writeDateTime(record.Time)
+			buffer.writeDateTime(record.Time)
 		case TimeFormatShort:
 			fallthrough
 		default:
-			buf.writeTime(record.Time)
+			buffer.writeTime(record.Time)
 		}
 
-		buf.writeByte(']')
-		handler.resetColor(buf)
-		buf.writeByte(' ')
+		buffer.writeByte(']')
+		handler.resetColor(buffer)
+		buffer.writeByte(' ')
 	}
 
-	handler.writeLevel(buf, record.Level)
-	handler.writeByteWithColor(buf, ':', colorGray)
-	buf.writeByte(' ')
+	handler.writeLevel(buffer, record.Level)
+	handler.writeByteWithColor(buffer, ':', colorGray)
+	buffer.writeByte(' ')
 
-	buf.writeString(record.Message)
-	buf.writeByte('\n')
+	buffer.writeString(record.Message)
+	buffer.writeByte('\n')
 
 	if handler.options.AddSource && record.PC != 0 {
-		handler.writeLogSource(buf, record.PC)
+		handler.writeLogSource(buffer, record.PC)
 	}
 
-	buf.join(handler.preformattedAttrs)
+	buffer.join(handler.preformattedAttrs)
 
 	if record.NumAttrs() > 0 {
-		handler.writeUnopenedGroups(buf)
+		handler.writeUnopenedGroups(buffer)
 		record.Attrs(func(attr slog.Attr) bool {
-			handler.writeAttribute(buf, attr, handler.indent)
+			handler.writeAttribute(buffer, attr, handler.indent)
 			return true
 		})
 	}
 
 	handler.outputLock.Lock()
 	defer handler.outputLock.Unlock()
-	_, err := handler.output.Write(*buf)
+	_, err := handler.output.Write(*buffer)
 	return err
 }
 
@@ -193,9 +193,9 @@ func (handler *Handler) WithGroup(name string) slog.Handler {
 	return &newHandler
 }
 
-func (handler *Handler) writeLevel(buf *buffer, level slog.Level) {
+func (handler *Handler) writeLevel(buffer *byteBuffer, level slog.Level) {
 	if handler.options.DisableColors {
-		buf.writeString(level.String())
+		buffer.writeString(level.String())
 		return
 	}
 
@@ -210,16 +210,16 @@ func (handler *Handler) writeLevel(buf *buffer, level slog.Level) {
 		levelColor = colorMagenta
 	}
 
-	handler.setColor(buf, levelColor)
-	buf.writeString(level.String())
-	handler.resetColor(buf)
+	handler.setColor(buffer, levelColor)
+	buffer.writeString(level.String())
+	handler.resetColor(buffer)
 }
 
-func (handler *Handler) writeUnopenedGroups(buf *buffer) {
+func (handler *Handler) writeUnopenedGroups(buffer *byteBuffer) {
 	for _, group := range handler.unopenedGroups {
-		buf.writeIndent(handler.indent)
-		handler.writeAttributeKey(buf, group)
-		buf.writeByte('\n')
+		buffer.writeIndent(handler.indent)
+		handler.writeAttributeKey(buffer, group)
+		buffer.writeByte('\n')
 		handler.indent++
 	}
 }
@@ -230,13 +230,13 @@ type jsonLogValuer interface {
 	JSONLogValue() any
 }
 
-func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) {
+func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, indent int) {
 	attr.Value = attr.Value.Resolve()
 	if attr.Equal(slog.Attr{}) {
 		return
 	}
 
-	buf.writeIndent(indent)
+	buffer.writeIndent(indent)
 
 	switch attr.Value.Kind() {
 	case slog.KindGroup:
@@ -246,50 +246,50 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) 
 		}
 
 		if attr.Key != "" {
-			handler.writeAttributeKey(buf, attr.Key)
-			buf.writeByte('\n')
+			handler.writeAttributeKey(buffer, attr.Key)
+			buffer.writeByte('\n')
 			indent++
 		}
 
 		for _, groupAttr := range attrs {
-			handler.writeAttribute(buf, groupAttr, indent)
+			handler.writeAttribute(buffer, groupAttr, indent)
 		}
 	case slog.KindTime:
-		handler.writeAttributeKey(buf, attr.Key)
-		buf.writeByte(' ')
-		buf.writeDateTime(attr.Value.Time())
-		buf.writeByte('\n')
+		handler.writeAttributeKey(buffer, attr.Key)
+		buffer.writeByte(' ')
+		buffer.writeDateTime(attr.Value.Time())
+		buffer.writeByte('\n')
 	case slog.KindAny:
-		handler.writeAttributeKey(buf, attr.Key)
+		handler.writeAttributeKey(buffer, attr.Key)
 
 		value := attr.Value.Any()
 		if json, ok := value.(jsonLogValuer); ok {
-			buf.writeByte(' ')
-			handler.writeJSON(buf, json.JSONLogValue(), attr.Value, indent)
+			buffer.writeByte(' ')
+			handler.writeJSON(buffer, json.JSONLogValue(), attr.Value, indent)
 			return
 		}
 
 		reflectValue := reflect.ValueOf(value)
 		switch reflectValue.Kind() {
 		case reflect.Slice, reflect.Array:
-			handler.writeListOrSingleElement(buf, reflectValue, indent+1)
+			handler.writeListOrSingleElement(buffer, reflectValue, indent+1)
 		default:
-			buf.writeByte(' ')
-			buf.writeString(attr.Value.String())
+			buffer.writeByte(' ')
+			buffer.writeString(attr.Value.String())
 		}
-		buf.writeByte('\n')
+		buffer.writeByte('\n')
 	default:
-		handler.writeAttributeKey(buf, attr.Key)
-		buf.writeByte(' ')
-		buf.writeString(attr.Value.String())
-		buf.writeByte('\n')
+		handler.writeAttributeKey(buffer, attr.Key)
+		buffer.writeByte(' ')
+		buffer.writeString(attr.Value.String())
+		buffer.writeByte('\n')
 	}
 }
 
-func (handler *Handler) writeAttributeKey(buf *buffer, attrKey string) {
-	handler.setColor(buf, colorCyan)
-	buf.writeString(attrKey)
-	handler.writeByteWithColor(buf, ':', colorGray)
+func (handler *Handler) writeAttributeKey(buffer *byteBuffer, attrKey string) {
+	handler.setColor(buffer, colorCyan)
+	buffer.writeString(attrKey)
+	handler.writeByteWithColor(buffer, ':', colorGray)
 }
 
 var jsonColors = jsoncolor.Colors{
@@ -304,8 +304,13 @@ var jsonColors = jsoncolor.Colors{
 	TextMarshaler: jsoncolor.Color(noColor),
 }
 
-func (handler *Handler) writeJSON(buf *buffer, jsonValue any, slogValue slog.Value, indent int) {
-	encoder := jsoncolor.NewEncoder(buf)
+func (handler *Handler) writeJSON(
+	buffer *byteBuffer,
+	jsonValue any,
+	slogValue slog.Value,
+	indent int,
+) {
+	encoder := jsoncolor.NewEncoder(buffer)
 
 	var prefix strings.Builder
 	for i := 0; i <= indent; i++ {
@@ -318,15 +323,19 @@ func (handler *Handler) writeJSON(buf *buffer, jsonValue any, slogValue slog.Val
 	}
 
 	if err := encoder.Encode(jsonValue); err != nil {
-		buf.writeString(slogValue.String())
-		buf.writeByte('\n')
+		buffer.writeString(slogValue.String())
+		buffer.writeByte('\n')
 	}
 }
 
-func (handler *Handler) writeListOrSingleElement(buf *buffer, list reflect.Value, indent int) {
+func (handler *Handler) writeListOrSingleElement(
+	buffer *byteBuffer,
+	list reflect.Value,
+	indent int,
+) {
 	switch list.Len() {
 	case 0:
-		buf.writeString(" []")
+		buffer.writeString(" []")
 	case 1:
 		value := list.Index(0)
 		if value.CanInterface() {
@@ -335,20 +344,20 @@ func (handler *Handler) writeListOrSingleElement(buf *buffer, list reflect.Value
 
 		switch value.Kind() {
 		case reflect.Slice, reflect.Array:
-			handler.writeListOrSingleElement(buf, value, indent)
+			handler.writeListOrSingleElement(buffer, value, indent)
 		case reflect.String:
-			buf.writeByte(' ')
-			buf.writeBytesWithIndentedNewlines([]byte(value.String()), indent)
+			buffer.writeByte(' ')
+			buffer.writeBytesWithIndentedNewlines([]byte(value.String()), indent)
 		default:
-			buf.writeByte(' ')
-			buf.writeAnyWithIndentedNewlines(value, indent)
+			buffer.writeByte(' ')
+			buffer.writeAnyWithIndentedNewlines(value, indent)
 		}
 	default:
-		handler.writeList(buf, list, indent)
+		handler.writeList(buffer, list, indent)
 	}
 }
 
-func (handler *Handler) writeList(buf *buffer, list reflect.Value, indent int) {
+func (handler *Handler) writeList(buffer *byteBuffer, list reflect.Value, indent int) {
 	for i := 0; i < list.Len(); i++ {
 		value := list.Index(i)
 		if value.CanInterface() {
@@ -357,32 +366,32 @@ func (handler *Handler) writeList(buf *buffer, list reflect.Value, indent int) {
 
 		switch value.Kind() {
 		case reflect.Slice, reflect.Array:
-			handler.writeList(buf, value, indent+1)
+			handler.writeList(buffer, value, indent+1)
 		case reflect.String:
-			handler.writeListItemPrefix(buf, indent)
-			buf.writeBytesWithIndentedNewlines([]byte(value.String()), indent+1)
+			handler.writeListItemPrefix(buffer, indent)
+			buffer.writeBytesWithIndentedNewlines([]byte(value.String()), indent+1)
 		default:
-			handler.writeListItemPrefix(buf, indent)
-			buf.writeAnyWithIndentedNewlines(value, indent+1)
+			handler.writeListItemPrefix(buffer, indent)
+			buffer.writeAnyWithIndentedNewlines(value, indent+1)
 		}
 	}
 }
 
-func (handler *Handler) writeListItemPrefix(buf *buffer, indent int) {
-	buf.writeByte('\n')
-	buf.writeIndent(indent)
-	handler.writeByteWithColor(buf, '-', colorGray)
-	buf.writeByte(' ')
+func (handler *Handler) writeListItemPrefix(buffer *byteBuffer, indent int) {
+	buffer.writeByte('\n')
+	buffer.writeIndent(indent)
+	handler.writeByteWithColor(buffer, '-', colorGray)
+	buffer.writeByte(' ')
 }
 
-func (handler *Handler) writeLogSource(buf *buffer, programCounter uintptr) {
+func (handler *Handler) writeLogSource(buffer *byteBuffer, programCounter uintptr) {
 	frames := runtime.CallersFrames([]uintptr{programCounter})
 	frame, _ := frames.Next()
 
-	handler.writeAttributeKey(buf, slog.SourceKey)
-	buf.writeByte(' ')
-	buf.writeString(frame.File)
-	buf.writeByte(':')
-	buf.writeDecimal(frame.Line)
-	buf.writeByte('\n')
+	handler.writeAttributeKey(buffer, slog.SourceKey)
+	buffer.writeByte(' ')
+	buffer.writeString(frame.File)
+	buffer.writeByte(':')
+	buffer.writeDecimal(frame.Line)
+	buffer.writeByte('\n')
 }

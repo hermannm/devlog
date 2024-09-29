@@ -15,19 +15,19 @@ import (
 
 // Tests our handler against the standard library test suite for structured logging handlers.
 func TestSlog(t *testing.T) {
-	var buf bytes.Buffer
+	var buffer bytes.Buffer
 
 	slogtest.Run(
 		t,
 		func(t *testing.T) slog.Handler {
-			buf.Reset()
-			return devlog.NewHandler(&buf, &devlog.Options{
+			buffer.Reset()
+			return devlog.NewHandler(&buffer, &devlog.Options{
 				DisableColors: true,
 				TimeFormat:    devlog.TimeFormatFull,
 			})
 		},
 		func(t *testing.T) map[string]any {
-			entries, err := parseLogEntry(buf.String())
+			entries, err := parseLogEntry(buffer.String())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -43,22 +43,22 @@ func TestTimeFormat(t *testing.T) {
 	}
 
 	testCases := []struct {
-		format            devlog.TimeFormat
-		expectedLogPrefix string
+		format         devlog.TimeFormat
+		expectedOutput string
 	}{
 		{
-			format:            devlog.TimeFormatShort,
-			expectedLogPrefix: "[10:57:30]",
+			format:         devlog.TimeFormatShort,
+			expectedOutput: "[10:57:30]",
 		},
 		{
-			format:            devlog.TimeFormatFull,
-			expectedLogPrefix: "[2024-09-29 10:57:30]",
+			format:         devlog.TimeFormatFull,
+			expectedOutput: "[2024-09-29 10:57:30]",
 		},
 	}
 
 	for _, testCase := range testCases {
-		var buf bytes.Buffer
-		handler := devlog.NewHandler(&buf, &devlog.Options{
+		var buffer bytes.Buffer
+		handler := devlog.NewHandler(&buffer, &devlog.Options{
 			DisableColors: true,
 			TimeFormat:    testCase.format,
 		})
@@ -68,7 +68,7 @@ func TestTimeFormat(t *testing.T) {
 			t.Fatalf("Handle failed: %v", err)
 		}
 
-		assertContains(t, buf.String(), testCase.expectedLogPrefix)
+		assertContains(t, buffer.String(), testCase.expectedOutput)
 	}
 }
 
@@ -122,11 +122,11 @@ string 2`}}),
 
 	for _, testCase := range testCases {
 		t.Run(testCase.attribute.Key, func(t *testing.T) {
-			var buf bytes.Buffer
-			logger := slog.New(devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}))
+			var buffer bytes.Buffer
+			logger := slog.New(devlog.NewHandler(&buffer, &devlog.Options{DisableColors: true}))
 			logger.Info("", testCase.attribute)
 
-			output := buf.String()
+			output := buffer.String()
 			t.Log(output)
 			assertContains(t, output, testCase.expectedOutput)
 		})
@@ -145,8 +145,8 @@ func (user user) JSONLogValue() any {
 }
 
 func TestJSON(t *testing.T) {
-	var buf bytes.Buffer
-	logger := slog.New(devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}))
+	var buffer bytes.Buffer
+	logger := slog.New(devlog.NewHandler(&buffer, &devlog.Options{DisableColors: true}))
 
 	user := user{
 		ID:   1,
@@ -160,7 +160,7 @@ func TestJSON(t *testing.T) {
     "name": "hermannm"
   }`
 
-	assertContains(t, buf.String(), expectedOutput)
+	assertContains(t, buffer.String(), expectedOutput)
 }
 
 func assertContains(t *testing.T, output string, expectedOutput string) {

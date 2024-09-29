@@ -14,20 +14,20 @@ var (
 	noColor      = color{}
 )
 
-func (handler *Handler) setColor(buf *buffer, color color) {
+func (handler *Handler) setColor(buffer *byteBuffer, color color) {
 	if handler.options.DisableColors {
 		return
 	}
 
-	buf.Write(color)
+	buffer.Write(color)
 }
 
-func (handler *Handler) resetColor(buf *buffer) {
-	handler.setColor(buf, colorReset)
+func (handler *Handler) resetColor(buffer *byteBuffer) {
+	handler.setColor(buffer, colorReset)
 }
 
-func (handler *Handler) writeByteWithColor(buf *buffer, byte byte, color color) {
-	handler.setColor(buf, color)
-	buf.writeByte(byte)
-	handler.resetColor(buf)
+func (handler *Handler) writeByteWithColor(buffer *byteBuffer, byte byte, color color) {
+	handler.setColor(buffer, color)
+	buffer.writeByte(byte)
+	handler.resetColor(buffer)
 }
