@@ -17,20 +17,23 @@ import (
 func TestSlog(t *testing.T) {
 	var buf bytes.Buffer
 
-	err := slogtest.TestHandler(
-		devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}),
-		func() []map[string]any {
-			entries, err := parseLogEntries(buf.String())
+	slogtest.Run(
+		t,
+		func(t *testing.T) slog.Handler {
+			buf.Reset()
+			return devlog.NewHandler(&buf, &devlog.Options{
+				DisableColors: true,
+				TimeFormat:    devlog.TimeFormatFull,
+			})
+		},
+		func(t *testing.T) map[string]any {
+			entries, err := parseLogEntry(buf.String())
 			if err != nil {
 				t.Fatal(err)
 			}
 			return entries
 		},
 	)
-
-	if err != nil {
-		t.Error(err)
-	}
 }
 
 func TestJSON(t *testing.T) {
@@ -133,26 +136,11 @@ want:
 	}
 }
 
-// slogtest.TestHandler requires us to parse our logging output to a []map[string]any.
-func parseLogEntries(data string) ([]map[string]any, error) {
-	entryStrings := strings.Split(data, "\n[")
-	entryStrings[0], _ = strings.CutPrefix(entryStrings[0], "[")
-	last := len(entryStrings) - 1
-	entryStrings[last], _ = strings.CutSuffix(entryStrings[last], "\n")
-
-	entries := make([]map[string]any, 0, len(entryStrings))
-	for _, entryString := range entryStrings {
-		if err := parseLogEntry(&entries, entryString, true); err != nil {
-			return nil, fmt.Errorf("failed to parse log entry number %d: %w", len(entries)+1, err)
-		}
-	}
-
-	return entries, nil
-}
-
-func parseLogEntry(entries *[]map[string]any, entryString string, includeTime bool) error {
+// slogtest.Run requires us to parse our logging output to a map[string]any.
+func parseLogEntry(entryString string) (map[string]any, error) {
 	entry := make(map[string]any)
 
+	entryString, includeTime := strings.CutPrefix(entryString, "[")
 	if includeTime {
 		split := strings.SplitN(entryString, "] ", 2)
 		timeString := split[0]
@@ -160,35 +148,23 @@ func parseLogEntry(entries *[]map[string]any, entryString string, includeTime bo
 
 		time, err := time.Parse(time.DateTime, timeString)
 		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
+			return nil, fmt.Errorf("failed to parse time: %w", err)
 		}
 		entry[slog.TimeKey] = time
 	}
 
 	split := strings.SplitN(entryString, ": ", 2)
-	levelString := split[0]
-	entryString = split[1]
+	entry[slog.LevelKey] = split[0]
 
-	entry[slog.LevelKey] = levelString
+	// Cut trailing newline
+	entryString, _ = strings.CutSuffix(split[1], "\n")
 
 	split = strings.SplitN(entryString, "\n", 2)
-	msg := split[0]
+	entry[slog.MessageKey] = split[0]
+
 	hasAttributes := len(split) == 2
-
-	entry[slog.MessageKey] = msg
-
-	var entriesWithoutTime []string
 	if hasAttributes {
 		entryString = split[1]
-		for {
-			if i := strings.Index(entryString, "\n"+slog.LevelInfo.String()); i >= 0 {
-				currentEntry, nextEntry := entryString[:i], entryString[i+1:]
-				entryString = currentEntry
-				entriesWithoutTime = append(entriesWithoutTime, nextEntry)
-			} else {
-				break
-			}
-		}
 
 		var openGroups []string
 		currentIndent := 0
@@ -217,15 +193,7 @@ func parseLogEntry(entries *[]map[string]any, entryString string, includeTime bo
 		}
 	}
 
-	*entries = append(*entries, entry)
-
-	for _, entryString := range entriesWithoutTime {
-		if err := parseLogEntry(entries, entryString, false); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return entry, nil
 }
 
 func getSubEntry(entry map[string]any, openGroups []string) map[string]any {
