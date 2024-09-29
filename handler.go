@@ -87,6 +87,14 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 	return &handler
 }
 
+// NewDefaultHandler is short-hand for:
+//   - Calling [NewHandler] with the given arguments
+//   - Setting it as the default log handler with [slog.SetDefault]
+func NewDefaultHandler(output io.Writer, options *Options) {
+	handler := NewHandler(output, options)
+	slog.SetDefault(slog.New(handler))
+}
+
 // Enabled reports whether the handler is configured to log records at the given level.
 func (handler *Handler) Enabled(_ context.Context, level slog.Level) bool {
 	minLevel := slog.LevelInfo
