@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/neilotoole/jsoncolor"
-	"hermannm.dev/devlog/log"
 )
 
 // Handler is a [slog.Handler] that outputs log records in a human-readable format, designed for
@@ -190,6 +189,12 @@ func (handler *Handler) writeUnopenedGroups(buf *buffer) {
 	}
 }
 
+// Interface to allow log input handlers (such as [hermannm.dev/devlog/log]) to pass a log attribute
+// value that should be pretty-formatted as JSON by this output handler.
+type jsonLogValuer interface {
+	JSONLogValue() any
+}
+
 func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) {
 	attr.Value = attr.Value.Resolve()
 	if attr.Equal(slog.Attr{}) {
@@ -223,9 +228,9 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) 
 		handler.writeAttributeKey(buf, attr.Key)
 
 		value := attr.Value.Any()
-		if json, ok := value.(log.JSONValue); ok {
+		if json, ok := value.(jsonLogValuer); ok {
 			buf.writeByte(' ')
-			handler.writeJSON(buf, json.Value, attr.Value, indent)
+			handler.writeJSON(buf, json.JSONLogValue(), attr.Value, indent)
 			return
 		}
 
