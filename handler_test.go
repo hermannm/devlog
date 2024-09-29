@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"hermannm.dev/devlog"
-	"hermannm.dev/devlog/log"
 )
 
 // Tests our handler against the standard library test suite for structured logging handlers.
@@ -36,19 +35,27 @@ func TestSlog(t *testing.T) {
 	)
 }
 
+type user struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// Implements devlog.jsonLogValuer interface (implemented manually here instead of using
+// devlog/log.JSON(), to make the packages fully independent).
+func (user user) JSONLogValue() any {
+	return user
+}
+
 func TestJSON(t *testing.T) {
 	var buf bytes.Buffer
 	logger := slog.New(devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}))
 
-	user := struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-	}{
+	user := user{
 		ID:   1,
 		Name: "hermannm",
 	}
 
-	logger.Info("user created", log.JSON("user", user))
+	logger.Info("user created", slog.Any("user", user))
 
 	expectedOutput := `user: {
     "id": 1,
