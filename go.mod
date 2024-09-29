@@ -1,6 +1,6 @@
 module hermannm.dev/devlog
 
-go 1.21.1
+go 1.22.0
 
 require (
 	github.com/neilotoole/jsoncolor v0.7.1
