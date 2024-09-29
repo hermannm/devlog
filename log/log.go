@@ -579,6 +579,8 @@ func (logger Logger) withLevel(level slog.Level) (withLevel levelLogger, enabled
 		logger.handler.Enabled(context.Background(), level)
 }
 
+// Adapted from standard library:
+// https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/slog/attr.go#L71
 func parseLogAttributes(unparsed []any) []slog.Attr {
 	var current slog.Attr
 	var parsed []slog.Attr
@@ -594,20 +596,25 @@ func parseLogAttributes(unparsed []any) []slog.Attr {
 //   - If args[0] is an Attr, it returns it.
 //   - If args[0] is a string, it treats the first two elements as a key-value pair.
 //   - Otherwise, it treats args[0] as a value with a missing key.
-func parseLogAttribute(args []any) (slog.Attr, []any) {
-	switch x := args[0].(type) {
+//
+// Adapted from standard library:
+// https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/slog/record.go#L168
+func parseLogAttribute(attrs []any) (parsed slog.Attr, remaining []any) {
+	switch attr := attrs[0].(type) {
 	case string:
-		if len(args) == 1 {
-			return slog.String(badKey, x), nil
+		if len(attrs) == 1 {
+			return slog.String(badKey, attr), nil
 		}
-		return slog.Any(x, args[1]), args[2:]
+		return slog.Any(attr, attrs[1]), attrs[2:]
 
 	case slog.Attr:
-		return x, args[1:]
+		return attr, attrs[1:]
 
 	default:
-		return slog.Any(badKey, x), args[1:]
+		return slog.Any(badKey, attr), attrs[1:]
 	}
 }
 
+// Same key as the one the standard library uses for attributes that failed to parse:
+// https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/slog/record.go#L160
 const badKey = "!BADKEY"
