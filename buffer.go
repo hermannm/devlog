@@ -61,6 +61,17 @@ func (buf *buffer) writeAnyWithIndentedNewlines(value any, indent int) {
 // Adapted from standard library log package:
 // https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/log.go#L114
 func (buf *buffer) writeTime(t time.Time) {
+	hour, min, sec := t.Clock()
+	buf.writeFixedWidthDecimal(hour, 2)
+	buf.writeByte(':')
+	buf.writeFixedWidthDecimal(min, 2)
+	buf.writeByte(':')
+	buf.writeFixedWidthDecimal(sec, 2)
+}
+
+// Adapted from standard library log package:
+// https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/log.go#L114
+func (buf *buffer) writeDateTime(t time.Time) {
 	year, month, day := t.Date()
 	buf.writeFixedWidthDecimal(year, 4)
 	buf.writeByte('-')
@@ -69,12 +80,7 @@ func (buf *buffer) writeTime(t time.Time) {
 	buf.writeFixedWidthDecimal(day, 2)
 	buf.writeByte(' ')
 
-	hour, min, sec := t.Clock()
-	buf.writeFixedWidthDecimal(hour, 2)
-	buf.writeByte(':')
-	buf.writeFixedWidthDecimal(min, 2)
-	buf.writeByte(':')
-	buf.writeFixedWidthDecimal(sec, 2)
+	buf.writeTime(t)
 }
 
 // Adapted from standard library log package:

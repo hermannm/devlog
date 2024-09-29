@@ -36,14 +36,32 @@ type Options struct {
 	AddSource bool
 
 	// DisableColors removes colors from log output.
-	// Defaults to false (i.e. colors enabled), but if [color.IsColorTerminal] returns false, then
-	// colors are disabled.
+	// Defaults to false (i.e. colors enabled), but if [IsColorTerminal] returns false, then colors
+	// are disabled.
 	DisableColors bool
 
-	// ForceColors skips checking [color.IsColorTerminal] for color support, and includes colors
-	// in log output regardless. It overrides DisableColors.
+	// ForceColors skips checking [IsColorTerminal] for color support, and includes colors in log
+	// output regardless. It overrides DisableColors.
 	ForceColors bool
+
+	// TimeFormat controls how time is formatted for each log entry. It defaults to
+	// [TimeFormatShort], showing just the time and not the date, but can be set to [TimeFormatFull]
+	// to include the date as well.
+	TimeFormat TimeFormat
 }
+
+// See [Options.TimeFormat].
+type TimeFormat int8
+
+const (
+	// TimeFormatShort includes just the time, not the date, formatted as: [10:57:30]
+	//
+	// This is the default time format.
+	TimeFormatShort TimeFormat = iota
+
+	// TimeFormatFull includes both date and time, formatted as: [2024-12-29 10:57:30]
+	TimeFormatFull
+)
 
 // NewHandler creates a log [Handler] that writes to output, using the given options.
 // If options is nil, the default options are used.
@@ -87,7 +105,16 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	if !record.Time.IsZero() {
 		handler.setColor(buf, colorGray)
 		buf.writeByte('[')
-		buf.writeTime(record.Time)
+
+		switch handler.options.TimeFormat {
+		case TimeFormatFull:
+			buf.writeDateTime(record.Time)
+		case TimeFormatShort:
+			fallthrough
+		default:
+			buf.writeTime(record.Time)
+		}
+
 		buf.writeByte(']')
 		handler.resetColor(buf)
 		buf.writeByte(' ')
@@ -222,7 +249,7 @@ func (handler *Handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) 
 	case slog.KindTime:
 		handler.writeAttributeKey(buf, attr.Key)
 		buf.writeByte(' ')
-		buf.writeTime(attr.Value.Time())
+		buf.writeDateTime(attr.Value.Time())
 		buf.writeByte('\n')
 	case slog.KindAny:
 		handler.writeAttributeKey(buf, attr.Key)
