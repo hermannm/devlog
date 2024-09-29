@@ -13,9 +13,21 @@ import (
 
 // Info logs the given message at the INFO log level, along with any given log attributes.
 // It uses the [slog.Default] logger.
-func Info(message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.Info("Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.Info("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.Info("Message", "attr1", "value1", slog.Int("attr2", 2))
+func Info(message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelInfo); enabled {
-		logger.log(message, attributes)
+		logger.log(message, logAttributes)
 	}
 }
 
@@ -29,9 +41,21 @@ func Infof(messageFormat string, formatArgs ...any) {
 
 // Warn logs the given message at the WARN log level, along with any given log attributes.
 // It uses the [slog.Default] logger.
-func Warn(message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.Warn("Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.Warn("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.Warn("Message", "attr1", "value1", slog.Int("attr2", 2))
+func Warn(message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(message, attributes)
+		logger.log(message, logAttributes)
 	}
 }
 
@@ -45,17 +69,41 @@ func Warnf(messageFormat string, formatArgs ...any) {
 
 // Error logs the given error at the ERROR log level, along with any given log attributes.
 // It uses the [slog.Default] logger.
-func Error(err error, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.Error(err, "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.Error(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.Error(err, "attr1", "value1", slog.Int("attr2", 2))
+func Error(err error, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(getErrorMessageAndCause(err, attributes))
+		logger.log(getErrorMessageAndCause(err, logAttributes))
 	}
 }
 
 // ErrorCause logs the given message at the ERROR log level, and adds a 'cause' attribute with the
 // given error, along with any other log attributes. It uses the [slog.Default] logger.
-func ErrorCause(err error, message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.ErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.ErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.ErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+func ErrorCause(err error, message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(message, appendErrorCause(attributes, err))
+		logger.log(message, appendErrorCause(logAttributes, err))
 	}
 }
 
@@ -77,9 +125,21 @@ func Errors(message string, errs ...error) {
 
 // ErrorMessage logs the given message at the ERROR log level, along with any given log attributes.
 // It uses the [slog.Default] logger.
-func ErrorMessage(message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.ErrorMessage("Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.ErrorMessage("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.ErrorMessage("Message", "attr1", "value1", slog.Int("attr2", 2))
+func ErrorMessage(message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(message, attributes)
+		logger.log(message, logAttributes)
 	}
 }
 
@@ -93,17 +153,41 @@ func ErrorMessagef(messageFormat string, formatArgs ...any) {
 
 // WarnError logs the given error at the WARN log level, along with any given log attributes.
 // It uses the [slog.Default] logger.
-func WarnError(err error, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.WarnError(err, "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.WarnError(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.WarnError(err, "attr1", "value1", slog.Int("attr2", 2))
+func WarnError(err error, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(getErrorMessageAndCause(err, attributes))
+		logger.log(getErrorMessageAndCause(err, logAttributes))
 	}
 }
 
 // WarnErrorCause logs the given message at the WARN log level, and adds a 'cause' attribute with
 // the given error, along with any other log attributes. It uses the [slog.Default] logger.
-func WarnErrorCause(err error, message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.WarnErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.WarnErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.WarnErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+func WarnErrorCause(err error, message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(message, appendErrorCause(attributes, err))
+		logger.log(message, appendErrorCause(logAttributes, err))
 	}
 }
 
@@ -128,9 +212,21 @@ func WarnErrors(message string, errs ...error) {
 //
 // Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
 // case no output will be produced.
-func Debug(message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.Debug("Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.Debug("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.Debug("Message", "attr1", "value1", slog.Int("attr2", 2))
+func Debug(message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(message, attributes)
+		logger.log(message, logAttributes)
 	}
 }
 
@@ -167,12 +263,24 @@ func Default() Logger {
 
 // With returns a Logger that includes the given attributes in each log.
 // If no attributes are given, the logger is returned as-is.
-func (logger Logger) With(attributes ...slog.Attr) Logger {
-	if len(attributes) == 0 {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.With("attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.With(slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.With("attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) With(logAttributes ...any) Logger {
+	if len(logAttributes) == 0 {
 		return logger
 	}
 
-	return Logger{handler: logger.handler.WithAttrs(attributes)}
+	return Logger{handler: logger.handler.WithAttrs(parseLogAttributes(logAttributes))}
 }
 
 // WithGroup returns a Logger that starts an attribute group.
@@ -192,9 +300,21 @@ func (logger Logger) Handler() slog.Handler {
 }
 
 // Info logs the given message at the INFO log level, along with any given log attributes.
-func (logger Logger) Info(message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.Info("Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.Info("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.Info("Message", "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) Info(message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelInfo); enabled {
-		level.log(message, attributes)
+		level.log(message, logAttributes)
 	}
 }
 
@@ -207,9 +327,21 @@ func (logger Logger) Infof(messageFormat string, formatArgs ...any) {
 }
 
 // Warn logs the given message at the WARN log level, along with any given log attributes.
-func (logger Logger) Warn(message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.Warn("Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.Warn("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.Warn("Message", "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) Warn(message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(message, attributes)
+		level.log(message, logAttributes)
 	}
 }
 
@@ -222,17 +354,41 @@ func (logger Logger) Warnf(messageFormat string, formatArgs ...any) {
 }
 
 // Error logs the given error at the ERROR log level, along with any given log attributes.
-func (logger Logger) Error(err error, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.Error(err, "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.Error(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.Error(err, "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) Error(err error, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(getErrorMessageAndCause(err, attributes))
+		level.log(getErrorMessageAndCause(err, logAttributes))
 	}
 }
 
 // ErrorCause logs the given message at the ERROR log level, and adds a 'cause' attribute with the
 // given error, along with any other log attributes.
-func (logger Logger) ErrorCause(err error, message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.ErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.ErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.ErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) ErrorCause(err error, message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(message, appendErrorCause(attributes, err))
+		level.log(message, appendErrorCause(logAttributes, err))
 	}
 }
 
@@ -253,9 +409,21 @@ func (logger Logger) Errors(message string, errs ...error) {
 }
 
 // ErrorMessage logs the given message at the ERROR log level, along with any given log attributes.
-func (logger Logger) ErrorMessage(message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.ErrorMessage("Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.ErrorMessage("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.ErrorMessage("Message", "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) ErrorMessage(message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(message, attributes)
+		level.log(message, logAttributes)
 	}
 }
 
@@ -268,17 +436,41 @@ func (logger Logger) ErrorMessagef(messageFormat string, formatArgs ...any) {
 }
 
 // WarnError logs the given error at the WARN log level, along with any given log attributes.
-func (logger Logger) WarnError(err error, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.WarnError(err, "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.WarnError(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.WarnError(err, "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) WarnError(err error, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(getErrorMessageAndCause(err, attributes))
+		level.log(getErrorMessageAndCause(err, logAttributes))
 	}
 }
 
 // WarnErrorCause logs the given message at the WARN log level, and adds a 'cause' attribute with
 // the given error, along with any other log attributes.
-func (logger Logger) WarnErrorCause(err error, message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.WarnErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.WarnErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.WarnErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) WarnErrorCause(err error, message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(message, appendErrorCause(attributes, err))
+		level.log(message, appendErrorCause(logAttributes, err))
 	}
 }
 
@@ -302,9 +494,21 @@ func (logger Logger) WarnErrors(message string, errs ...error) {
 //
 // Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
 // case no output will be produced.
-func (logger Logger) Debug(message string, attributes ...slog.Attr) {
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.Debug("Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.Debug("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.Debug("Message", "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) Debug(message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(message, attributes)
+		level.log(message, logAttributes)
 	}
 }
 
@@ -345,7 +549,7 @@ type levelLogger struct {
 
 // Follows the example from the slog package for how to properly wrap its functions:
 // https://pkg.go.dev/golang.org/x/exp/slog#hdr-Wrapping_output_methods
-func (logger levelLogger) log(message string, attributes []slog.Attr) {
+func (logger levelLogger) log(message string, logAttributes []any) {
 	var programCounters [1]uintptr
 	// Skips 3, because we want to skip:
 	// - the call to runtime.Callers
@@ -354,8 +558,8 @@ func (logger levelLogger) log(message string, attributes []slog.Attr) {
 	runtime.Callers(3, programCounters[:])
 
 	record := slog.NewRecord(time.Now(), logger.level, message, programCounters[0])
-	if len(attributes) > 0 {
-		record.AddAttrs(attributes...)
+	if len(logAttributes) > 0 {
+		record.Add(logAttributes...)
 	}
 
 	_ = logger.handler.Handle(context.Background(), record)
@@ -370,3 +574,36 @@ func (logger Logger) withLevel(level slog.Level) (withLevel levelLogger, enabled
 	return levelLogger{handler: logger.handler, level: level},
 		logger.handler.Enabled(context.Background(), level)
 }
+
+func parseLogAttributes(unparsed []any) []slog.Attr {
+	var current slog.Attr
+	var parsed []slog.Attr
+	for len(unparsed) > 0 {
+		current, unparsed = parseLogAttribute(unparsed)
+		parsed = append(parsed, current)
+	}
+	return parsed
+}
+
+// parseLogAttribute turns a prefix of the nonempty args slice into an Attr and returns the
+// unconsumed portion of the slice.
+//   - If args[0] is an Attr, it returns it.
+//   - If args[0] is a string, it treats the first two elements as a key-value pair.
+//   - Otherwise, it treats args[0] as a value with a missing key.
+func parseLogAttribute(args []any) (slog.Attr, []any) {
+	switch x := args[0].(type) {
+	case string:
+		if len(args) == 1 {
+			return slog.String(badKey, x), nil
+		}
+		return slog.Any(x, args[1]), args[2:]
+
+	case slog.Attr:
+		return x, args[1:]
+
+	default:
+		return slog.Any(badKey, x), args[1:]
+	}
+}
+
+const badKey = "!BADKEY"

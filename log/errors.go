@@ -20,33 +20,33 @@ type WrappedErrors interface {
 	Unwrap() []error
 }
 
-func appendErrorCause(attributes []slog.Attr, err error) []slog.Attr {
-	return appendCause(attributes, buildErrorLogValue(err))
+func appendErrorCause(logAttributes []any, err error) []any {
+	return appendCause(logAttributes, buildErrorLogValue(err))
 }
 
-func appendErrorCauses(attributes []slog.Attr, errs []error) []slog.Attr {
-	return appendCause(attributes, buildErrorList(errs, false))
+func appendErrorCauses(logAttributes []any, errs []error) []any {
+	return appendCause(logAttributes, buildErrorList(errs, false))
 }
 
-func appendCause(attributes []slog.Attr, cause any) []slog.Attr {
-	return append([]slog.Attr{slog.Any("cause", cause)}, attributes...)
+func appendCause(logAttributes []any, cause any) []any {
+	return append([]any{slog.Any("cause", cause)}, logAttributes...)
 }
 
 func getErrorMessageAndCause(
 	err error,
-	attributes []slog.Attr,
-) (message string, attributesWithCause []slog.Attr) {
+	logAttributes []any,
+) (message string, attributesWithCause []any) {
 	switch err := err.(type) {
 	case WrappedError:
-		return err.WrappingMessage(), appendErrorCause(attributes, err.Unwrap())
+		return err.WrappingMessage(), appendErrorCause(logAttributes, err.Unwrap())
 	case WrappedErrors:
-		return err.WrappingMessage(), appendErrorCauses(attributes, err.Unwrap())
+		return err.WrappingMessage(), appendErrorCauses(logAttributes, err.Unwrap())
 	default:
 		splits, firstSplit := splitLongErrorMessage(err.Error())
 		if len(splits) > 1 {
-			attributes = appendCause(attributes, splits[1:])
+			logAttributes = appendCause(logAttributes, splits[1:])
 		}
-		return firstSplit, attributes
+		return firstSplit, logAttributes
 	}
 }
 
