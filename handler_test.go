@@ -2,6 +2,7 @@ package devlog_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -35,34 +36,40 @@ func TestSlog(t *testing.T) {
 	)
 }
 
-type user struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-// Implements devlog.jsonLogValuer interface (implemented manually here instead of using
-// devlog/log.JSON(), to make the packages fully independent).
-func (user user) JSONLogValue() any {
-	return user
-}
-
-func TestJSON(t *testing.T) {
-	var buf bytes.Buffer
-	logger := slog.New(devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}))
-
-	user := user{
-		ID:   1,
-		Name: "hermannm",
+func TestTimeFormat(t *testing.T) {
+	time, err := time.Parse(time.DateTime, "2024-09-29 10:57:30")
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	logger.Info("user created", slog.Any("user", user))
+	testCases := []struct {
+		format            devlog.TimeFormat
+		expectedLogPrefix string
+	}{
+		{
+			format:            devlog.TimeFormatShort,
+			expectedLogPrefix: "[10:57:30]",
+		},
+		{
+			format:            devlog.TimeFormatFull,
+			expectedLogPrefix: "[2024-09-29 10:57:30]",
+		},
+	}
 
-	expectedOutput := `user: {
-    "id": 1,
-    "name": "hermannm"
-  }`
+	for _, testCase := range testCases {
+		var buf bytes.Buffer
+		handler := devlog.NewHandler(&buf, &devlog.Options{
+			DisableColors: true,
+			TimeFormat:    testCase.format,
+		})
 
-	assertContains(t, buf.String(), expectedOutput)
+		record := slog.NewRecord(time, slog.LevelInfo, "Message", 0)
+		if err := handler.Handle(context.Background(), record); err != nil {
+			t.Fatalf("Handle failed: %v", err)
+		}
+
+		assertContains(t, buf.String(), testCase.expectedLogPrefix)
+	}
 }
 
 func TestListAttributes(t *testing.T) {
@@ -124,6 +131,36 @@ string 2`}}),
 			assertContains(t, output, testCase.expectedOutput)
 		})
 	}
+}
+
+type user struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// Implements devlog.jsonLogValuer interface (implemented manually here instead of using
+// devlog/log.JSON(), to make the packages fully independent).
+func (user user) JSONLogValue() any {
+	return user
+}
+
+func TestJSON(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(devlog.NewHandler(&buf, &devlog.Options{DisableColors: true}))
+
+	user := user{
+		ID:   1,
+		Name: "hermannm",
+	}
+
+	logger.Info("user created", slog.Any("user", user))
+
+	expectedOutput := `user: {
+    "id": 1,
+    "name": "hermannm"
+  }`
+
+	assertContains(t, buf.String(), expectedOutput)
 }
 
 func assertContains(t *testing.T, output string, expectedOutput string) {

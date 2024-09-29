@@ -59,7 +59,7 @@ const (
 	// This is the default time format.
 	TimeFormatShort TimeFormat = iota
 
-	// TimeFormatFull includes both date and time, formatted as: [2024-12-29 10:57:30]
+	// TimeFormatFull includes both date and time, formatted as: [2024-09-29 10:57:30]
 	TimeFormatFull
 )
 
