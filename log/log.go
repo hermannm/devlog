@@ -241,6 +241,74 @@ func Debugf(messageFormat string, formatArgs ...any) {
 	}
 }
 
+// DebugError logs the given error at the DEBUG log level, along with any given log attributes.
+// It uses the [slog.Default] logger.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.DebugError(err, "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.DebugError(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.DebugError(err, "attr1", "value1", slog.Int("attr2", 2))
+func DebugError(err error, logAttributes ...any) {
+	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
+		logger.log(getErrorMessageAndCause(err, logAttributes))
+	}
+}
+
+// DebugErrorCause logs the given message at the DEBUG log level, and adds a 'cause' attribute with
+// the given error, along with any other log attributes. It uses the [slog.Default] logger.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.DebugErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	log.DebugErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	log.DebugErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+func DebugErrorCause(err error, message string, logAttributes ...any) {
+	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
+		logger.log(message, appendErrorCause(logAttributes, err))
+	}
+}
+
+// DebugErrorCausef logs a formatted message (using [fmt.Sprintf]) at the DEBUG log level, and adds
+// a 'cause' attribute with the given error. It uses the [slog.Default] logger.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+func DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
+	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
+		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
+	}
+}
+
+// DebugErrors logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
+// given errors. It uses the [slog.Default] logger.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+func DebugErrors(message string, errs ...error) {
+	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
+		logger.log(message, appendErrorCauses(nil, errs))
+	}
+}
+
 // A Logger provides methods to produce structured log records for its output handler.
 // It is analogous to [slog.Logger], but provides more utilities for log message formatting.
 //
@@ -520,6 +588,73 @@ func (logger Logger) Debug(message string, logAttributes ...any) {
 func (logger Logger) Debugf(messageFormat string, formatArgs ...any) {
 	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
 		level.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
+	}
+}
+
+// DebugError logs the given error at the DEBUG log level, along with any given log attributes.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.DebugError(err, "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.DebugError(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.DebugError(err, "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) DebugError(err error, logAttributes ...any) {
+	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
+		level.log(getErrorMessageAndCause(err, logAttributes))
+	}
+}
+
+// DebugErrorCause logs the given message at the DEBUG log level, and adds a 'cause' attribute with
+// the given error, along with any other log attributes.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+//
+// # Log attributes
+//
+// A log attribute is a key/value pair attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.DebugErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	// slog.Attr objects:
+//	logger.DebugErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	// Or a mix of the two:
+//	logger.DebugErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+func (logger Logger) DebugErrorCause(err error, message string, logAttributes ...any) {
+	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
+		level.log(message, appendErrorCause(logAttributes, err))
+	}
+}
+
+// DebugErrorCausef logs a formatted message (using [fmt.Sprintf]) at the DEBUG log level, and adds
+// a 'cause' attribute with the given error.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+func (logger Logger) DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
+	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
+		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
+	}
+}
+
+// DebugErrors logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
+// given errors.
+//
+// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// case no output will be produced.
+func (logger Logger) DebugErrors(message string, errs ...error) {
+	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
+		level.log(message, appendErrorCauses(nil, errs))
 	}
 }
 
