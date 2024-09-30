@@ -18,17 +18,17 @@ slog.SetDefault(slog.New(logHandler))
 Logging with `slog` will now use this handler:
 
 ```go
-slog.Warn("no value found for 'PORT' in env, defaulting to 8000")
-slog.Info("server started", slog.Int("port", 8000), slog.String("environment", "DEV"))
+slog.Warn("No value found for 'PORT' in env, defaulting to 8000")
+slog.Info("Server started", "port", 8000, "environment", "DEV")
 slog.Error(
-	"database query failed",
-	slog.Group("dbError", slog.Int("code", 60), slog.String("message", "UNKNOWN_TABLE")),
+	"Database query failed",
+	slog.Group("dbError", "code", 60, "message", "UNKNOWN_TABLE"),
 )
 ```
 
 ...giving the following output (using a gruvbox terminal color scheme):
 
-![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/ac14f0dc1823316c983fb9cef6f1cf73a0bbb923/devlog-example-output.png?raw=true)
+![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/ac5ebe0a372e745c30b5afe6eeb71a67c4c44d21/devlog-example-output.png?raw=true)
 
 This output is meant to be easily read by a developer working locally. However, you may want a more
 structured format for production, such as JSON, to make log analysis easier. You can get both by
@@ -57,7 +57,6 @@ Example using `devlog` and `devlog/log` together:
 ```go
 import (
 	"errors"
-	"log/slog"
 	"os"
 
 	"hermannm.dev/devlog"
@@ -65,18 +64,18 @@ import (
 )
 
 func main() {
-	logHandler := devlog.NewHandler(os.Stdout, nil)
-	slog.SetDefault(slog.New(logHandler))
+	// Shorthand for calling NewHandler with slog.SetDefault
+	devlog.SetDefaultHandler(os.Stdout, nil)
 
 	user := map[string]any{"id": 2, "username": "hermannm"}
 	err := errors.New("username taken")
-	log.ErrorCause(err, "failed to create user", log.JSON("user", user))
+	log.ErrorCause(err, "Failed to create user", log.JSON("user", user))
 }
 ```
 
 This gives the following output:
 
-![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/90cddb67221a246937d472067374a00b4767a12b/devlog-example-output-2.png?raw=true)
+![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/ac5ebe0a372e745c30b5afe6eeb71a67c4c44d21/devlog-example-output-2.png?raw=true)
 
 ## Credits
 
