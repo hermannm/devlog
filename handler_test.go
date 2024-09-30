@@ -133,6 +133,23 @@ string 2`}}),
 	}
 }
 
+func TestSource(t *testing.T) {
+	var buffer bytes.Buffer
+	logger := slog.New(devlog.NewHandler(&buffer, &devlog.Options{
+		DisableColors: true,
+		AddSource:     true,
+	}))
+
+	logger.Info("test")
+
+	assertContains(
+		t,
+		buffer.String(),
+		"\n  source: hermannm.dev/devlog_test.TestSource",
+		"handler_test.go:143",
+	)
+}
+
 type user struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
@@ -163,11 +180,12 @@ func TestJSON(t *testing.T) {
 	assertContains(t, buffer.String(), expectedOutput)
 }
 
-func assertContains(t *testing.T, output string, expectedOutput string) {
+func assertContains(t *testing.T, output string, expectedInOutput ...string) {
 	t.Helper()
 
-	if !strings.Contains(output, expectedOutput) {
-		t.Errorf(`unexpected log output
+	for _, expected := range expectedInOutput {
+		if !strings.Contains(output, expected) {
+			t.Errorf(`unexpected log output
 got:
 ----------------------------------------
 %s----------------------------------------
@@ -176,7 +194,8 @@ want:
 ----------------------------------------
 %s
 ----------------------------------------
-`, output, expectedOutput)
+`, output, expected)
+		}
 	}
 }
 

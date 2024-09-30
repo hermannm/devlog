@@ -19,9 +19,11 @@ type Handler struct {
 	outputLock *sync.Mutex
 	options    Options
 
-	preformattedAttrs byteBuffer
-	unopenedGroups    []string
-	indent            int
+	// Current indent for new attributes, based on the current number of preformatted groups.
+	indent                      int
+	preformattedAttrs           byteBuffer
+	preformattedGroups          byteBuffer
+	preformattedGroupsWithAttrs byteBuffer
 }
 
 // Options configure a log [Handler].
@@ -68,12 +70,13 @@ const (
 // If options is nil, the default options are used.
 func NewHandler(output io.Writer, options *Options) *Handler {
 	handler := Handler{
-		output:            output,
-		outputLock:        &sync.Mutex{},
-		options:           Options{},
-		preformattedAttrs: nil,
-		unopenedGroups:    nil,
-		indent:            0,
+		output:                      output,
+		outputLock:                  &sync.Mutex{},
+		options:                     Options{},
+		preformattedAttrs:           nil,
+		preformattedGroups:          nil,
+		preformattedGroupsWithAttrs: nil,
+		indent:                      0,
 	}
 	if options != nil {
 		handler.options = *options
@@ -136,18 +139,26 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	buffer.writeString(record.Message)
 	buffer.writeByte('\n')
 
-	if handler.options.AddSource && record.PC != 0 {
-		handler.writeLogSource(buffer, record.PC)
-	}
-
-	buffer.join(handler.preformattedAttrs)
+	// Preformatted groups that have preformatted attributes: we always want to write these, so that
+	// the preformatted attributes written below are shown under their corresponding groups
+	buffer.join(handler.preformattedGroupsWithAttrs)
 
 	if record.NumAttrs() > 0 {
-		handler.writeUnopenedGroups(buffer)
+		// We only want to write preformattedGroups (without preformatted attrs) if the current
+		// record has attributes - otherwise we end up with writing groups with no attributes
+		buffer.join(handler.preformattedGroups)
+
 		record.Attrs(func(attr slog.Attr) bool {
 			handler.writeAttribute(buffer, attr, handler.indent)
 			return true
 		})
+	}
+
+	// Write preformatted attributes last, so they are shown beneath the current record's attributes
+	buffer.join(handler.preformattedAttrs)
+
+	if handler.options.AddSource && record.PC != 0 {
+		handler.writeLogSource(buffer, record.PC)
 	}
 
 	handler.outputLock.Lock()
@@ -164,15 +175,19 @@ func (handler *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 
 	// Copies the old handler, but keeps the same mutex since we hold a pointer to it
 	newHandler := *handler
-	newHandler.preformattedAttrs = handler.preformattedAttrs.copy()
-	newHandler.writeUnopenedGroups(&newHandler.preformattedAttrs)
 
-	// Now all groups have been opened
-	newHandler.unopenedGroups = nil
-
+	// We want to show newer attributes before old ones, so we write the new ones first before
+	// joining the previous ones below
+	newHandler.preformattedAttrs = nil
 	for _, attr := range attrs {
 		newHandler.writeAttribute(&newHandler.preformattedAttrs, attr, newHandler.indent)
 	}
+	newHandler.preformattedAttrs.join(handler.preformattedAttrs)
+
+	// We want to move previous preformattedGroups to preformattedGroupsWithAttrs, so we always
+	// write these groups (since the attributes added here should be displayed under these groups)
+	newHandler.preformattedGroupsWithAttrs = handler.preformattedGroups.copy()
+	newHandler.preformattedGroups = nil
 
 	return &newHandler
 }
@@ -186,10 +201,16 @@ func (handler *Handler) WithGroup(name string) slog.Handler {
 
 	// Copies the old handler, but keeps the same mutex since we hold a pointer to it
 	newHandler := *handler
-	newHandler.unopenedGroups = make([]string, len(handler.unopenedGroups)+1)
 
-	copy(newHandler.unopenedGroups, handler.unopenedGroups)
-	newHandler.unopenedGroups[len(newHandler.unopenedGroups)-1] = name
+	// Copy old preformattedGroups so we don't mutate the previous ones
+	newHandler.preformattedGroups = handler.preformattedGroups.copy()
+
+	// We then write the new group key to preformattedGroups, and increase the indent on newHandler
+	// so future attributes will display under the new group
+	newHandler.preformattedGroups.writeIndent(newHandler.indent)
+	newHandler.writeAttributeKey(&newHandler.preformattedGroups, name)
+	newHandler.preformattedGroups.writeByte('\n')
+	newHandler.indent++
 
 	return &newHandler
 }
@@ -214,15 +235,6 @@ func (handler *Handler) writeLevel(buffer *byteBuffer, level slog.Level) {
 	handler.setColor(buffer, levelColor)
 	buffer.writeString(level.String())
 	handler.resetColor(buffer)
-}
-
-func (handler *Handler) writeUnopenedGroups(buffer *byteBuffer) {
-	for _, group := range handler.unopenedGroups {
-		buffer.writeIndent(handler.indent)
-		handler.writeAttributeKey(buffer, group)
-		buffer.writeByte('\n')
-		handler.indent++
-	}
 }
 
 // Interface to allow log input handlers (such as [hermannm.dev/devlog/log]) to pass a log attribute
@@ -389,10 +401,42 @@ func (handler *Handler) writeLogSource(buffer *byteBuffer, programCounter uintpt
 	frames := runtime.CallersFrames([]uintptr{programCounter})
 	frame, _ := frames.Next()
 
+	hasFunction := frame.Func != nil // May be nil for non-Go code or fully inlined functions
+	hasFile := frame.File != ""      // frame.File may be blank if not known
+	hasLine := frame.Line != 0       // frame.Line may be 0 if not known
+
+	// If we have neither function nor file, we don't want to include source
+	if !hasFunction && !hasFile {
+		return
+	}
+
+	buffer.writeIndent(0)
 	handler.writeAttributeKey(buffer, slog.SourceKey)
 	buffer.writeByte(' ')
-	buffer.writeString(frame.File)
-	buffer.writeByte(':')
-	buffer.writeDecimal(frame.Line)
-	buffer.writeByte('\n')
+
+	// If we have the source function, we want to print that with file name in parentheses
+	if hasFunction {
+		buffer.writeString(frame.Func.Name())
+
+		if hasFile {
+			buffer.writeString(" (")
+			buffer.writeString(frame.File)
+			if hasLine {
+				buffer.writeByte(':')
+				buffer.writeDecimal(frame.Line)
+			}
+			buffer.writeString(")\n")
+		}
+		return
+	}
+
+	// If we don't have the source function, but do have the source file, we want to print that
+	if hasFile {
+		buffer.writeString(frame.File)
+		if hasLine {
+			buffer.writeByte(':')
+			buffer.writeDecimal(frame.Line)
+		}
+		buffer.writeByte('\n')
+	}
 }
