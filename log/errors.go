@@ -4,18 +4,18 @@ import (
 	"log/slog"
 )
 
-// WrappedError is an interface for errors that wrap an inner error with a wrapping message.
+// wrappedError is an interface for errors that wrap an inner error with a wrapping message.
 // When an error logging function in this package receives such an error, it is unwrapped to display
 // the error cause as a list.
-type WrappedError interface {
+type wrappedError interface {
 	WrappingMessage() string
 	Unwrap() error
 }
 
-// WrappedErrors is an interface for errors that wrap multiple inner errors with a wrapping message.
+// wrappedErrors is an interface for errors that wrap multiple inner errors with a wrapping message.
 // When an error logging function in this package receives such an error, it is unwrapped to display
 // the error cause as a list.
-type WrappedErrors interface {
+type wrappedErrors interface {
 	WrappingMessage() string
 	Unwrap() []error
 }
@@ -37,9 +37,9 @@ func getErrorMessageAndCause(
 	logAttributes []any,
 ) (message string, attributesWithCause []any) {
 	switch err := err.(type) {
-	case WrappedError:
+	case wrappedError:
 		return err.WrappingMessage(), appendErrorCause(logAttributes, err.Unwrap())
-	case WrappedErrors:
+	case wrappedErrors:
 		return err.WrappingMessage(), appendErrorCauses(logAttributes, err.Unwrap())
 	default:
 		splits, firstSplit := splitLongErrorMessage(err.Error())
@@ -52,10 +52,10 @@ func getErrorMessageAndCause(
 
 func buildErrorLogValue(err error) any {
 	switch err := err.(type) {
-	case WrappedError:
+	case wrappedError:
 		logValue := []any{err.WrappingMessage()}
 		return appendError(logValue, err.Unwrap(), false)
-	case WrappedErrors:
+	case wrappedErrors:
 		return [2]any{err.WrappingMessage(), buildErrorList(err.Unwrap(), false)}
 	default:
 		splits, firstSplit := splitLongErrorMessage(err.Error())
@@ -81,7 +81,7 @@ func buildErrorList(errors []error, partOfList bool) any {
 
 func appendError(logValue []any, err error, partOfList bool) []any {
 	switch err := err.(type) {
-	case WrappedError:
+	case wrappedError:
 		logValue = append(logValue, err.WrappingMessage())
 		if partOfList {
 			nested := appendError([]any{}, err.Unwrap(), false)
@@ -89,7 +89,7 @@ func appendError(logValue []any, err error, partOfList bool) []any {
 		} else {
 			logValue = appendError(logValue, err.Unwrap(), false)
 		}
-	case WrappedErrors:
+	case wrappedErrors:
 		logValue = append(logValue, err.WrappingMessage())
 		logValue = append(logValue, buildErrorList(err.Unwrap(), partOfList))
 	default:

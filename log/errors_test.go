@@ -157,12 +157,11 @@ another newline message`),
 	)
 }
 
+// Implements wrappedError interface from devlog/log.
 type wrappedError struct {
 	msg   string
 	cause error
 }
-
-var _ log.WrappedError = wrappedError{}
 
 func (err wrappedError) WrappingMessage() string {
 	return err.msg
@@ -176,12 +175,11 @@ func (err wrappedError) Error() string {
 	return err.msg
 }
 
+// Implements wrappedErrors interface from devlog/log.
 type wrappedErrors struct {
 	msg    string
 	causes []error
 }
-
-var _ log.WrappedErrors = wrappedErrors{}
 
 func (err wrappedErrors) WrappingMessage() string {
 	return err.msg
