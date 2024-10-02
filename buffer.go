@@ -111,7 +111,7 @@ func (buffer byteBuffer) copy() byteBuffer {
 	return newBuffer
 }
 
-// Inspired by Jonathan Amsterdam's guide to writing structured logging handlers:
+// Inspired by Jonathan Amsterdam's guide to writing structured log handlers:
 // https://github.com/golang/example/blob/1d6d2400d4027025cb8edc86a139c9c581d672f7/slog-handler-guide/README.md#speed
 var bufferPool = sync.Pool{
 	New: func() any {

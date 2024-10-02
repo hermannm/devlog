@@ -1,5 +1,5 @@
-// Package devlog implements a structured logging (slog) handler, with a human-readable output
-// format designed for development builds.
+// Package devlog implements a structured log (slog) handler, with a human-readable output format
+// designed for development builds.
 //
 // A devlog.Handler can be configured as follows:
 //

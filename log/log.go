@@ -210,7 +210,7 @@ func WarnErrors(message string, errs ...error) {
 // Debug logs the given message at the DEBUG log level, along with any given log attributes.
 // It uses the [slog.Default] logger.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 //
 // # Log attributes
@@ -233,7 +233,7 @@ func Debug(message string, logAttributes ...any) {
 // Debugf creates a message from the given format and arguments using [fmt.Sprintf], and logs it at
 // the DEBUG log level. It uses the [slog.Default] logger.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func Debugf(messageFormat string, formatArgs ...any) {
 	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
@@ -244,7 +244,7 @@ func Debugf(messageFormat string, formatArgs ...any) {
 // DebugError logs the given error at the DEBUG log level, along with any given log attributes.
 // It uses the [slog.Default] logger.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 //
 // # Log attributes
@@ -267,7 +267,7 @@ func DebugError(err error, logAttributes ...any) {
 // DebugErrorCause logs the given message at the DEBUG log level, and adds a 'cause' attribute with
 // the given error, along with any other log attributes. It uses the [slog.Default] logger.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 //
 // # Log attributes
@@ -290,7 +290,7 @@ func DebugErrorCause(err error, message string, logAttributes ...any) {
 // DebugErrorCausef logs a formatted message (using [fmt.Sprintf]) at the DEBUG log level, and adds
 // a 'cause' attribute with the given error. It uses the [slog.Default] logger.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
@@ -301,7 +301,7 @@ func DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
 // DebugErrors logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
 // given errors. It uses the [slog.Default] logger.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func DebugErrors(message string, errs ...error) {
 	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
@@ -560,7 +560,7 @@ func (logger Logger) WarnErrors(message string, errs ...error) {
 
 // Debug logs the given message at the DEBUG log level, along with any given log attributes.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 //
 // # Log attributes
@@ -583,7 +583,7 @@ func (logger Logger) Debug(message string, logAttributes ...any) {
 // Debugf creates a message from the given format and arguments using [fmt.Sprintf], and logs it at
 // the DEBUG log level.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func (logger Logger) Debugf(messageFormat string, formatArgs ...any) {
 	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
@@ -593,7 +593,7 @@ func (logger Logger) Debugf(messageFormat string, formatArgs ...any) {
 
 // DebugError logs the given error at the DEBUG log level, along with any given log attributes.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 //
 // # Log attributes
@@ -616,7 +616,7 @@ func (logger Logger) DebugError(err error, logAttributes ...any) {
 // DebugErrorCause logs the given message at the DEBUG log level, and adds a 'cause' attribute with
 // the given error, along with any other log attributes.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 //
 // # Log attributes
@@ -639,7 +639,7 @@ func (logger Logger) DebugErrorCause(err error, message string, logAttributes ..
 // DebugErrorCausef logs a formatted message (using [fmt.Sprintf]) at the DEBUG log level, and adds
 // a 'cause' attribute with the given error.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func (logger Logger) DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
@@ -650,7 +650,7 @@ func (logger Logger) DebugErrorCausef(err error, messageFormat string, formatArg
 // DebugErrors logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
 // given errors.
 //
-// Note that the DEBUG log level is typically disabled by default in most slog handlers, in which
+// Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func (logger Logger) DebugErrors(message string, errs ...error) {
 	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {

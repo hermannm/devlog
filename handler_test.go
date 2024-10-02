@@ -13,7 +13,7 @@ import (
 	"hermannm.dev/devlog"
 )
 
-// Tests our handler against the standard library test suite for structured logging handlers.
+// Tests our handler against the standard library test suite for structured log handlers.
 func TestSlog(t *testing.T) {
 	var buffer bytes.Buffer
 
@@ -199,7 +199,7 @@ want:
 	}
 }
 
-// slogtest.Run requires us to parse our logging output to a map[string]any.
+// slogtest.Run requires us to parse our log output to a map[string]any.
 func parseLogEntry(entryString string) (map[string]any, error) {
 	entry := make(map[string]any)
 
