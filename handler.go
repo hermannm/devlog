@@ -91,10 +91,10 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 	return &handler
 }
 
-// SetDefaultHandler is shorthand for:
+// InitDefaultLogHandler is shorthand for:
 //   - Calling [NewHandler] with the given arguments
 //   - Setting it as the default log handler with [slog.SetDefault]
-func SetDefaultHandler(output io.Writer, options *Options) {
+func InitDefaultLogHandler(output io.Writer, options *Options) {
 	handler := NewHandler(output, options)
 	slog.SetDefault(slog.New(handler))
 }

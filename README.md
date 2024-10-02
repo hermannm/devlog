@@ -65,7 +65,7 @@ import (
 
 func main() {
 	// Shorthand for calling NewHandler with slog.SetDefault
-	devlog.SetDefaultHandler(os.Stdout, nil)
+	devlog.InitDefaultLogHandler(os.Stdout, nil)
 
 	user := map[string]any{"id": 2, "username": "hermannm"}
 	err := errors.New("username taken")
