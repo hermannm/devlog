@@ -26,17 +26,13 @@ import (
 //	// Or a mix of the two:
 //	log.Info("Message", "attr1", "value1", slog.Int("attr2", 2))
 func Info(message string, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelInfo); enabled {
-		logger.log(message, logAttributes)
-	}
+	Default().log(slog.LevelInfo, message, nil, logAttributes, nil, nil)
 }
 
 // Infof creates a message from the given format and arguments using [fmt.Sprintf], and logs it at
 // the INFO log level. It uses the [slog.Default] logger.
 func Infof(messageFormat string, formatArgs ...any) {
-	if logger, enabled := defaultLogger(slog.LevelInfo); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
+	Default().log(slog.LevelInfo, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // Warn logs the given message at the WARN log level, along with any given log attributes.
@@ -54,17 +50,13 @@ func Infof(messageFormat string, formatArgs ...any) {
 //	// Or a mix of the two:
 //	log.Warn("Message", "attr1", "value1", slog.Int("attr2", 2))
 func Warn(message string, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(message, logAttributes)
-	}
+	Default().log(slog.LevelWarn, message, nil, logAttributes, nil, nil)
 }
 
 // Warnf creates a message from the given format and arguments using [fmt.Sprintf], and logs it at
 // the WARN log level. It uses the [slog.Default] logger.
 func Warnf(messageFormat string, formatArgs ...any) {
-	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
+	Default().log(slog.LevelWarn, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // Error logs the given error at the ERROR log level, along with any given log attributes.
@@ -82,9 +74,7 @@ func Warnf(messageFormat string, formatArgs ...any) {
 //	// Or a mix of the two:
 //	log.Error(err, "attr1", "value1", slog.Int("attr2", 2))
 func Error(err error, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(getErrorMessageAndCause(err, logAttributes))
-	}
+	Default().log(slog.LevelError, "", nil, logAttributes, err, nil)
 }
 
 // ErrorCause logs the given message at the ERROR log level, and adds a 'cause' attribute with the
@@ -102,25 +92,19 @@ func Error(err error, logAttributes ...any) {
 //	// Or a mix of the two:
 //	log.ErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func ErrorCause(err error, message string, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(message, appendCauseError(logAttributes, err))
-	}
+	Default().log(slog.LevelError, message, nil, logAttributes, err, nil)
 }
 
 // ErrorCausef logs a formatted message (using [fmt.Sprintf]) at the ERROR log level, and adds a
 // 'cause' attribute with the given error. It uses the [slog.Default] logger.
 func ErrorCausef(err error, messageFormat string, formatArgs ...any) {
-	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
-	}
+	Default().log(slog.LevelError, messageFormat, formatArgs, nil, err, nil)
 }
 
 // Errors logs the given message at the ERROR log level, and adds a 'cause' attribute with the given
 // errors. It uses the [slog.Default] logger.
-func Errors(message string, errs ...error) {
-	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(message, appendCauseErrors(nil, errs))
-	}
+func Errors(message string, errors ...error) {
+	Default().log(slog.LevelError, message, nil, nil, nil, errors)
 }
 
 // ErrorMessage logs the given message at the ERROR log level, along with any given log attributes.
@@ -138,17 +122,13 @@ func Errors(message string, errs ...error) {
 //	// Or a mix of the two:
 //	log.ErrorMessage("Message", "attr1", "value1", slog.Int("attr2", 2))
 func ErrorMessage(message string, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(message, logAttributes)
-	}
+	Default().log(slog.LevelError, message, nil, logAttributes, nil, nil)
 }
 
 // ErrorMessagef creates a message from the given format and arguments using [fmt.Sprintf], and logs
 // it at the ERROR log level. It uses the [slog.Default] logger.
 func ErrorMessagef(messageFormat string, formatArgs ...any) {
-	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
+	Default().log(slog.LevelError, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // WarnError logs the given error at the WARN log level, along with any given log attributes.
@@ -166,9 +146,7 @@ func ErrorMessagef(messageFormat string, formatArgs ...any) {
 //	// Or a mix of the two:
 //	log.WarnError(err, "attr1", "value1", slog.Int("attr2", 2))
 func WarnError(err error, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(getErrorMessageAndCause(err, logAttributes))
-	}
+	Default().log(slog.LevelWarn, "", nil, logAttributes, err, nil)
 }
 
 // WarnErrorCause logs the given message at the WARN log level, and adds a 'cause' attribute with
@@ -186,25 +164,19 @@ func WarnError(err error, logAttributes ...any) {
 //	// Or a mix of the two:
 //	log.WarnErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func WarnErrorCause(err error, message string, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(message, appendCauseError(logAttributes, err))
-	}
+	Default().log(slog.LevelWarn, message, nil, logAttributes, err, nil)
 }
 
 // WarnErrorCausef logs a formatted message (using [fmt.Sprintf]) at the WARN log level, and adds a
 // 'cause' attribute with the given error. It uses the [slog.Default] logger.
 func WarnErrorCausef(err error, messageFormat string, formatArgs ...any) {
-	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
-	}
+	Default().log(slog.LevelWarn, messageFormat, formatArgs, nil, err, nil)
 }
 
 // WarnErrors logs the given message at the WARN log level, and adds a 'cause' attribute with the
 // given errors. It uses the [slog.Default] logger.
-func WarnErrors(message string, errs ...error) {
-	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(message, appendCauseErrors(nil, errs))
-	}
+func WarnErrors(message string, errors ...error) {
+	Default().log(slog.LevelWarn, message, nil, nil, nil, errors)
 }
 
 // Debug logs the given message at the DEBUG log level, along with any given log attributes.
@@ -225,9 +197,7 @@ func WarnErrors(message string, errs ...error) {
 //	// Or a mix of the two:
 //	log.Debug("Message", "attr1", "value1", slog.Int("attr2", 2))
 func Debug(message string, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(message, logAttributes)
-	}
+	Default().log(slog.LevelDebug, message, nil, logAttributes, nil, nil)
 }
 
 // Debugf creates a message from the given format and arguments using [fmt.Sprintf], and logs it at
@@ -236,9 +206,7 @@ func Debug(message string, logAttributes ...any) {
 // Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func Debugf(messageFormat string, formatArgs ...any) {
-	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
+	Default().log(slog.LevelDebug, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // DebugError logs the given error at the DEBUG log level, along with any given log attributes.
@@ -259,9 +227,7 @@ func Debugf(messageFormat string, formatArgs ...any) {
 //	// Or a mix of the two:
 //	log.DebugError(err, "attr1", "value1", slog.Int("attr2", 2))
 func DebugError(err error, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(getErrorMessageAndCause(err, logAttributes))
-	}
+	Default().log(slog.LevelDebug, "", nil, logAttributes, err, nil)
 }
 
 // DebugErrorCause logs the given message at the DEBUG log level, and adds a 'cause' attribute with
@@ -282,9 +248,7 @@ func DebugError(err error, logAttributes ...any) {
 //	// Or a mix of the two:
 //	log.DebugErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func DebugErrorCause(err error, message string, logAttributes ...any) {
-	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(message, appendCauseError(logAttributes, err))
-	}
+	Default().log(slog.LevelDebug, message, nil, logAttributes, err, nil)
 }
 
 // DebugErrorCausef logs a formatted message (using [fmt.Sprintf]) at the DEBUG log level, and adds
@@ -293,9 +257,7 @@ func DebugErrorCause(err error, message string, logAttributes ...any) {
 // Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
-	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
-	}
+	Default().log(slog.LevelDebug, messageFormat, formatArgs, nil, err, nil)
 }
 
 // DebugErrors logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
@@ -303,10 +265,8 @@ func DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
 //
 // Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
-func DebugErrors(message string, errs ...error) {
-	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(message, appendCauseErrors(nil, errs))
-	}
+func DebugErrors(message string, errors ...error) {
+	Default().log(slog.LevelDebug, message, nil, nil, nil, errors)
 }
 
 // A Logger provides methods to produce structured log records for its output handler.
@@ -381,17 +341,13 @@ func (logger Logger) Handler() slog.Handler {
 //	// Or a mix of the two:
 //	logger.Info("Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) Info(message string, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelInfo); enabled {
-		level.log(message, logAttributes)
-	}
+	logger.log(slog.LevelInfo, message, nil, logAttributes, nil, nil)
 }
 
 // Infof creates a message from the given format and arguments using [fmt.Sprintf], and logs it at
 // the INFO log level.
 func (logger Logger) Infof(messageFormat string, formatArgs ...any) {
-	if level, enabled := logger.withLevel(slog.LevelInfo); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
+	logger.log(slog.LevelInfo, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // Warn logs the given message at the WARN log level, along with any given log attributes.
@@ -408,17 +364,13 @@ func (logger Logger) Infof(messageFormat string, formatArgs ...any) {
 //	// Or a mix of the two:
 //	logger.Warn("Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) Warn(message string, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(message, logAttributes)
-	}
+	logger.log(slog.LevelWarn, message, nil, logAttributes, nil, nil)
 }
 
 // Warnf creates a message from the given format and arguments using [fmt.Sprintf], and logs it at
 // the WARN log level.
 func (logger Logger) Warnf(messageFormat string, formatArgs ...any) {
-	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
+	logger.log(slog.LevelWarn, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // Error logs the given error at the ERROR log level, along with any given log attributes.
@@ -435,9 +387,7 @@ func (logger Logger) Warnf(messageFormat string, formatArgs ...any) {
 //	// Or a mix of the two:
 //	logger.Error(err, "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) Error(err error, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(getErrorMessageAndCause(err, logAttributes))
-	}
+	logger.log(slog.LevelError, "", nil, logAttributes, err, nil)
 }
 
 // ErrorCause logs the given message at the ERROR log level, and adds a 'cause' attribute with the
@@ -455,25 +405,19 @@ func (logger Logger) Error(err error, logAttributes ...any) {
 //	// Or a mix of the two:
 //	logger.ErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) ErrorCause(err error, message string, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(message, appendCauseError(logAttributes, err))
-	}
+	logger.log(slog.LevelError, message, nil, logAttributes, err, nil)
 }
 
 // ErrorCausef logs a formatted message (using [fmt.Sprintf]) at the ERROR log level, and adds a
 // 'cause' attribute with the given error.
 func (logger Logger) ErrorCausef(err error, messageFormat string, formatArgs ...any) {
-	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
-	}
+	logger.log(slog.LevelError, messageFormat, formatArgs, nil, err, nil)
 }
 
 // Errors logs the given message at the ERROR log level, and adds a 'cause' attribute with the given
 // errors.
-func (logger Logger) Errors(message string, errs ...error) {
-	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(message, appendCauseErrors(nil, errs))
-	}
+func (logger Logger) Errors(message string, errors ...error) {
+	logger.log(slog.LevelError, message, nil, nil, nil, errors)
 }
 
 // ErrorMessage logs the given message at the ERROR log level, along with any given log attributes.
@@ -490,17 +434,13 @@ func (logger Logger) Errors(message string, errs ...error) {
 //	// Or a mix of the two:
 //	logger.ErrorMessage("Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) ErrorMessage(message string, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(message, logAttributes)
-	}
+	logger.log(slog.LevelError, message, nil, logAttributes, nil, nil)
 }
 
 // ErrorMessagef creates a message from the given format and arguments using [fmt.Sprintf], and logs
 // it at the ERROR log level.
 func (logger Logger) ErrorMessagef(messageFormat string, formatArgs ...any) {
-	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
+	logger.log(slog.LevelError, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // WarnError logs the given error at the WARN log level, along with any given log attributes.
@@ -517,9 +457,7 @@ func (logger Logger) ErrorMessagef(messageFormat string, formatArgs ...any) {
 //	// Or a mix of the two:
 //	logger.WarnError(err, "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) WarnError(err error, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(getErrorMessageAndCause(err, logAttributes))
-	}
+	logger.log(slog.LevelWarn, "", nil, logAttributes, err, nil)
 }
 
 // WarnErrorCause logs the given message at the WARN log level, and adds a 'cause' attribute with
@@ -537,25 +475,19 @@ func (logger Logger) WarnError(err error, logAttributes ...any) {
 //	// Or a mix of the two:
 //	logger.WarnErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) WarnErrorCause(err error, message string, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(message, appendCauseError(logAttributes, err))
-	}
+	logger.log(slog.LevelWarn, message, nil, logAttributes, err, nil)
 }
 
 // WarnErrorCausef logs a formatted message (using [fmt.Sprintf]) at the WARN log level, and adds a
 // 'cause' attribute with the given error.
 func (logger Logger) WarnErrorCausef(err error, messageFormat string, formatArgs ...any) {
-	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
-	}
+	logger.log(slog.LevelWarn, messageFormat, formatArgs, nil, err, nil)
 }
 
 // WarnErrors logs the given message at the WARN log level, and adds a 'cause' attribute with the
 // given errors.
-func (logger Logger) WarnErrors(message string, errs ...error) {
-	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(message, appendCauseErrors(nil, errs))
-	}
+func (logger Logger) WarnErrors(message string, errors ...error) {
+	logger.log(slog.LevelWarn, message, nil, nil, nil, errors)
 }
 
 // Debug logs the given message at the DEBUG log level, along with any given log attributes.
@@ -575,9 +507,7 @@ func (logger Logger) WarnErrors(message string, errs ...error) {
 //	// Or a mix of the two:
 //	logger.Debug("Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) Debug(message string, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(message, logAttributes)
-	}
+	logger.log(slog.LevelDebug, message, nil, logAttributes, nil, nil)
 }
 
 // Debugf creates a message from the given format and arguments using [fmt.Sprintf], and logs it at
@@ -586,9 +516,7 @@ func (logger Logger) Debug(message string, logAttributes ...any) {
 // Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func (logger Logger) Debugf(messageFormat string, formatArgs ...any) {
-	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), nil)
-	}
+	logger.log(slog.LevelDebug, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // DebugError logs the given error at the DEBUG log level, along with any given log attributes.
@@ -608,9 +536,7 @@ func (logger Logger) Debugf(messageFormat string, formatArgs ...any) {
 //	// Or a mix of the two:
 //	logger.DebugError(err, "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) DebugError(err error, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(getErrorMessageAndCause(err, logAttributes))
-	}
+	logger.log(slog.LevelDebug, "", nil, logAttributes, err, nil)
 }
 
 // DebugErrorCause logs the given message at the DEBUG log level, and adds a 'cause' attribute with
@@ -631,9 +557,7 @@ func (logger Logger) DebugError(err error, logAttributes ...any) {
 //	// Or a mix of the two:
 //	logger.DebugErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) DebugErrorCause(err error, message string, logAttributes ...any) {
-	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(message, appendCauseError(logAttributes, err))
-	}
+	logger.log(slog.LevelDebug, message, nil, logAttributes, err, nil)
 }
 
 // DebugErrorCausef logs a formatted message (using [fmt.Sprintf]) at the DEBUG log level, and adds
@@ -642,9 +566,7 @@ func (logger Logger) DebugErrorCause(err error, message string, logAttributes ..
 // Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
 func (logger Logger) DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
-	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
-	}
+	logger.log(slog.LevelDebug, messageFormat, formatArgs, nil, err, nil)
 }
 
 // DebugErrors logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
@@ -652,10 +574,8 @@ func (logger Logger) DebugErrorCausef(err error, messageFormat string, formatArg
 //
 // Note that the DEBUG log level is typically disabled by default in most log handlers, in which
 // case no output will be produced.
-func (logger Logger) DebugErrors(message string, errs ...error) {
-	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(message, appendCauseErrors(nil, errs))
-	}
+func (logger Logger) DebugErrors(message string, errors ...error) {
+	logger.log(slog.LevelDebug, message, nil, nil, nil, errors)
 }
 
 // JSON returns a log attribute with the given key and value.
@@ -671,7 +591,7 @@ type jsonLogValue struct {
 	Value any
 }
 
-// Implements the devlog.jsonLogValuer interface.
+// JSONLogValue implements the devlog.jsonLogValuer interface.
 func (jsonValue jsonLogValue) JSONLogValue() any {
 	return jsonValue.Value
 }
@@ -681,14 +601,29 @@ func (jsonValue jsonLogValue) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonValue.Value)
 }
 
-type levelLogger struct {
-	handler slog.Handler
-	level   slog.Level
-}
+func (logger Logger) log(level slog.Level, message string, formatArgs []any, logAttributes []any, err error, errors []error) {
+	if !logger.handler.Enabled(context.Background(), level) {
+		return
+	}
 
-// Follows the example from the slog package for how to properly wrap its functions:
-// https://pkg.go.dev/golang.org/x/exp/slog#hdr-Wrapping_output_methods
-func (logger levelLogger) log(message string, logAttributes []any) {
+	if len(formatArgs) != 0 {
+		message = fmt.Sprintf(message, formatArgs...)
+	}
+
+	if err != nil {
+		if message == "" {
+			message, logAttributes = getErrorMessageAndCause(err, logAttributes)
+		} else {
+			logAttributes = appendCauseError(logAttributes, err)
+		}
+	} else if len(errors) != 0 {
+		logAttributes = appendCauseErrors(logAttributes, errors)
+	}
+
+	parsedAttributes := parseLogAttributes(logAttributes)
+
+	// Follows the example from the slog package for how to properly wrap its functions:
+	// https://pkg.go.dev/golang.org/x/exp/slog#hdr-Wrapping_output_methods
 	var programCounters [1]uintptr
 	// Skips 3, because we want to skip:
 	// - the call to runtime.Callers
@@ -696,56 +631,41 @@ func (logger levelLogger) log(message string, logAttributes []any) {
 	// - the call to the public log function that uses this function
 	runtime.Callers(3, programCounters[:])
 
-	record := slog.NewRecord(time.Now(), logger.level, message, programCounters[0])
+	record := slog.NewRecord(time.Now(), level, message, programCounters[0])
 	if len(logAttributes) > 0 {
-		record.Add(logAttributes...)
+		record.AddAttrs(parsedAttributes...)
 	}
 
 	_ = logger.handler.Handle(context.Background(), record)
 }
 
-func defaultLogger(level slog.Level) (logger levelLogger, enabled bool) {
-	logger = levelLogger{handler: slog.Default().Handler(), level: level}
-	return logger, logger.handler.Enabled(context.Background(), logger.level)
-}
-
-func (logger Logger) withLevel(level slog.Level) (withLevel levelLogger, enabled bool) {
-	return levelLogger{handler: logger.handler, level: level},
-		logger.handler.Enabled(context.Background(), level)
-}
-
-// Adapted from standard library:
+// Adapted from the standard library:
 // https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/slog/attr.go#L71
 func parseLogAttributes(unparsed []any) []slog.Attr {
 	var current slog.Attr
 	var parsed []slog.Attr
+
 	for len(unparsed) > 0 {
-		current, unparsed = parseLogAttribute(unparsed)
+		// - If unparsed[0] is an Attr, use that and continue
+		// - If unparsed[0] is a string, the first two elements are a key-value pair
+		// - Otherwise, it treats args[0] as a value with a missing key.
+		switch attr := unparsed[0].(type) {
+		case slog.Attr:
+			current, unparsed = attr, unparsed[1:]
+		case string:
+			if len(unparsed) == 1 {
+				current, unparsed = slog.String(badKey, attr), nil
+			} else {
+				current, unparsed = slog.Any(attr, unparsed[1]), unparsed[2:]
+			}
+		default:
+			current, unparsed = slog.Any(badKey, attr), unparsed[1:]
+		}
+
 		parsed = append(parsed, current)
 	}
-	return parsed
-}
 
-// parseLogAttribute turns a prefix of the nonempty args slice into an Attr and returns the
-// unconsumed portion of the slice.
-//   - If args[0] is an Attr, it returns it.
-//   - If args[0] is a string, it treats the first two elements as a key-value pair.
-//   - Otherwise, it treats args[0] as a value with a missing key.
-//
-// Adapted from standard library:
-// https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/slog/record.go#L168
-func parseLogAttribute(attrs []any) (parsed slog.Attr, remaining []any) {
-	switch attr := attrs[0].(type) {
-	case string:
-		if len(attrs) == 1 {
-			return slog.String(badKey, attr), nil
-		}
-		return slog.Any(attr, attrs[1]), attrs[2:]
-	case slog.Attr:
-		return attr, attrs[1:]
-	default:
-		return slog.Any(badKey, attr), attrs[1:]
-	}
+	return parsed
 }
 
 // Same key as the one the standard library uses for attributes that failed to parse:
