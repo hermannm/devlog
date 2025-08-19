@@ -610,17 +610,17 @@ func (logger Logger) log(level slog.Level, message string, formatArgs []any, log
 		message = fmt.Sprintf(message, formatArgs...)
 	}
 
+	parsedAttributes := parseLogAttributes(logAttributes)
+
 	if err != nil {
 		if message == "" {
-			message, logAttributes = getErrorMessageAndCause(err, logAttributes)
+			message, parsedAttributes = getErrorMessageAndCause(err, parsedAttributes)
 		} else {
-			logAttributes = appendCauseError(logAttributes, err)
+			parsedAttributes = appendCauseError(parsedAttributes, err)
 		}
 	} else if len(errors) != 0 {
-		logAttributes = appendCauseErrors(logAttributes, errors)
+		parsedAttributes = appendCauseErrors(parsedAttributes, errors)
 	}
-
-	parsedAttributes := parseLogAttributes(logAttributes)
 
 	// Follows the example from the slog package for how to properly wrap its functions:
 	// https://pkg.go.dev/golang.org/x/exp/slog#hdr-Wrapping_output_methods

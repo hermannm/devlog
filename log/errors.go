@@ -40,34 +40,34 @@ type wrappedErrorsWithLogAttributes interface {
 	hasLogAttributes
 }
 
-func appendCauseError(logAttributes []any, err error) []any {
+func appendCauseError(logAttributes []slog.Attr, err error) []slog.Attr {
 	errorLogValue, logAttributes := buildErrorLogValue(err, logAttributes)
 	return prependCauseAttribute(errorLogValue, logAttributes)
 }
 
-func appendCauseErrors(logAttributes []any, errs []error) []any {
+func appendCauseErrors(logAttributes []slog.Attr, errs []error) []slog.Attr {
 	errorLogValue, logAttributes := buildErrorListLogValue(errs, logAttributes, false)
 	return prependCauseAttribute(errorLogValue, logAttributes)
 }
 
-func buildErrorLogValue(err error, logAttributes []any) (errorLogValue any, newLogAttributes []any) {
+func buildErrorLogValue(err error, logAttributes []slog.Attr) (errorLogValue any, newLogAttributes []slog.Attr) {
 	switch err := err.(type) {
 	case wrappedErrorsWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		errorLogValue := initErrorLogValue(err.WrappingMessage(), 2)
 		return appendErrors(errorLogValue, logAttributes, err.Unwrap())
 	case wrappedErrors:
 		errorLogValue := initErrorLogValue(err.WrappingMessage(), 2)
 		return appendErrors(errorLogValue, logAttributes, err.Unwrap())
 	case wrappedErrorWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		errorLogValue := initErrorLogValue(err.WrappingMessage(), 4)
 		return appendError(errorLogValue, logAttributes, err.Unwrap(), false)
 	case wrappedError:
 		errorLogValue := initErrorLogValue(err.WrappingMessage(), 4)
 		return appendError(errorLogValue, logAttributes, err.Unwrap(), false)
 	case errorWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		return errorLogValueFromPlainError(err), logAttributes
 	default:
 		return errorLogValueFromPlainError(err), logAttributes
@@ -76,23 +76,23 @@ func buildErrorLogValue(err error, logAttributes []any) (errorLogValue any, newL
 
 func appendError(
 	errorLogValue []any,
-	logAttributes []any,
+	logAttributes []slog.Attr,
 	err error,
 	partOfList bool,
-) (newErrorLogValue []any, newLogAttributes []any) {
+) (newErrorLogValue []any, newLogAttributes []slog.Attr) {
 	switch err := err.(type) {
 	case wrappedErrorsWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		return appendWrappedCauseErrors(errorLogValue, logAttributes, err, partOfList)
 	case wrappedErrors:
 		return appendWrappedCauseErrors(errorLogValue, logAttributes, err, partOfList)
 	case wrappedErrorWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		return appendWrappedCauseError(errorLogValue, logAttributes, err, partOfList)
 	case wrappedError:
 		return appendWrappedCauseError(errorLogValue, logAttributes, err, partOfList)
 	case errorWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		errorLogValue = appendPlainError(errorLogValue, err, partOfList)
 		return errorLogValue, logAttributes
 	default:
@@ -103,9 +103,9 @@ func appendError(
 
 func appendErrors(
 	errorLogValue []any,
-	logAttributes []any,
+	logAttributes []slog.Attr,
 	errors []error,
-) (newErrorLogValue []any, newLogAttributes []any) {
+) (newErrorLogValue []any, newLogAttributes []slog.Attr) {
 	errorListLogValue, logAttributes := buildErrorListLogValue(errors, logAttributes, false)
 	if errorListLogValue != nil {
 		errorLogValue = append(errorLogValue, errorListLogValue)
@@ -115,9 +115,9 @@ func appendErrors(
 
 func buildErrorListLogValue(
 	errors []error,
-	logAttributes []any,
+	logAttributes []slog.Attr,
 	partOfList bool,
-) (errorLogValue any, newLogAttributes []any) {
+) (errorLogValue any, newLogAttributes []slog.Attr) {
 	switch len(errors) {
 	case 0:
 		return nil, logAttributes
@@ -136,10 +136,10 @@ func buildErrorListLogValue(
 
 func appendWrappedCauseError(
 	errorLogValue []any,
-	logAttributes []any,
+	logAttributes []slog.Attr,
 	err wrappedError,
 	partOfList bool,
-) (newErrorLogValue []any, newLogAttributes []any) {
+) (newErrorLogValue []any, newLogAttributes []slog.Attr) {
 	errorLogValue = appendToErrorLogValue(errorLogValue, err.WrappingMessage(), 4)
 
 	if partOfList {
@@ -157,10 +157,10 @@ func appendWrappedCauseError(
 
 func appendWrappedCauseErrors(
 	errorLogValue []any,
-	logAttributes []any,
+	logAttributes []slog.Attr,
 	err wrappedErrors,
 	partOfList bool,
-) (newErrorLogValue []any, newLogAttributes []any) {
+) (newErrorLogValue []any, newLogAttributes []slog.Attr) {
 	errorLogValue = append(errorLogValue, err.WrappingMessage())
 	errorListLogValue, logAttributes := buildErrorListLogValue(err.Unwrap(), logAttributes, partOfList)
 	if errorListLogValue != nil {
@@ -208,55 +208,47 @@ func appendToErrorLogValue(errorLogValue []any, errorItem any, newCapacity int) 
 	return errorLogValue
 }
 
-func appendAttributes(logAttributes []any, newLogAttributes []slog.Attr) []any {
-	logAttributes = slices.Grow(logAttributes, len(newLogAttributes)+1)
-	for _, newAttr := range newLogAttributes {
-		logAttributes = append(logAttributes, newAttr)
-	}
-	return logAttributes
-}
-
-func prependCauseAttribute(errorLogValue any, logAttributes []any) (newLogAttributes []any) {
+func prependCauseAttribute(
+	errorLogValue any,
+	logAttributes []slog.Attr,
+) (newLogAttributes []slog.Attr) {
 	if errorLogValue == nil {
 		return logAttributes
 	}
 
-	var causeAttribute any = slog.Any("cause", errorLogValue)
-	return prepend(logAttributes, causeAttribute)
-}
+	causeAttribute := slog.Any("cause", errorLogValue)
 
-func prepend[E any](elements []E, newElement E) []E {
-	if len(elements) == 0 {
-		return []E{newElement}
+	if len(logAttributes) == 0 {
+		return []slog.Attr{causeAttribute}
 	} else {
-		return slices.Insert(elements, 0, newElement)
+		return slices.Insert(logAttributes, 0, causeAttribute)
 	}
 }
 
 func getErrorMessageAndCause(
 	err error,
-	logAttributes []any,
-) (message string, newLogAttributes []any) {
+	logAttributes []slog.Attr,
+) (message string, newLogAttributes []slog.Attr) {
 	switch err := err.(type) {
 	case wrappedErrorsWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		return err.WrappingMessage(), appendCauseErrors(logAttributes, err.Unwrap())
 	case wrappedErrors:
 		return err.WrappingMessage(), appendCauseErrors(logAttributes, err.Unwrap())
 	case wrappedErrorWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		return err.WrappingMessage(), appendCauseError(logAttributes, err.Unwrap())
 	case wrappedError:
 		return err.WrappingMessage(), appendCauseError(logAttributes, err.Unwrap())
 	case errorWithLogAttributes:
-		logAttributes = appendAttributes(logAttributes, err.LogAttrs())
+		logAttributes = append(logAttributes, err.LogAttrs()...)
 		return getErrorMessageAndCauseFromPlainError(err, logAttributes)
 	default:
 		return getErrorMessageAndCauseFromPlainError(err, logAttributes)
 	}
 }
 
-func getErrorMessageAndCauseFromPlainError(err error, logAttributes []any) (message string, newLogAttributes []any) {
+func getErrorMessageAndCauseFromPlainError(err error, logAttributes []slog.Attr) (message string, newLogAttributes []slog.Attr) {
 	splits, _, firstSplit := splitLongErrorMessage(err.Error())
 	if len(splits) > 1 {
 		errorLogValue := splits[1:]
