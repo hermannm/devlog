@@ -45,29 +45,29 @@ func appendCauseError(logAttributes []slog.Attr, err error) []slog.Attr {
 	return prependCauseAttribute(errorLogValue, logAttributes)
 }
 
-func appendCauseErrors(logAttributes []slog.Attr, errs []error) []slog.Attr {
-	errorLogValue, logAttributes := buildErrorListLogValue(errs, logAttributes, false)
+func appendCauseErrors(logAttributes []slog.Attr, errors []error) []slog.Attr {
+	errorLogValue, logAttributes := buildErrorListLogValue(errors, logAttributes, false)
 	return prependCauseAttribute(errorLogValue, logAttributes)
 }
 
 func buildErrorLogValue(err error, logAttributes []slog.Attr) (errorLogValue any, newLogAttributes []slog.Attr) {
 	switch err := err.(type) {
 	case wrappedErrorsWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		errorLogValue := initErrorLogValue(err.WrappingMessage(), 2)
 		return appendErrors(errorLogValue, logAttributes, err.Unwrap())
 	case wrappedErrors:
 		errorLogValue := initErrorLogValue(err.WrappingMessage(), 2)
 		return appendErrors(errorLogValue, logAttributes, err.Unwrap())
 	case wrappedErrorWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		errorLogValue := initErrorLogValue(err.WrappingMessage(), 4)
 		return appendError(errorLogValue, logAttributes, err.Unwrap(), false)
 	case wrappedError:
 		errorLogValue := initErrorLogValue(err.WrappingMessage(), 4)
 		return appendError(errorLogValue, logAttributes, err.Unwrap(), false)
 	case errorWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		return errorLogValueFromPlainError(err), logAttributes
 	default:
 		return errorLogValueFromPlainError(err), logAttributes
@@ -82,17 +82,17 @@ func appendError(
 ) (newErrorLogValue []any, newLogAttributes []slog.Attr) {
 	switch err := err.(type) {
 	case wrappedErrorsWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		return appendWrappedCauseErrors(errorLogValue, logAttributes, err, partOfList)
 	case wrappedErrors:
 		return appendWrappedCauseErrors(errorLogValue, logAttributes, err, partOfList)
 	case wrappedErrorWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		return appendWrappedCauseError(errorLogValue, logAttributes, err, partOfList)
 	case wrappedError:
 		return appendWrappedCauseError(errorLogValue, logAttributes, err, partOfList)
 	case errorWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		errorLogValue = appendPlainError(errorLogValue, err, partOfList)
 		return errorLogValue, logAttributes
 	default:
@@ -231,17 +231,17 @@ func getErrorMessageAndCause(
 ) (message string, newLogAttributes []slog.Attr) {
 	switch err := err.(type) {
 	case wrappedErrorsWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		return err.WrappingMessage(), appendCauseErrors(logAttributes, err.Unwrap())
 	case wrappedErrors:
 		return err.WrappingMessage(), appendCauseErrors(logAttributes, err.Unwrap())
 	case wrappedErrorWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		return err.WrappingMessage(), appendCauseError(logAttributes, err.Unwrap())
 	case wrappedError:
 		return err.WrappingMessage(), appendCauseError(logAttributes, err.Unwrap())
 	case errorWithLogAttributes:
-		logAttributes = append(logAttributes, err.LogAttrs()...)
+		logAttributes = appendAttrs(logAttributes, err.LogAttrs())
 		return getErrorMessageAndCauseFromPlainError(err, logAttributes)
 	default:
 		return getErrorMessageAndCauseFromPlainError(err, logAttributes)
