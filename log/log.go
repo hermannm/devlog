@@ -103,7 +103,7 @@ func Error(err error, logAttributes ...any) {
 //	log.ErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func ErrorCause(err error, message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(message, appendErrorCause(logAttributes, err))
+		logger.log(message, appendCauseError(logAttributes, err))
 	}
 }
 
@@ -111,7 +111,7 @@ func ErrorCause(err error, message string, logAttributes ...any) {
 // 'cause' attribute with the given error. It uses the [slog.Default] logger.
 func ErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
+		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
 	}
 }
 
@@ -119,7 +119,7 @@ func ErrorCausef(err error, messageFormat string, formatArgs ...any) {
 // errors. It uses the [slog.Default] logger.
 func Errors(message string, errs ...error) {
 	if logger, enabled := defaultLogger(slog.LevelError); enabled {
-		logger.log(message, appendErrorCauses(nil, errs))
+		logger.log(message, appendCauseErrors(nil, errs))
 	}
 }
 
@@ -187,7 +187,7 @@ func WarnError(err error, logAttributes ...any) {
 //	log.WarnErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func WarnErrorCause(err error, message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(message, appendErrorCause(logAttributes, err))
+		logger.log(message, appendCauseError(logAttributes, err))
 	}
 }
 
@@ -195,7 +195,7 @@ func WarnErrorCause(err error, message string, logAttributes ...any) {
 // 'cause' attribute with the given error. It uses the [slog.Default] logger.
 func WarnErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
+		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
 	}
 }
 
@@ -203,7 +203,7 @@ func WarnErrorCausef(err error, messageFormat string, formatArgs ...any) {
 // given errors. It uses the [slog.Default] logger.
 func WarnErrors(message string, errs ...error) {
 	if logger, enabled := defaultLogger(slog.LevelWarn); enabled {
-		logger.log(message, appendErrorCauses(nil, errs))
+		logger.log(message, appendCauseErrors(nil, errs))
 	}
 }
 
@@ -283,7 +283,7 @@ func DebugError(err error, logAttributes ...any) {
 //	log.DebugErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func DebugErrorCause(err error, message string, logAttributes ...any) {
 	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(message, appendErrorCause(logAttributes, err))
+		logger.log(message, appendCauseError(logAttributes, err))
 	}
 }
 
@@ -294,7 +294,7 @@ func DebugErrorCause(err error, message string, logAttributes ...any) {
 // case no output will be produced.
 func DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
+		logger.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
 	}
 }
 
@@ -305,7 +305,7 @@ func DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
 // case no output will be produced.
 func DebugErrors(message string, errs ...error) {
 	if logger, enabled := defaultLogger(slog.LevelDebug); enabled {
-		logger.log(message, appendErrorCauses(nil, errs))
+		logger.log(message, appendCauseErrors(nil, errs))
 	}
 }
 
@@ -456,7 +456,7 @@ func (logger Logger) Error(err error, logAttributes ...any) {
 //	logger.ErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) ErrorCause(err error, message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(message, appendErrorCause(logAttributes, err))
+		level.log(message, appendCauseError(logAttributes, err))
 	}
 }
 
@@ -464,7 +464,7 @@ func (logger Logger) ErrorCause(err error, message string, logAttributes ...any)
 // 'cause' attribute with the given error.
 func (logger Logger) ErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
+		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
 	}
 }
 
@@ -472,7 +472,7 @@ func (logger Logger) ErrorCausef(err error, messageFormat string, formatArgs ...
 // errors.
 func (logger Logger) Errors(message string, errs ...error) {
 	if level, enabled := logger.withLevel(slog.LevelError); enabled {
-		level.log(message, appendErrorCauses(nil, errs))
+		level.log(message, appendCauseErrors(nil, errs))
 	}
 }
 
@@ -538,7 +538,7 @@ func (logger Logger) WarnError(err error, logAttributes ...any) {
 //	logger.WarnErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) WarnErrorCause(err error, message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(message, appendErrorCause(logAttributes, err))
+		level.log(message, appendCauseError(logAttributes, err))
 	}
 }
 
@@ -546,7 +546,7 @@ func (logger Logger) WarnErrorCause(err error, message string, logAttributes ...
 // 'cause' attribute with the given error.
 func (logger Logger) WarnErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
+		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
 	}
 }
 
@@ -554,7 +554,7 @@ func (logger Logger) WarnErrorCausef(err error, messageFormat string, formatArgs
 // given errors.
 func (logger Logger) WarnErrors(message string, errs ...error) {
 	if level, enabled := logger.withLevel(slog.LevelWarn); enabled {
-		level.log(message, appendErrorCauses(nil, errs))
+		level.log(message, appendCauseErrors(nil, errs))
 	}
 }
 
@@ -632,7 +632,7 @@ func (logger Logger) DebugError(err error, logAttributes ...any) {
 //	logger.DebugErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
 func (logger Logger) DebugErrorCause(err error, message string, logAttributes ...any) {
 	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(message, appendErrorCause(logAttributes, err))
+		level.log(message, appendCauseError(logAttributes, err))
 	}
 }
 
@@ -643,7 +643,7 @@ func (logger Logger) DebugErrorCause(err error, message string, logAttributes ..
 // case no output will be produced.
 func (logger Logger) DebugErrorCausef(err error, messageFormat string, formatArgs ...any) {
 	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendErrorCause(nil, err))
+		level.log(fmt.Sprintf(messageFormat, formatArgs...), appendCauseError(nil, err))
 	}
 }
 
@@ -654,7 +654,7 @@ func (logger Logger) DebugErrorCausef(err error, messageFormat string, formatArg
 // case no output will be produced.
 func (logger Logger) DebugErrors(message string, errs ...error) {
 	if level, enabled := logger.withLevel(slog.LevelDebug); enabled {
-		level.log(message, appendErrorCauses(nil, errs))
+		level.log(message, appendCauseErrors(nil, errs))
 	}
 }
 
@@ -741,10 +741,8 @@ func parseLogAttribute(attrs []any) (parsed slog.Attr, remaining []any) {
 			return slog.String(badKey, attr), nil
 		}
 		return slog.Any(attr, attrs[1]), attrs[2:]
-
 	case slog.Attr:
 		return attr, attrs[1:]
-
 	default:
 		return slog.Any(badKey, attr), attrs[1:]
 	}
