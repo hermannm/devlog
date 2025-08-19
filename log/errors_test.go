@@ -2,7 +2,6 @@ package log_test
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"hermannm.dev/devlog/log"
@@ -13,7 +12,7 @@ func TestWrappedError(t *testing.T) {
 		log.Error(ctx, wrappedError{"wrapping message", errors.New("wrapped error")})
 	})
 
-	assertContains(t, output, `"msg":"wrapping message"`, `"cause":"wrapped error"`)
+	verifyLogOutput(t, output, "ERROR", "wrapping message", `"cause":"wrapped error"`)
 }
 
 func TestNestedWrappedError(t *testing.T) {
@@ -27,10 +26,11 @@ func TestNestedWrappedError(t *testing.T) {
 		)
 	})
 
-	assertContains(
+	verifyLogOutput(
 		t,
 		output,
-		`"msg":"wrapping message 1"`,
+		"ERROR",
+		"wrapping message 1",
 		`"cause":["wrapping message 2","wrapped error"]`,
 	)
 }
@@ -46,10 +46,11 @@ func TestWrappedErrors(t *testing.T) {
 		)
 	})
 
-	assertContains(
+	verifyLogOutput(
 		t,
 		output,
-		`"msg":"wrapping message"`,
+		"ERROR",
+		"wrapping message",
 		`"cause":["wrapped error 1","wrapped error 2"]`,
 	)
 }
@@ -74,10 +75,11 @@ func TestNestedWrappedErrors(t *testing.T) {
 		)
 	})
 
-	assertContains(
+	verifyLogOutput(
 		t,
 		output,
-		`"msg":"invalid user data"`,
+		"ERROR",
+		"invalid user data",
 		`"cause":["invalid email",["missing @","missing top-level domain"],"invalid username",["username exceeds 30 characters"]]`,
 	)
 }
@@ -87,10 +89,11 @@ func TestSingleWrappedErrors(t *testing.T) {
 		log.Error(ctx, wrappedErrors{"wrapping message", []error{errors.New("wrapped error")}})
 	})
 
-	assertContains(
+	verifyLogOutput(
 		t,
 		output,
-		`"msg":"wrapping message"`,
+		"ERROR",
+		"wrapping message",
 		`"cause":"wrapped error"`,
 	)
 }
@@ -109,10 +112,11 @@ func TestLongErrorMessage(t *testing.T) {
 		)
 	})
 
-	assertContains(
+	verifyLogOutput(
 		t,
 		output,
-		`"msg":"this error message is more than 16 characters"`,
+		"ERROR",
+		"this error message is more than 16 characters",
 		`"cause":["less than 16: now again longer than 16 characters",`+
 			`"this is a long error message, of barely less than 64 characters",`+
 			`"short message"]`,
@@ -129,18 +133,13 @@ func TestUnsplittableErrorMessage(t *testing.T) {
 		)
 	})
 
-	assertContains(
+	verifyLogOutput(
 		t,
 		output,
-		`"msg":"this is a super long error message of more than 64 characters in total"`,
+		"ERROR",
+		"this is a super long error message of more than 64 characters in total",
+		"",
 	)
-
-	if strings.Contains(output, `"cause"`) {
-		t.Fatalf(
-			"expected unsplittable error message to give no 'cause' attribute, but got: %s",
-			output,
-		)
-	}
 }
 
 func TestLongMultilineErrorMessage(t *testing.T) {
@@ -154,10 +153,11 @@ another newline message`),
 		)
 	})
 
-	assertContains(
+	verifyLogOutput(
 		t,
 		output,
-		`"msg":"this error message ends in a newline and colon"`,
+		"ERROR",
+		"this error message ends in a newline and colon",
 		`"cause":["more than 16 characters",`+
 			`"this message ends in a newline\nanother message ending in a newline and colon:\nanother newline message"]`,
 	)
