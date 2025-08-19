@@ -11,15 +11,12 @@ func AddContextAttrs(parent context.Context, logAttributes ...any) context.Conte
 	}
 
 	existingAttrs := getContextAttrs(parent)
-	if len(existingAttrs) != 0 {
-		newAttrs := make([]slog.Attr, 0, len(existingAttrs)+len(logAttributes))
-		copy(newAttrs, existingAttrs)
-		newAttrs = parseAttrs(newAttrs, logAttributes)
-		return context.WithValue(parent, contextAttrsKey, newAttrs)
-	}
 
-	attrs := make([]slog.Attr, 0, len(logAttributes))
+	attrs := make([]slog.Attr, 0, len(existingAttrs)+len(logAttributes))
+	// Add new attrs first, so the most recent attrs show up first in the logs
 	attrs = parseAttrs(attrs, logAttributes)
+	attrs = appendAttrs(attrs, existingAttrs)
+
 	return context.WithValue(parent, contextAttrsKey, attrs)
 }
 
