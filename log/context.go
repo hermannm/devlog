@@ -6,6 +6,10 @@ import (
 )
 
 func AddContextAttrs(parent context.Context, logAttributes ...any) context.Context {
+	if parent == nil {
+		parent = context.Background()
+	}
+
 	existingAttrs := getContextAttrs(parent)
 	if len(existingAttrs) != 0 {
 		newAttrs := make([]slog.Attr, 0, len(existingAttrs)+len(logAttributes))
