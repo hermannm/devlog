@@ -20,11 +20,11 @@ import (
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.Info("Message", "attr1", "value1", "attr2", 2)
+//	log.Info(ctx, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.Info("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.Info(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.Info("Message", "attr1", "value1", slog.Int("attr2", 2))
+//	log.Info(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
 func Info(ctx context.Context, message string, logAttributes ...any) {
 	Default().log(ctx, slog.LevelInfo, message, nil, logAttributes, nil, nil)
 }
@@ -44,11 +44,11 @@ func Infof(ctx context.Context, messageFormat string, formatArgs ...any) {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.Warn("Message", "attr1", "value1", "attr2", 2)
+//	log.Warn(ctx, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.Warn("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.Warn(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.Warn("Message", "attr1", "value1", slog.Int("attr2", 2))
+//	log.Warn(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
 func Warn(ctx context.Context, message string, logAttributes ...any) {
 	Default().log(ctx, slog.LevelWarn, message, nil, logAttributes, nil, nil)
 }
@@ -68,11 +68,11 @@ func Warnf(ctx context.Context, messageFormat string, formatArgs ...any) {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.Error(err, "attr1", "value1", "attr2", 2)
+//	log.Error(ctx, err, "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.Error(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.Error(ctx, err, slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.Error(err, "attr1", "value1", slog.Int("attr2", 2))
+//	log.Error(ctx, err, "key1", "value1", slog.Int("key2", 2))
 func Error(ctx context.Context, err error, logAttributes ...any) {
 	Default().log(ctx, slog.LevelError, "", nil, logAttributes, err, nil)
 }
@@ -86,11 +86,11 @@ func Error(ctx context.Context, err error, logAttributes ...any) {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.ErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	log.ErrorCause(ctx, err, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.ErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.ErrorCause(ctx, err, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.ErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+//	log.ErrorCause(ctx, err, "Message", "key1", "value1", slog.Int("key2", 2))
 func ErrorCause(ctx context.Context, err error, message string, logAttributes ...any) {
 	Default().log(ctx, slog.LevelError, message, nil, logAttributes, err, nil)
 }
@@ -116,11 +116,11 @@ func Errors(ctx context.Context, message string, errors ...error) {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.ErrorMessage("Message", "attr1", "value1", "attr2", 2)
+//	log.ErrorMessage(ctx, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.ErrorMessage("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.ErrorMessage(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.ErrorMessage("Message", "attr1", "value1", slog.Int("attr2", 2))
+//	log.ErrorMessage(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
 func ErrorMessage(ctx context.Context, message string, logAttributes ...any) {
 	Default().log(ctx, slog.LevelError, message, nil, logAttributes, nil, nil)
 }
@@ -140,11 +140,11 @@ func ErrorMessagef(ctx context.Context, messageFormat string, formatArgs ...any)
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.WarnError(err, "attr1", "value1", "attr2", 2)
+//	log.WarnError(ctx, err, "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.WarnError(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.WarnError(ctx, err, slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.WarnError(err, "attr1", "value1", slog.Int("attr2", 2))
+//	log.WarnError(ctx, err, "key1", "value1", slog.Int("key2", 2))
 func WarnError(ctx context.Context, err error, logAttributes ...any) {
 	Default().log(ctx, slog.LevelWarn, "", nil, logAttributes, err, nil)
 }
@@ -158,11 +158,11 @@ func WarnError(ctx context.Context, err error, logAttributes ...any) {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.WarnErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	log.WarnErrorCause(ctx, err, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.WarnErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.WarnErrorCause(ctx, err, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.WarnErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+//	log.WarnErrorCause(ctx, err, "Message", "key1", "value1", slog.Int("key2", 2))
 func WarnErrorCause(ctx context.Context, err error, message string, logAttributes ...any) {
 	Default().log(ctx, slog.LevelWarn, message, nil, logAttributes, err, nil)
 }
@@ -191,11 +191,11 @@ func WarnErrors(ctx context.Context, message string, errors ...error) {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.Debug("Message", "attr1", "value1", "attr2", 2)
+//	log.Debug(ctx, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.Debug("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.Debug(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.Debug("Message", "attr1", "value1", slog.Int("attr2", 2))
+//	log.Debug(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
 func Debug(ctx context.Context, message string, logAttributes ...any) {
 	Default().log(ctx, slog.LevelDebug, message, nil, logAttributes, nil, nil)
 }
@@ -221,11 +221,11 @@ func Debugf(ctx context.Context, messageFormat string, formatArgs ...any) {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.DebugError(err, "attr1", "value1", "attr2", 2)
+//	log.DebugError(ctx, err, "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.DebugError(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.DebugError(ctx, err, slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.DebugError(err, "attr1", "value1", slog.Int("attr2", 2))
+//	log.DebugError(ctx, err, "key1", "value1", slog.Int("key2", 2))
 func DebugError(ctx context.Context, err error, logAttributes ...any) {
 	Default().log(ctx, slog.LevelDebug, "", nil, logAttributes, err, nil)
 }
@@ -242,11 +242,11 @@ func DebugError(ctx context.Context, err error, logAttributes ...any) {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	log.DebugErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	log.DebugErrorCause(ctx, err, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	log.DebugErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	log.DebugErrorCause(ctx, err, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	log.DebugErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+//	log.DebugErrorCause(ctx, err, "Message", "key1", "value1", slog.Int("key2", 2))
 func DebugErrorCause(ctx context.Context, err error, message string, logAttributes ...any) {
 	Default().log(ctx, slog.LevelDebug, message, nil, logAttributes, err, nil)
 }
@@ -298,11 +298,11 @@ func Default() Logger {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.With("attr1", "value1", "attr2", 2)
+//	logger.With("key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.With(slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.With(slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.With("attr1", "value1", slog.Int("attr2", 2))
+//	logger.With("key1", "value1", slog.Int("key2", 2))
 func (logger Logger) With(logAttributes ...any) Logger {
 	if len(logAttributes) == 0 {
 		return logger
@@ -335,11 +335,11 @@ func (logger Logger) Handler() slog.Handler {
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.Info("Message", "attr1", "value1", "attr2", 2)
+//	logger.Info(ctx, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.Info("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.Info(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.Info("Message", "attr1", "value1", slog.Int("attr2", 2))
+//	logger.Info(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) Info(ctx context.Context, message string, logAttributes ...any) {
 	logger.log(ctx, slog.LevelInfo, message, nil, logAttributes, nil, nil)
 }
@@ -358,11 +358,11 @@ func (logger Logger) Infof(ctx context.Context, messageFormat string, formatArgs
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.Warn("Message", "attr1", "value1", "attr2", 2)
+//	logger.Warn(ctx, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.Warn("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.Warn(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.Warn("Message", "attr1", "value1", slog.Int("attr2", 2))
+//	logger.Warn(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) Warn(ctx context.Context, message string, logAttributes ...any) {
 	logger.log(ctx, slog.LevelWarn, message, nil, logAttributes, nil, nil)
 }
@@ -381,11 +381,11 @@ func (logger Logger) Warnf(ctx context.Context, messageFormat string, formatArgs
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.Error(err, "attr1", "value1", "attr2", 2)
+//	logger.Error(ctx, err, "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.Error(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.Error(ctx, err, slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.Error(err, "attr1", "value1", slog.Int("attr2", 2))
+//	logger.Error(ctx, err, "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) Error(ctx context.Context, err error, logAttributes ...any) {
 	logger.log(ctx, slog.LevelError, "", nil, logAttributes, err, nil)
 }
@@ -399,11 +399,11 @@ func (logger Logger) Error(ctx context.Context, err error, logAttributes ...any)
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.ErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	logger.ErrorCause(ctx, err, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.ErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.ErrorCause(ctx, err, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.ErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+//	logger.ErrorCause(ctx, err, "Message", "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) ErrorCause(
 	ctx context.Context,
 	err error,
@@ -438,11 +438,11 @@ func (logger Logger) Errors(ctx context.Context, message string, errors ...error
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.ErrorMessage("Message", "attr1", "value1", "attr2", 2)
+//	logger.ErrorMessage(ctx, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.ErrorMessage("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.ErrorMessage(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.ErrorMessage("Message", "attr1", "value1", slog.Int("attr2", 2))
+//	logger.ErrorMessage(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) ErrorMessage(ctx context.Context, message string, logAttributes ...any) {
 	logger.log(ctx, slog.LevelError, message, nil, logAttributes, nil, nil)
 }
@@ -461,11 +461,11 @@ func (logger Logger) ErrorMessagef(ctx context.Context, messageFormat string, fo
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.WarnError(err, "attr1", "value1", "attr2", 2)
+//	logger.WarnError(ctx, err, "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.WarnError(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.WarnError(ctx, err, slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.WarnError(err, "attr1", "value1", slog.Int("attr2", 2))
+//	logger.WarnError(ctx, err, "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) WarnError(ctx context.Context, err error, logAttributes ...any) {
 	logger.log(ctx, slog.LevelWarn, "", nil, logAttributes, err, nil)
 }
@@ -479,11 +479,11 @@ func (logger Logger) WarnError(ctx context.Context, err error, logAttributes ...
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.WarnErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	logger.WarnErrorCause(ctx, err, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.WarnErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.WarnErrorCause(ctx, err, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.WarnErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+//	logger.WarnErrorCause(ctx, err, "Message", "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) WarnErrorCause(
 	ctx context.Context,
 	err error,
@@ -521,11 +521,11 @@ func (logger Logger) WarnErrors(ctx context.Context, message string, errors ...e
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.Debug("Message", "attr1", "value1", "attr2", 2)
+//	logger.Debug(ctx, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.Debug("Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.Debug(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.Debug("Message", "attr1", "value1", slog.Int("attr2", 2))
+//	logger.Debug(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) Debug(ctx context.Context, message string, logAttributes ...any) {
 	logger.log(ctx, slog.LevelDebug, message, nil, logAttributes, nil, nil)
 }
@@ -550,11 +550,11 @@ func (logger Logger) Debugf(ctx context.Context, messageFormat string, formatArg
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.DebugError(err, "attr1", "value1", "attr2", 2)
+//	logger.DebugError(ctx, err, "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.DebugError(err, slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.DebugError(ctx, err, slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.DebugError(err, "attr1", "value1", slog.Int("attr2", 2))
+//	logger.DebugError(ctx, err, "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) DebugError(ctx context.Context, err error, logAttributes ...any) {
 	logger.log(ctx, slog.LevelDebug, "", nil, logAttributes, err, nil)
 }
@@ -571,11 +571,11 @@ func (logger Logger) DebugError(ctx context.Context, err error, logAttributes ..
 // following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	logger.DebugErrorCause(err, "Message", "attr1", "value1", "attr2", 2)
+//	logger.DebugErrorCause(ctx, err, "Message", "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	logger.DebugErrorCause(err, "Message", slog.String("attr1", "value1"), slog.Int("attr2", 2))
+//	logger.DebugErrorCause(ctx, err, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	logger.DebugErrorCause(err, "Message", "attr1", "value1", slog.Int("attr2", 2))
+//	logger.DebugErrorCause(ctx, err, "Message", "key1", "value1", slog.Int("key2", 2))
 func (logger Logger) DebugErrorCause(
 	ctx context.Context,
 	err error,
