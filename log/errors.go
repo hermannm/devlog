@@ -9,6 +9,15 @@ import (
 // wrappedError is an interface for errors that wrap an inner error with a wrapping message.
 // When an error logging function in this package receives such an error, it is unwrapped to display
 // the error cause as a list.
+//
+// We don't export this interface, as we don't want library consumers to depend on it directly. The
+// interface type itself is an implementation detail - we only use it to check if errors logged by
+// this library implicitly implement these methods. This is the same approach that the standard
+// [errors] package uses to support Unwrap().
+//
+// This interface is implemented by the [hermannm.dev/wrap] library.
+//
+// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
 type wrappedError interface {
 	WrappingMessage() string
 	Unwrap() error
@@ -17,15 +26,41 @@ type wrappedError interface {
 // wrappedErrors is an interface for errors that wrap multiple inner errors with a wrapping message.
 // When an error logging function in this package receives such an error, it is unwrapped to display
 // the error cause as a list.
+//
+// We don't export this interface, for the same reason as [wrappedError].
+//
+// This interface is implemented by the [hermannm.dev/wrap] library.
+//
+// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
 type wrappedErrors interface {
 	WrappingMessage() string
 	Unwrap() []error
 }
 
+// hasLogAttributes is an interface for errors that carry log attributes, to provide structured
+// context when the error is logged.
+//
+// We don't export this interface, for the same reason as [wrappedError].
+//
+// This interface is implemented by the [hermannm.dev/wrap] library.
+//
+// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
 type hasLogAttributes interface {
 	LogAttrs() []slog.Attr
 }
 
+// hasContext is an interface for errors that carry the [context.Context] from where they were
+// created. We use this to add context attributes ([log.AddContextAttrs]) from the error's context,
+// not just the context in which the log is made. This is useful when error is produced somewhere
+// down in the stack, and then propagated up multiple levels before it is logged. By letting the
+// error carry its context, we don't lose the original context of the exception as it is propagated
+// up.
+//
+// We don't export this interface, for the same reason as [wrappedError].
+//
+// This interface is implemented by the [hermannm.dev/wrap/ctxwrap] library.
+//
+// [hermannm.dev/wrap/ctxwrap]: https://pkg.go.dev/hermannm.dev/wrap/ctxwrap
 type hasContext interface {
 	Context() context.Context
 }
