@@ -66,84 +66,84 @@ type hasContext interface {
 }
 
 func appendCauseError(attrs []slog.Attr, err error) []slog.Attr {
-	errorLogValue, attrs := buildErrorLogValue(err, attrs)
-	return prependCauseAttribute(errorLogValue, attrs)
+	errorLog, attrs := buildErrorLog(err, attrs)
+	return prependCauseErrorAttr(errorLog, attrs)
 }
 
 func appendCauseErrors(attrs []slog.Attr, errors []error) []slog.Attr {
-	errorLogValue, attrs := buildErrorListLogValue(errors, attrs, false)
-	return prependCauseAttribute(errorLogValue, attrs)
+	errorLog, attrs := buildErrorListLog(errors, attrs, false)
+	return prependCauseErrorAttr(errorLog, attrs)
 }
 
-func buildErrorLogValue(err error, attrs []slog.Attr) (errorLogValue any, newAttrs []slog.Attr) {
+func buildErrorLog(err error, attrs []slog.Attr) (errorLog any, newAttrs []slog.Attr) {
 	attrs = appendErrorAttrs(attrs, err)
 
 	switch err := err.(type) {
 	case wrappedErrors:
-		errorLogValue, attrs = appendErrors(
+		errorLog, attrs = appendErrors(
 			initErrorLogValue(err.WrappingMessage(), 2),
 			attrs,
 			err.Unwrap(),
 		)
 	case wrappedError:
-		errorLogValue, attrs = appendError(
+		errorLog, attrs = appendError(
 			initErrorLogValue(err.WrappingMessage(), 4),
 			attrs,
 			err.Unwrap(),
 			false,
 		)
 	default:
-		errorLogValue = errorLogValueFromPlainError(err)
+		errorLog = errorLogFromPlainError(err)
 	}
 
 	attrs = appendErrorContextAttrs(attrs, err)
-	return errorLogValue, attrs
+	return errorLog, attrs
 }
 
 func appendError(
-	errorLogValue []any,
+	errorLog []any,
 	attrs []slog.Attr,
 	err error,
 	partOfList bool,
-) (newErrorLogValue []any, newAttrs []slog.Attr) {
+) (newErrorLog []any, newAttrs []slog.Attr) {
 	attrs = appendErrorAttrs(attrs, err)
 
 	switch err := err.(type) {
 	case wrappedErrors:
-		errorLogValue, attrs = appendWrappedErrors(errorLogValue, attrs, err, partOfList)
+		errorLog, attrs = appendWrappedErrors(errorLog, attrs, err, partOfList)
 	case wrappedError:
-		errorLogValue, attrs = appendWrappedError(errorLogValue, attrs, err, partOfList)
+		errorLog, attrs = appendWrappedError(errorLog, attrs, err, partOfList)
 	default:
-		errorLogValue, attrs = appendPlainError(errorLogValue, err, partOfList), attrs
+		errorLog = appendPlainError(errorLog, err, partOfList)
 	}
 
 	attrs = appendErrorContextAttrs(attrs, err)
-	return errorLogValue, attrs
+	return errorLog, attrs
 }
 
 func appendErrors(
-	errorLogValue []any,
+	errorLog []any,
 	attrs []slog.Attr,
 	errors []error,
-) (newErrorLogValue []any, newAttrs []slog.Attr) {
-	errorListLogValue, attrs := buildErrorListLogValue(errors, attrs, false)
+) (newErrorLog []any, newAttrs []slog.Attr) {
+	errorListLogValue, attrs := buildErrorListLog(errors, attrs, false)
 	if errorListLogValue != nil {
-		errorLogValue = append(errorLogValue, errorListLogValue)
+		errorLog = append(errorLog, errorListLogValue)
 	}
-	return errorLogValue, attrs
+	return errorLog, attrs
 }
 
-func buildErrorListLogValue(
+func buildErrorListLog(
 	errors []error,
 	attrs []slog.Attr,
 	partOfList bool,
-) (errorLogValue any, newAttrs []slog.Attr) {
+) (errorLog any, newAttrs []slog.Attr) {
 	switch len(errors) {
 	case 0:
 		return nil, attrs
 	case 1:
 		if !partOfList {
-			return buildErrorLogValue(errors[0], attrs)
+			return buildErrorLog(errors[0], attrs)
 		}
 	}
 
@@ -155,42 +155,40 @@ func buildErrorListLogValue(
 }
 
 func appendWrappedError(
-	errorLogValue []any,
+	errorLog []any,
 	attrs []slog.Attr,
 	err wrappedError,
 	partOfList bool,
-) (newErrorLogValue []any, newAttrs []slog.Attr) {
-	errorLogValue = appendToErrorLogValue(errorLogValue, err.WrappingMessage(), 4)
+) (newErrorLog []any, newAttrs []slog.Attr) {
+	errorLog = appendToErrorLog(errorLog, err.WrappingMessage(), 4)
 
 	if partOfList {
-		var nestedErrorLogValue []any
-		nestedErrorLogValue, attrs =
-			appendError(nestedErrorLogValue, attrs, err.Unwrap(), partOfList)
-		errorLogValue = append(errorLogValue, nestedErrorLogValue)
+		var nestedErrorLog []any
+		nestedErrorLog, attrs = appendError(nestedErrorLog, attrs, err.Unwrap(), partOfList)
+		errorLog = append(errorLog, nestedErrorLog)
 	} else {
-		errorLogValue, attrs =
-			appendError(errorLogValue, attrs, err.Unwrap(), partOfList)
+		errorLog, attrs = appendError(errorLog, attrs, err.Unwrap(), partOfList)
 	}
 
-	return errorLogValue, attrs
+	return errorLog, attrs
 }
 
 func appendWrappedErrors(
-	errorLogValue []any,
+	errorLog []any,
 	attrs []slog.Attr,
 	err wrappedErrors,
 	partOfList bool,
-) (newErrorLogValue []any, newAttrs []slog.Attr) {
-	errorLogValue = append(errorLogValue, err.WrappingMessage())
-	errorListLogValue, attrs := buildErrorListLogValue(err.Unwrap(), attrs, partOfList)
+) (newErrorLog []any, newAttrs []slog.Attr) {
+	errorLog = appendToErrorLog(errorLog, err.WrappingMessage(), 2)
+	errorListLogValue, attrs := buildErrorListLog(err.Unwrap(), attrs, partOfList)
 	if errorListLogValue != nil {
-		errorLogValue = append(errorLogValue, errorListLogValue)
+		errorLog = append(errorLog, errorListLogValue)
 	}
 
-	return errorLogValue, attrs
+	return errorLog, attrs
 }
 
-func errorLogValueFromPlainError(err error) any {
+func errorLogFromPlainError(err error) any {
 	splits, splitCount, firstSplit := splitLongErrorMessage(err.Error())
 	if splitCount == 1 {
 		return firstSplit
@@ -199,44 +197,44 @@ func errorLogValueFromPlainError(err error) any {
 	}
 }
 
-func appendPlainError(errorLogValue []any, err error, partOfList bool) (newErrorLogValue []any) {
+func appendPlainError(errorLog []any, err error, partOfList bool) (newErrorLog []any) {
 	splits, splitCount, firstSplit := splitLongErrorMessage(err.Error())
 	if partOfList {
-		errorLogValue = append(errorLogValue, firstSplit)
+		errorLog = appendToErrorLog(errorLog, firstSplit, 2)
 		if len(splits) > 1 {
-			errorLogValue = append(errorLogValue, splits[1:])
+			errorLog = append(errorLog, splits[1:])
 		}
 	} else {
 		if splitCount == 1 {
-			errorLogValue = append(errorLogValue, firstSplit)
+			errorLog = append(errorLog, firstSplit)
 		} else {
-			errorLogValue = append(errorLogValue, splits...)
+			errorLog = append(errorLog, splits...)
 		}
 	}
-	return errorLogValue
+	return errorLog
 }
 
 func initErrorLogValue(firstErrorItem any, capacity int) []any {
-	errorLogValue := make([]any, 0, capacity)
-	errorLogValue = append(errorLogValue, firstErrorItem)
-	return errorLogValue
+	errorLog := make([]any, 0, capacity)
+	errorLog = append(errorLog, firstErrorItem)
+	return errorLog
 }
 
-func appendToErrorLogValue(errorLogValue []any, errorItem any, newCapacity int) []any {
-	errorLogValue = slices.Grow(errorLogValue, newCapacity)
-	errorLogValue = append(errorLogValue, errorItem)
-	return errorLogValue
+func appendToErrorLog(errorLog []any, errorItem any, newCapacity int) []any {
+	errorLog = slices.Grow(errorLog, newCapacity)
+	errorLog = append(errorLog, errorItem)
+	return errorLog
 }
 
-func prependCauseAttribute(
-	errorLogValue any,
+func prependCauseErrorAttr(
+	errorLog any,
 	attrs []slog.Attr,
 ) (newAttrs []slog.Attr) {
-	if errorLogValue == nil {
+	if errorLog == nil {
 		return attrs
 	}
 
-	causeAttribute := slog.Any("cause", errorLogValue)
+	causeAttribute := slog.Any("cause", errorLog)
 
 	if len(attrs) == 0 {
 		return []slog.Attr{causeAttribute}
@@ -272,8 +270,8 @@ func getErrorMessageAndCauseFromPlainError(
 ) (message string, newAttrs []slog.Attr) {
 	splits, _, firstSplit := splitLongErrorMessage(err.Error())
 	if len(splits) > 1 {
-		errorLogValue := splits[1:]
-		attrs = prependCauseAttribute(errorLogValue, attrs)
+		errorLog := splits[1:]
+		attrs = prependCauseErrorAttr(errorLog, attrs)
 	}
 	return firstSplit, attrs
 }
