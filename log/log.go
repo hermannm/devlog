@@ -1,5 +1,3 @@
-// Package log provides a thin wrapper over the [log/slog] package, with utility functions for log
-// message formatting.
 package log
 
 import (
