@@ -47,25 +47,25 @@ func TestWarnf(t *testing.T) {
 func TestError(t *testing.T) {
 	output := getLogOutput(nil, func() {
 		err := errors.New("error")
-		log.Error(ctx, err, "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "ERROR", "error", `"errorCode":6`)
-}
-
-func TestErrorCause(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err := errors.New("error")
-		log.ErrorCause(ctx, err, "an error occurred", "errorCode", 6)
+		log.Error(ctx, err, "an error occurred", "errorCode", 6)
 	})
 
 	verifyLogOutput(t, output, "ERROR", "an error occurred", `"cause":"error","errorCode":6`)
 }
 
-func TestErrorCausef(t *testing.T) {
+func TestErrorWithBlankMessage(t *testing.T) {
 	output := getLogOutput(nil, func() {
 		err := errors.New("error")
-		log.ErrorCausef(ctx, err, "a %s error occurred", "formatted")
+		log.Error(ctx, err, "", "errorCode", 6)
+	})
+
+	verifyLogOutput(t, output, "ERROR", "error", `"errorCode":6`)
+}
+
+func TestErrorf(t *testing.T) {
+	output := getLogOutput(nil, func() {
+		err := errors.New("error")
+		log.Errorf(ctx, err, "a %s error occurred", "formatted")
 	})
 
 	verifyLogOutput(t, output, "ERROR", "a formatted error occurred", `"cause":"error"`)
@@ -100,25 +100,25 @@ func TestErrorMessagef(t *testing.T) {
 func TestWarnError(t *testing.T) {
 	output := getLogOutput(nil, func() {
 		err := errors.New("error")
-		log.WarnError(ctx, err, "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "WARN", "error", `"errorCode":6`)
-}
-
-func TestWarnErrorCause(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err := errors.New("error")
-		log.WarnErrorCause(ctx, err, "an error occurred", "errorCode", 6)
+		log.WarnError(ctx, err, "an error occurred", "errorCode", 6)
 	})
 
 	verifyLogOutput(t, output, "WARN", "an error occurred", `"cause":"error","errorCode":6`)
 }
 
-func TestWarnErrorCausef(t *testing.T) {
+func TestWarnErrorWithBlankMessage(t *testing.T) {
 	output := getLogOutput(nil, func() {
 		err := errors.New("error")
-		log.WarnErrorCausef(ctx, err, "a %s error occurred", "formatted")
+		log.WarnError(ctx, err, "", "errorCode", 6)
+	})
+
+	verifyLogOutput(t, output, "WARN", "error", `"errorCode":6`)
+}
+
+func TestWarnErrorf(t *testing.T) {
+	output := getLogOutput(nil, func() {
+		err := errors.New("error")
+		log.WarnErrorf(ctx, err, "a %s error occurred", "formatted")
 	})
 
 	verifyLogOutput(t, output, "WARN", "a formatted error occurred", `"cause":"error"`)
@@ -155,25 +155,25 @@ func TestDebugf(t *testing.T) {
 func TestDebugError(t *testing.T) {
 	output := getLogOutput(enableDebug, func() {
 		err := errors.New("error")
-		log.DebugError(ctx, err, "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "DEBUG", "error", `"errorCode":6`)
-}
-
-func TestDebugErrorCause(t *testing.T) {
-	output := getLogOutput(enableDebug, func() {
-		err := errors.New("error")
-		log.DebugErrorCause(ctx, err, "an error occurred", "errorCode", 6)
+		log.DebugError(ctx, err, "an error occurred", "errorCode", 6)
 	})
 
 	verifyLogOutput(t, output, "DEBUG", "an error occurred", `"cause":"error","errorCode":6`)
 }
 
-func TestDebugErrorCausef(t *testing.T) {
+func TestDebugErrorWithBlankMessage(t *testing.T) {
 	output := getLogOutput(enableDebug, func() {
 		err := errors.New("error")
-		log.DebugErrorCausef(ctx, err, "a %s error occurred", "formatted")
+		log.DebugError(ctx, err, "", "errorCode", 6)
+	})
+
+	verifyLogOutput(t, output, "DEBUG", "error", `"errorCode":6`)
+}
+
+func TestDebugErrorf(t *testing.T) {
+	output := getLogOutput(enableDebug, func() {
+		err := errors.New("error")
+		log.DebugErrorf(ctx, err, "a %s error occurred", "formatted")
 	})
 
 	verifyLogOutput(t, output, "DEBUG", "a formatted error occurred", `"cause":"error"`)
@@ -248,25 +248,25 @@ func TestLoggerWarnf(t *testing.T) {
 func TestLoggerError(t *testing.T) {
 	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error")
-		logger.Error(ctx, err, "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "ERROR", "error", `"errorCode":6`)
-}
-
-func TestLoggerErrorCause(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err := errors.New("error")
-		logger.ErrorCause(ctx, err, "an error occurred", "errorCode", 6)
+		logger.Error(ctx, err, "an error occurred", "errorCode", 6)
 	})
 
 	verifyLogOutput(t, output, "ERROR", "an error occurred", `"cause":"error","errorCode":6`)
 }
 
-func TestLoggerErrorCausef(t *testing.T) {
+func TestLoggerErrorWithBlankMessage(t *testing.T) {
 	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error")
-		logger.ErrorCausef(ctx, err, "a %s error occurred", "formatted")
+		logger.Error(ctx, err, "", "errorCode", 6)
+	})
+
+	verifyLogOutput(t, output, "ERROR", "error", `"errorCode":6`)
+}
+
+func TestLoggerErrorf(t *testing.T) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
+		err := errors.New("error")
+		logger.Errorf(ctx, err, "a %s error occurred", "formatted")
 	})
 
 	verifyLogOutput(t, output, "ERROR", "a formatted error occurred", `"cause":"error"`)
@@ -301,25 +301,25 @@ func TestLoggerErrorMessagef(t *testing.T) {
 func TestLoggerWarnError(t *testing.T) {
 	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error")
-		logger.WarnError(ctx, err, "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "WARN", "error", `"errorCode":6`)
-}
-
-func TestLoggerWarnErrorCause(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err := errors.New("error")
-		logger.WarnErrorCause(ctx, err, "an error occurred", "errorCode", 6)
+		logger.WarnError(ctx, err, "an error occurred", "errorCode", 6)
 	})
 
 	verifyLogOutput(t, output, "WARN", "an error occurred", `"cause":"error","errorCode":6`)
 }
 
-func TestLoggerWarnErrorCausef(t *testing.T) {
+func TestLoggerWarnErrorWithBlankMessage(t *testing.T) {
 	output := getLoggerOutput(nil, func(logger log.Logger) {
 		err := errors.New("error")
-		logger.WarnErrorCausef(ctx, err, "a %s error occurred", "formatted")
+		logger.WarnError(ctx, err, "", "errorCode", 6)
+	})
+
+	verifyLogOutput(t, output, "WARN", "error", `"errorCode":6`)
+}
+
+func TestLoggerWarnErrorf(t *testing.T) {
+	output := getLoggerOutput(nil, func(logger log.Logger) {
+		err := errors.New("error")
+		logger.WarnErrorf(ctx, err, "a %s error occurred", "formatted")
 	})
 
 	verifyLogOutput(t, output, "WARN", "a formatted error occurred", `"cause":"error"`)
@@ -362,31 +362,31 @@ func TestLoggerDebugError(t *testing.T) {
 		enableDebug,
 		func(logger log.Logger) {
 			err := errors.New("error")
-			logger.DebugError(ctx, err, "errorCode", 6)
-		},
-	)
-
-	verifyLogOutput(t, output, "DEBUG", "error", `"errorCode":6`)
-}
-
-func TestLoggerDebugErrorCause(t *testing.T) {
-	output := getLoggerOutput(
-		enableDebug,
-		func(logger log.Logger) {
-			err := errors.New("error")
-			logger.DebugErrorCause(ctx, err, "an error occurred", "errorCode", 6)
+			logger.DebugError(ctx, err, "an error occurred", "errorCode", 6)
 		},
 	)
 
 	verifyLogOutput(t, output, "DEBUG", "an error occurred", `"cause":"error","errorCode":6`)
 }
 
-func TestLoggerDebugErrorCausef(t *testing.T) {
+func TestLoggerDebugErrorWithBlankMessage(t *testing.T) {
 	output := getLoggerOutput(
 		enableDebug,
 		func(logger log.Logger) {
 			err := errors.New("error")
-			logger.DebugErrorCausef(ctx, err, "a %s error occurred", "formatted")
+			logger.DebugError(ctx, err, "", "errorCode", 6)
+		},
+	)
+
+	verifyLogOutput(t, output, "DEBUG", "error", `"errorCode":6`)
+}
+
+func TestLoggerDebugErrorf(t *testing.T) {
+	output := getLoggerOutput(
+		enableDebug,
+		func(logger log.Logger) {
+			err := errors.New("error")
+			logger.DebugErrorf(ctx, err, "a %s error occurred", "formatted")
 		},
 	)
 

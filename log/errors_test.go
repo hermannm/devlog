@@ -9,7 +9,7 @@ import (
 
 func TestWrappedError(t *testing.T) {
 	output := getLogOutput(nil, func() {
-		log.Error(ctx, wrappedError{"wrapping message", errors.New("wrapped error")})
+		log.Error(ctx, wrappedError{"wrapping message", errors.New("wrapped error")}, "")
 	})
 
 	verifyLogOutput(t, output, "ERROR", "wrapping message", `"cause":"wrapped error"`)
@@ -23,6 +23,7 @@ func TestNestedWrappedError(t *testing.T) {
 				"wrapping message 1",
 				wrappedError{"wrapping message 2", errors.New("wrapped error")},
 			},
+			"",
 		)
 	})
 
@@ -43,6 +44,7 @@ func TestWrappedErrors(t *testing.T) {
 				"wrapping message",
 				[]error{errors.New("wrapped error 1"), errors.New("wrapped error 2")},
 			},
+			"",
 		)
 	})
 
@@ -72,6 +74,7 @@ func TestNestedWrappedErrors(t *testing.T) {
 					wrappedError{"invalid username", errors.New("username exceeds 30 characters")},
 				},
 			},
+			"",
 		)
 	})
 
@@ -86,7 +89,7 @@ func TestNestedWrappedErrors(t *testing.T) {
 
 func TestSingleWrappedErrors(t *testing.T) {
 	output := getLogOutput(nil, func() {
-		log.Error(ctx, wrappedErrors{"wrapping message", []error{errors.New("wrapped error")}})
+		log.Error(ctx, wrappedErrors{"wrapping message", []error{errors.New("wrapped error")}}, "")
 	})
 
 	verifyLogOutput(
@@ -109,6 +112,7 @@ func TestLongErrorMessage(t *testing.T) {
 					"this is a long error message, of barely less than 64 characters: "+
 					"short message",
 			),
+			"",
 		)
 	})
 
@@ -130,6 +134,7 @@ func TestUnsplittableErrorMessage(t *testing.T) {
 			errors.New(
 				"this is a super long error message of more than 64 characters in total",
 			),
+			"",
 		)
 	})
 
@@ -150,6 +155,7 @@ func TestLongMultilineErrorMessage(t *testing.T) {
 more than 16 characters: this message ends in a newline
 another message ending in a newline and colon:
 another newline message`),
+			"",
 		)
 	})
 
