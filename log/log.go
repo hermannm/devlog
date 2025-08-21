@@ -4,7 +4,6 @@ package log
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"runtime"
@@ -779,29 +778,6 @@ func (logger Logger) DebugErrorCausef(
 // case no output will be produced.
 func (logger Logger) DebugErrors(ctx context.Context, message string, errors ...error) {
 	logger.log(ctx, slog.LevelDebug, message, nil, nil, nil, errors)
-}
-
-// JSON returns a log attribute with the given key and value.
-// Your log output handler can then handle the value appropriately:
-//   - [slog.JSONHandler] logs it as JSON as normal
-//   - [hermannm.dev/devlog.Handler] logs it in a prettified format, with colors if enabled
-func JSON(key string, value any) slog.Attr {
-	return slog.Any(key, jsonLogValue{value})
-}
-
-// jsonLogValue is a wrapper type to allow log output handlers to pretty-format the given value.
-type jsonLogValue struct {
-	Value any
-}
-
-// JSONLogValue implements the devlog.jsonLogValuer interface.
-func (jsonValue jsonLogValue) JSONLogValue() any {
-	return jsonValue.Value
-}
-
-// MarshalJSON implements [json.Marshaler].
-func (jsonValue jsonLogValue) MarshalJSON() ([]byte, error) {
-	return json.Marshal(jsonValue.Value)
 }
 
 func (logger Logger) log(

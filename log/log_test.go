@@ -406,22 +406,6 @@ func TestLoggerDebugErrors(t *testing.T) {
 	verifyLogOutput(t, output, "DEBUG", "multiple errors occurred", `"cause":["error 1","error 2"]`)
 }
 
-func TestJSON(t *testing.T) {
-	user := struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-	}{
-		ID:   1,
-		Name: "hermannm",
-	}
-
-	output := getLogOutput(nil, func() {
-		log.Info(ctx, "user created", log.JSON("user", user))
-	})
-
-	verifyLogAttrs(t, output, `"user":{"id":1,"name":"hermannm"}`)
-}
-
 func TestLoggerDisabledLogLevel(t *testing.T) {
 	output := getLoggerOutput(
 		&slog.HandlerOptions{Level: slog.LevelInfo},
