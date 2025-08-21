@@ -234,7 +234,7 @@ func prependCauseErrorAttr(
 		return attrs
 	}
 
-	causeAttribute := slog.Any("cause", errorLog)
+	causeAttribute := slog.Any(causeErrorAttrKey, errorLog)
 
 	if len(attrs) == 0 {
 		return []slog.Attr{causeAttribute}
@@ -242,6 +242,10 @@ func prependCauseErrorAttr(
 		return slices.Insert(attrs, 0, causeAttribute)
 	}
 }
+
+// Should be the same key as in devlog/handler.go (we don't import this across packages, as that
+// would require a dependency between them, whereas they're currently independent from each other).
+const causeErrorAttrKey = "cause"
 
 func getErrorMessageAndCause(
 	err error,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log/slog"
-	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -32,7 +31,7 @@ type Options struct {
 	// If nil, defaults to [slog.LevelInfo].
 	Level slog.Leveler
 
-	// AddSource adds a 'source' attribute to every log record, with the file name and line number
+	// AddSource adds a 'source' attr to every log record, with the file name and line number
 	// where the log record was produced.
 	// Defaults to false.
 	AddSource bool
@@ -53,7 +52,7 @@ type Options struct {
 	TimeFormat TimeFormat
 }
 
-// See [Options.TimeFormat].
+// TimeFormat is the type for valid constants for [Options.TimeFormat].
 type TimeFormat int8
 
 const (
@@ -154,7 +153,7 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 		})
 	}
 
-	// Write preformatted attributes last, so they are shown beneath the current record's attributes
+	// write preformatted attributes last, so they are shown beneath the current record's attributes
 	buffer.join(handler.preformattedAttrs)
 
 	if handler.options.AddSource && record.PC != 0 {
@@ -237,12 +236,6 @@ func (handler *Handler) writeLevel(buffer *byteBuffer, level slog.Level) {
 	handler.resetColor(buffer)
 }
 
-// Interface to allow log input handlers (such as [hermannm.dev/devlog/log]) to pass a log attribute
-// value that should be pretty-formatted as JSON by this output handler.
-type jsonLogValuer interface {
-	JSONLogValue() any
-}
-
 func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, indent int) {
 	attr.Value = attr.Value.Resolve()
 	if attr.Equal(slog.Attr{}) {
@@ -276,19 +269,15 @@ func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, inden
 		handler.writeAttributeKey(buffer, attr.Key)
 
 		value := attr.Value.Any()
-		if json, ok := value.(jsonLogValuer); ok {
+		if attr.Key == causeErrorAttrKey {
+			handler.writeCauseError(buffer, value, indent)
+		} else {
 			buffer.writeByte(' ')
-			handler.writeJSON(buffer, json.JSONLogValue(), attr.Value, indent)
-			return
-		}
-
-		reflectValue := reflect.ValueOf(value)
-		switch reflectValue.Kind() {
-		case reflect.Slice, reflect.Array:
-			handler.writeListOrSingleElement(buffer, reflectValue, indent+1)
-		default:
-			buffer.writeByte(' ')
-			buffer.writeString(attr.Value.String())
+			if stringValue, ok := value.(string); ok {
+				buffer.writeString(stringValue)
+			} else {
+				handler.writeJSON(buffer, value, indent)
+			}
 		}
 		buffer.writeByte('\n')
 	default:
@@ -317,12 +306,7 @@ var jsonColors = jsoncolor.Colors{
 	TextMarshaler: jsoncolor.Color(noColor),
 }
 
-func (handler *Handler) writeJSON(
-	buffer *byteBuffer,
-	jsonValue any,
-	slogValue slog.Value,
-	indent int,
-) {
+func (handler *Handler) writeJSON(buffer *byteBuffer, jsonValue any, indent int) {
 	encoder := jsoncolor.NewEncoder(buffer)
 
 	var prefix strings.Builder
@@ -336,61 +320,33 @@ func (handler *Handler) writeJSON(
 	}
 
 	if err := encoder.Encode(jsonValue); err != nil {
-		buffer.writeString(slogValue.String())
+		buffer.writeAny(jsonValue)
 		buffer.writeByte('\n')
 	}
 }
 
-func (handler *Handler) writeListOrSingleElement(
-	buffer *byteBuffer,
-	list reflect.Value,
-	indent int,
-) {
-	switch list.Len() {
-	case 0:
-		buffer.writeString(" []")
-	case 1:
-		value := list.Index(0)
-		if value.CanInterface() {
-			value = reflect.ValueOf(value.Interface())
-		}
-
-		switch value.Kind() {
-		case reflect.Slice, reflect.Array:
-			handler.writeListOrSingleElement(buffer, value, indent)
-		case reflect.String:
-			buffer.writeByte(' ')
-			buffer.writeBytesWithIndentedNewlines([]byte(value.String()), indent)
-		default:
-			buffer.writeByte(' ')
-			buffer.writeAnyWithIndentedNewlines(value, indent)
+func (handler *Handler) writeCauseError(buffer *byteBuffer, errorLogValue any, indent int) {
+	switch errorLogValue := errorLogValue.(type) {
+	case string:
+		handler.writeListItemPrefix(buffer, indent)
+		buffer.writeString(errorLogValue)
+	case []any:
+		indent++
+		for _, errorItem := range errorLogValue {
+			handler.writeCauseError(buffer, errorItem, indent)
 		}
 	default:
-		handler.writeList(buffer, list, indent)
-	}
-}
-
-func (handler *Handler) writeList(buffer *byteBuffer, list reflect.Value, indent int) {
-	for i := 0; i < list.Len(); i++ {
-		value := list.Index(i)
-		if value.CanInterface() {
-			value = reflect.ValueOf(value.Interface())
-		}
-
-		switch value.Kind() {
-		case reflect.Slice, reflect.Array:
-			handler.writeList(buffer, value, indent+1)
-		case reflect.String:
-			handler.writeListItemPrefix(buffer, indent)
-			buffer.writeBytesWithIndentedNewlines([]byte(value.String()), indent+1)
-		default:
-			handler.writeListItemPrefix(buffer, indent)
-			buffer.writeAnyWithIndentedNewlines(value, indent+1)
-		}
+		handler.writeListItemPrefix(buffer, indent)
+		handler.writeJSON(buffer, errorLogValue, indent)
 	}
 }
 
 func (handler *Handler) writeListItemPrefix(buffer *byteBuffer, indent int) {
+	if indent == 0 {
+		buffer.writeByte(' ')
+		return
+	}
+
 	buffer.writeByte('\n')
 	buffer.writeIndent(indent)
 	handler.writeByteWithColor(buffer, '-', colorGray)
@@ -440,3 +396,7 @@ func (handler *Handler) writeLogSource(buffer *byteBuffer, programCounter uintpt
 		buffer.writeByte('\n')
 	}
 }
+
+// Should be the same key as in log/errors.go (we don't import this across packages, as that would
+// require a dependency between them, whereas they're currently independent from each other).
+const causeErrorAttrKey = "cause"

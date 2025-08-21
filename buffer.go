@@ -9,6 +9,10 @@ import (
 
 type byteBuffer []byte
 
+func (buffer *byteBuffer) write(bytes []byte) {
+	*buffer = append(*buffer, bytes...)
+}
+
 // Always returns nil error (still has error in signature, to satisfy [io.Writer] interface).
 func (buffer *byteBuffer) Write(bytes []byte) (bytesWritten int, err error) {
 	*buffer = append(*buffer, bytes...)
@@ -41,13 +45,13 @@ func (buffer *byteBuffer) writeBytesWithIndentedNewlines(bytes []byte, indent in
 	lastWriteIndex := 0
 	for i := 0; i < len(bytes)-1; i++ {
 		if bytes[i] == '\n' {
-			buffer.Write(bytes[lastWriteIndex : i+1])
+			buffer.write(bytes[lastWriteIndex : i+1])
 			buffer.writeIndent(indent)
 			lastWriteIndex = i + 1
 		}
 	}
 
-	buffer.Write(bytes[lastWriteIndex:])
+	buffer.write(bytes[lastWriteIndex:])
 }
 
 func (buffer *byteBuffer) writeAnyWithIndentedNewlines(value any, indent int) {
@@ -61,12 +65,12 @@ func (buffer *byteBuffer) writeAnyWithIndentedNewlines(value any, indent int) {
 // Adapted from standard library log package:
 // https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/log.go#L114
 func (buffer *byteBuffer) writeTime(t time.Time) {
-	hour, min, sec := t.Clock()
+	hour, minute, second := t.Clock()
 	buffer.writeFixedWidthDecimal(hour, 2)
 	buffer.writeByte(':')
-	buffer.writeFixedWidthDecimal(min, 2)
+	buffer.writeFixedWidthDecimal(minute, 2)
 	buffer.writeByte(':')
-	buffer.writeFixedWidthDecimal(sec, 2)
+	buffer.writeFixedWidthDecimal(second, 2)
 }
 
 // Adapted from standard library log package:
@@ -105,9 +109,10 @@ func (buffer *byteBuffer) join(other byteBuffer) {
 	*buffer = append(*buffer, other...)
 }
 
-func (buffer byteBuffer) copy() byteBuffer {
-	newBuffer := make(byteBuffer, len(buffer), cap(buffer))
-	copy(newBuffer, buffer)
+func (buffer *byteBuffer) copy() byteBuffer {
+	oldBuffer := *buffer
+	newBuffer := make(byteBuffer, len(oldBuffer), cap(oldBuffer))
+	copy(newBuffer, oldBuffer)
 	return newBuffer
 }
 

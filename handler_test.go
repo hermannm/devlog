@@ -37,7 +37,7 @@ func TestSlog(t *testing.T) {
 }
 
 func TestTimeFormat(t *testing.T) {
-	time, err := time.Parse(time.DateTime, "2024-09-29 10:57:30")
+	timeValue, err := time.Parse(time.DateTime, "2024-09-29 10:57:30")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestTimeFormat(t *testing.T) {
 			TimeFormat:    testCase.format,
 		})
 
-		record := slog.NewRecord(time, slog.LevelInfo, "Message", 0)
+		record := slog.NewRecord(timeValue, slog.LevelInfo, "Message", 0)
 		if err := handler.Handle(context.Background(), record); err != nil {
 			t.Fatalf("Handle failed: %v", err)
 		}
@@ -72,112 +72,124 @@ func TestTimeFormat(t *testing.T) {
 	}
 }
 
-func TestListAttributes(t *testing.T) {
-	type testStruct struct {
-		text string
-	}
-
-	testCases := []struct {
-		attribute      slog.Attr
-		expectedOutput string
-	}{
-		{
-			attribute: slog.Any("stringList", []string{"test1", "test2", "test3"}),
-			expectedOutput: `  stringList:
-    - test1
-    - test2
-    - test3`,
-		},
-		{
-			attribute: slog.Any("structList", []testStruct{{"test1"}, {"test2"}}),
-			expectedOutput: `  structList:
-    - {test1}
-    - {test2}`,
-		},
-		{
-			attribute: slog.Any("multilineStringList", []string{`multiline
-string 1`, `multiline
-string 2`}),
-			expectedOutput: `  multilineStringList:
-    - multiline
-      string 1
-    - multiline
-      string 2`,
-		},
-		{
-			attribute: slog.Any("multilineStructList", []testStruct{{`multiline
-string 1`}, {`multiline
-string 2`}}),
-			expectedOutput: `  multilineStructList:
-    - {multiline
-      string 1}
-    - {multiline
-      string 2}`,
-		},
-		{
-			attribute:      slog.Any("singleListItem", []string{"single"}),
-			expectedOutput: "  singleListItem: single",
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.attribute.Key, func(t *testing.T) {
-			var buffer bytes.Buffer
-			logger := slog.New(devlog.NewHandler(&buffer, &devlog.Options{DisableColors: true}))
-			logger.Info("", testCase.attribute)
-
-			output := buffer.String()
-			t.Log(output)
-			assertContains(t, output, testCase.expectedOutput)
-		})
-	}
-}
-
-func TestSource(t *testing.T) {
-	var buffer bytes.Buffer
-	logger := slog.New(devlog.NewHandler(&buffer, &devlog.Options{
-		DisableColors: true,
-		AddSource:     true,
-	}))
-
-	logger.Info("test")
-
-	assertContains(
-		t,
-		buffer.String(),
-		"\n  source: hermannm.dev/devlog_test.TestSource",
-		"handler_test.go:143",
-	)
-}
-
 type user struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
-// Implements devlog.jsonLogValuer interface (implemented manually here instead of using
-// devlog/log.JSON(), to make the packages fully independent).
-func (user user) JSONLogValue() any {
-	return user
-}
-
-func TestJSON(t *testing.T) {
-	var buffer bytes.Buffer
-	logger := slog.New(devlog.NewHandler(&buffer, &devlog.Options{DisableColors: true}))
-
+func TestStructAttr(t *testing.T) {
 	user := user{
 		ID:   1,
 		Name: "hermannm",
 	}
 
-	logger.Info("user created", slog.Any("user", user))
+	output := getLogOutput(t, nil, func() {
+		slog.Info("user created", "user", user)
+	})
 
 	expectedOutput := `user: {
     "id": 1,
     "name": "hermannm"
   }`
 
-	assertContains(t, buffer.String(), expectedOutput)
+	assertContains(t, output, expectedOutput)
+}
+
+func TestListAttrs(t *testing.T) {
+	type testStruct struct {
+		Field string `json:"field"`
+	}
+
+	testCases := []struct {
+		attr           slog.Attr
+		expectedOutput string
+	}{
+		{
+			attr: slog.Any("stringList", []string{"test1", "test2", "test3"}),
+			expectedOutput: `  stringList: [
+    "test1",
+    "test2",
+    "test3"
+  ]`,
+		},
+		{
+			attr: slog.Any("structList", []testStruct{{"test1"}, {"test2"}}),
+			expectedOutput: `  structList: [
+    {
+      "field": "test1"
+    },
+    {
+      "field": "test2"
+    }
+  ]`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.attr.Key, func(t *testing.T) {
+			output := getLogOutput(t, nil, func() {
+				slog.Info("", testCase.attr)
+			})
+			assertContains(t, output, testCase.expectedOutput)
+		})
+	}
+}
+
+func TestCauseError(t *testing.T) {
+	// This follows the structure that the devlog/log subpackage uses for logged errors
+	errorLog := []any{
+		"something went wrong",
+		"cause error 1",
+		[]any{"underlying cause 1"},
+		"cause error 2",
+		[]any{"underlying cause 2", "underlying cause 3"},
+	}
+
+	output := getLogOutput(t, nil, func() {
+		slog.Error("", "cause", errorLog)
+	})
+
+	assertContains(
+		t,
+		output,
+		`  cause:
+    - something went wrong
+    - cause error 1
+      - underlying cause 1
+    - cause error 2
+      - underlying cause 2
+      - underlying cause 3`,
+	)
+}
+
+func TestSource(t *testing.T) {
+	output := getLogOutput(t, &devlog.Options{AddSource: true}, func() {
+		slog.Info("Test")
+	})
+
+	assertContains(
+		t,
+		output,
+		"\n  source: hermannm.dev/devlog_test.TestSource",
+		"handler_test.go:167",
+	)
+}
+
+func getLogOutput(t *testing.T, handlerOptions *devlog.Options, logFunc func()) string {
+	if handlerOptions == nil {
+		handlerOptions = &devlog.Options{}
+	}
+	// Must disable color output to parse reliably
+	handlerOptions.DisableColors = true
+
+	var buffer bytes.Buffer
+	slog.SetDefault(slog.New(devlog.NewHandler(&buffer, handlerOptions)))
+
+	logFunc()
+
+	output := buffer.String()
+	t.Log(output)
+	return output
 }
 
 func assertContains(t *testing.T, output string, expectedInOutput ...string) {
@@ -209,11 +221,11 @@ func parseLogEntry(entryString string) (map[string]any, error) {
 		timeString := split[0]
 		entryString = split[1]
 
-		time, err := time.Parse(time.DateTime, timeString)
+		timeValue, err := time.Parse(time.DateTime, timeString)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse time: %w", err)
 		}
-		entry[slog.TimeKey] = time
+		entry[slog.TimeKey] = timeValue
 	}
 
 	split := strings.SplitN(entryString, ": ", 2)

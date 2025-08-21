@@ -19,7 +19,7 @@ func (handler *Handler) setColor(buffer *byteBuffer, color color) {
 		return
 	}
 
-	buffer.Write(color)
+	buffer.write(color)
 }
 
 func (handler *Handler) resetColor(buffer *byteBuffer) {
