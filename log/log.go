@@ -812,6 +812,9 @@ func (logger Logger) log(
 	}
 
 	parsedAttrs = appendAttrs(parsedAttrs, getContextAttrs(ctx))
+	// Set contextAttrsKey to nil after handling context attributes, to avoid duplicate handling by
+	// ContextHandler
+	ctx = context.WithValue(ctx, contextAttrsKey, nil)
 
 	// Follows the example from the slog package for how to properly wrap its functions:
 	// https://pkg.go.dev/golang.org/x/exp/slog#hdr-Wrapping_output_methods

@@ -47,6 +47,56 @@ func AddContextAttrs(parent context.Context, logAttributes ...any) context.Conte
 	return context.WithValue(parent, contextAttrsKey, attrs)
 }
 
+// ContextHandler wraps a [slog.Handler], adding context attributes from [log.AddContextAttrs]
+// before forwarding logs to the wrapped handler.
+//
+// The logging functions in this library already add context attributes. But logs made outside of
+// this library (for example, a call to plain [slog.InfoContext]) won't add these attributes. That's
+// why you may want to use this to wrap your [slog.Handler], so that context attributes are added
+// regardless of how the log is made (as long as a [context.Context] is passed to the logger).
+//
+// Example of how to set up your handler with this:
+//
+//	logHandler := devlog.NewHandler(os.Stdout, nil)
+//	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
+func ContextHandler(wrapped slog.Handler) slog.Handler {
+	return contextHandler{wrapped}
+}
+
+type contextHandler struct {
+	wrapped slog.Handler
+}
+
+func (handler contextHandler) Handle(ctx context.Context, record slog.Record) error {
+	contextAttrs := getContextAttrs(ctx)
+
+ContextAttrLoop:
+	for _, contextAttr := range contextAttrs {
+		// Don't add the context attribute if the key already exists in the record's attributes
+		for existingAttr := range record.Attrs {
+			if existingAttr.Key == contextAttr.Key {
+				continue ContextAttrLoop
+			}
+		}
+
+		record.AddAttrs(contextAttr)
+	}
+
+	return handler.wrapped.Handle(ctx, record)
+}
+
+func (handler contextHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return handler.wrapped.Enabled(ctx, level)
+}
+
+func (handler contextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return contextHandler{handler.wrapped.WithAttrs(attrs)}
+}
+
+func (handler contextHandler) WithGroup(name string) slog.Handler {
+	return contextHandler{handler.wrapped.WithGroup(name)}
+}
+
 func getContextAttrs(ctx context.Context) []slog.Attr {
 	contextValue := ctx.Value(contextAttrsKey)
 	if contextValue == nil {
