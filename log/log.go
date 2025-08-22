@@ -508,8 +508,14 @@ func LogWithError(
 // the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call
 // [log.LogWithError] and format the message directly with [fmt.Sprintf].
-func LogWithErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
+func LogWithErrorf(
+	ctx context.Context,
+	level slog.Level,
+	err error,
+	formatString string,
+	formatArgs ...any,
+) {
+	Default().log(ctx, level, formatString, formatArgs, nil, err, nil)
 }
 
 // LogWithErrors logs a message at the given log level, and adds a 'cause' attribute with the given
@@ -522,8 +528,8 @@ func LogWithErrorf(ctx context.Context, err error, formatString string, formatAr
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
-func LogWithErrors(ctx context.Context, message string, errors ...error) {
-	Default().log(ctx, slog.LevelWarn, message, nil, nil, nil, errors)
+func LogWithErrors(ctx context.Context, level slog.Level, message string, errors ...error) {
+	Default().log(ctx, level, message, nil, nil, nil, errors)
 }
 
 // A Logger provides methods to produce structured log records for its output handler.
@@ -1130,8 +1136,14 @@ func (logger Logger) LogWithError(
 // in the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call
 // [Logger.LogWithError] and format the message directly with [fmt.Sprintf].
-func (logger Logger) LogWithErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
-	logger.log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
+func (logger Logger) LogWithErrorf(
+	ctx context.Context,
+	level slog.Level,
+	err error,
+	formatString string,
+	formatArgs ...any,
+) {
+	logger.log(ctx, level, formatString, formatArgs, nil, err, nil)
 }
 
 // LogWithErrors logs a message at the given log level, and adds a 'cause' attribute with the given
@@ -1144,8 +1156,13 @@ func (logger Logger) LogWithErrorf(ctx context.Context, err error, formatString 
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
-func (logger Logger) LogWithErrors(ctx context.Context, message string, errors ...error) {
-	logger.log(ctx, slog.LevelWarn, message, nil, nil, nil, errors)
+func (logger Logger) LogWithErrors(
+	ctx context.Context,
+	level slog.Level,
+	message string,
+	errors ...error,
+) {
+	logger.log(ctx, level, message, nil, nil, nil, errors)
 }
 
 func (logger Logger) log(
