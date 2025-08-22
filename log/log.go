@@ -8,83 +8,6 @@ import (
 	"time"
 )
 
-// Info logs the given message at the INFO log level, along with any given log attributes.
-// It uses the [slog.Default] logger.
-//
-// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
-// a function without a context parameter, you may pass a nil context. But ideally, you should pass
-// a context wherever you do logging, in order to propagate context attributes.
-//
-// # Log attributes
-//
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
-//
-//	// Pairs of string keys and corresponding values:
-//	log.Info(ctx, "Message", "key1", "value1", "key2", 2)
-//	// slog.Attr objects:
-//	log.Info(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
-//	// Or a mix of the two:
-//	log.Info(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
-//
-// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
-// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
-// your choice, in a more structured manner than if you were to just use string concatenation.
-func Info(ctx context.Context, message string, logAttributes ...any) {
-	Default().log(ctx, slog.LevelInfo, message, nil, logAttributes, nil, nil)
-}
-
-// Infof creates a message from the given format string and arguments using [fmt.Sprintf], and logs
-// it at the INFO log level. It uses the [slog.Default] logger.
-//
-// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
-// a function without a context parameter, you may pass a nil context. But ideally, you should pass
-// a context wherever you do logging, in order to propagate context attributes.
-//
-// If you have structured data to attach to the log, you should consider using [log.Info] instead,
-// with log attributes instead of format args. This allows you to filter and query on the attributes
-// in the log analysis tool of your choice, in a more structured manner than arbitrary message
-// formatting.
-func Infof(ctx context.Context, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelInfo, formatString, formatArgs, nil, nil, nil)
-}
-
-// Warn logs the given message at the WARN log level, along with any given log attributes.
-// It uses the [slog.Default] logger.
-//
-// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
-// a function without a context parameter, you may pass a nil context. But ideally, you should pass
-// a context wherever you do logging, in order to propagate context attributes.
-//
-// # Log attributes
-//
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
-//
-//	// Pairs of string keys and corresponding values:
-//	log.Warn(ctx, "Message", "key1", "value1", "key2", 2)
-//	// slog.Attr objects:
-//	log.Warn(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
-//	// Or a mix of the two:
-//	log.Warn(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
-//
-// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
-// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
-// your choice, in a more structured manner than if you were to just use string concatenation.
-func Warn(ctx context.Context, message string, logAttributes ...any) {
-	Default().log(ctx, slog.LevelWarn, message, nil, logAttributes, nil, nil)
-}
-
-// Warnf creates a message from the given format string and arguments using [fmt.Sprintf], and logs
-// it at the WARN log level. It uses the [slog.Default] logger.
-//
-// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
-// a function without a context parameter, you may pass a nil context. But ideally, you should pass
-// a context wherever you do logging, in order to propagate context attributes.
-func Warnf(ctx context.Context, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, nil, nil)
-}
-
 // Error logs the given message at the ERROR log level, and adds a 'cause' attribute with the given
 // error, along with any other log attributes. It uses the [slog.Default] logger.
 //
@@ -119,6 +42,9 @@ func Error(ctx context.Context, err error, message string, logAttributes ...any)
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [log.Error] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func Errorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
 	Default().log(ctx, slog.LevelError, formatString, formatArgs, nil, err, nil)
 }
@@ -165,8 +91,50 @@ func ErrorMessage(ctx context.Context, message string, logAttributes ...any) {
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [log.ErrorMessage] instead,
+// and format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func ErrorMessagef(ctx context.Context, formatString string, formatArgs ...any) {
 	Default().log(ctx, slog.LevelError, formatString, formatArgs, nil, nil, nil)
+}
+
+// Warn logs the given message at the WARN log level, along with any given log attributes.
+// It uses the [slog.Default] logger.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// # Log attributes
+//
+// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.Warn(ctx, "Message", "key1", "value1", "key2", 2)
+//	// slog.Attr objects:
+//	log.Warn(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
+//	// Or a mix of the two:
+//	log.Warn(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
+//
+// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
+// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
+// your choice, in a more structured manner than if you were to just use string concatenation.
+func Warn(ctx context.Context, message string, logAttributes ...any) {
+	Default().log(ctx, slog.LevelWarn, message, nil, logAttributes, nil, nil)
+}
+
+// Warnf creates a message from the given format string and arguments using [fmt.Sprintf], and logs
+// it at the WARN log level. It uses the [slog.Default] logger.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [log.Warn] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
+func Warnf(ctx context.Context, formatString string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, nil, nil)
 }
 
 // WarnError logs the given message at the WARN log level, and adds a 'cause' attribute with the
@@ -203,6 +171,9 @@ func WarnError(ctx context.Context, err error, message string, logAttributes ...
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [log.WarnError] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func WarnErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
 	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
 }
@@ -214,6 +185,101 @@ func WarnErrorf(ctx context.Context, err error, formatString string, formatArgs 
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
 func WarnErrors(ctx context.Context, message string, errors ...error) {
+	Default().log(ctx, slog.LevelWarn, message, nil, nil, nil, errors)
+}
+
+// Info logs the given message at the INFO log level, along with any given log attributes.
+// It uses the [slog.Default] logger.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// # Log attributes
+//
+// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.Info(ctx, "Message", "key1", "value1", "key2", 2)
+//	// slog.Attr objects:
+//	log.Info(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
+//	// Or a mix of the two:
+//	log.Info(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
+//
+// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
+// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
+// your choice, in a more structured manner than if you were to just use string concatenation.
+func Info(ctx context.Context, message string, logAttributes ...any) {
+	Default().log(ctx, slog.LevelInfo, message, nil, logAttributes, nil, nil)
+}
+
+// Infof creates a message from the given format string and arguments using [fmt.Sprintf], and logs
+// it at the INFO log level. It uses the [slog.Default] logger.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// If you have structured data to attach to the log, you should consider using [log.Info] instead,
+// with log attributes instead of format args. This allows you to filter and query on the attributes
+// in the log analysis tool of your choice, in a more structured manner than arbitrary message
+// formatting.
+//
+// If you want to add structured attributes to the log, you should call [log.Info] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
+func Infof(ctx context.Context, formatString string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelInfo, formatString, formatArgs, nil, nil, nil)
+}
+
+// InfoError logs the given message at the INFO log level, and adds a 'cause' attribute with the
+// given error, along with any other log attributes. It uses the [slog.Default] logger.
+//
+// If you pass a blank string as the message, the error string is used as the log message.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// # Log attributes
+//
+// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	log.InfoError(ctx, err, "Message", "key1", "value1", "key2", 2)
+//	// slog.Attr objects:
+//	log.InfoError(ctx, err, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
+//	// Or a mix of the two:
+//	log.InfoError(ctx, err, "Message", "key1", "value1", slog.Int("key2", 2))
+//
+// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
+// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
+// your choice, in a more structured manner than if you were to just use string concatenation.
+func InfoError(ctx context.Context, err error, message string, logAttributes ...any) {
+	Default().log(ctx, slog.LevelWarn, message, nil, logAttributes, err, nil)
+}
+
+// InfoErrorf logs a formatted message (using [fmt.Sprintf]) at the INFO log level, and adds a
+// 'cause' attribute with the given error. It uses the [slog.Default] logger.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [log.InfoError] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
+func InfoErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
+}
+
+// InfoErrors logs the given message at the INFO log level, and adds a 'cause' attribute with the
+// given errors. It uses the [slog.Default] logger.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+func InfoErrors(ctx context.Context, message string, errors ...error) {
 	Default().log(ctx, slog.LevelWarn, message, nil, nil, nil, errors)
 }
 
@@ -255,6 +321,12 @@ func Debug(ctx context.Context, message string, logAttributes ...any) {
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured log attributes to the log, you should call [log.Debug] instead,
+// and format the message directly with [fmt.Sprintf] if you want message formatting as well.
+//
+// If you want to add structured attributes to the log, you should call [log.Debug] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func Debugf(ctx context.Context, formatString string, formatArgs ...any) {
 	Default().log(ctx, slog.LevelDebug, formatString, formatArgs, nil, nil, nil)
 }
@@ -299,6 +371,9 @@ func DebugError(ctx context.Context, err error, message string, logAttributes ..
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [log.DebugError] instead,
+// and format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func DebugErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
 	Default().log(ctx, slog.LevelDebug, formatString, formatArgs, nil, err, nil)
 }
@@ -378,76 +453,6 @@ func (logger Logger) Handler() slog.Handler {
 	return logger.handler
 }
 
-// Info logs the given message at the INFO log level, along with any given log attributes.
-//
-// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
-// a function without a context parameter, you may pass a nil context. But ideally, you should pass
-// a context wherever you do logging, in order to propagate context attributes.
-//
-// # Log attributes
-//
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
-//
-//	// Pairs of string keys and corresponding values:
-//	logger.Info(ctx, "Message", "key1", "value1", "key2", 2)
-//	// slog.Attr objects:
-//	logger.Info(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
-//	// Or a mix of the two:
-//	logger.Info(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
-//
-// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
-// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
-// your choice, in a more structured manner than if you were to just use string concatenation.
-func (logger Logger) Info(ctx context.Context, message string, logAttributes ...any) {
-	logger.log(ctx, slog.LevelInfo, message, nil, logAttributes, nil, nil)
-}
-
-// Infof creates a message from the given format string and arguments using [fmt.Sprintf], and logs
-// it at the INFO log level.
-//
-// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
-// a function without a context parameter, you may pass a nil context. But ideally, you should pass
-// a context wherever you do logging, in order to propagate context attributes.
-func (logger Logger) Infof(ctx context.Context, formatString string, formatArgs ...any) {
-	logger.log(ctx, slog.LevelInfo, formatString, formatArgs, nil, nil, nil)
-}
-
-// Warn logs the given message at the WARN log level, along with any given log attributes.
-//
-// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
-// a function without a context parameter, you may pass a nil context. But ideally, you should pass
-// a context wherever you do logging, in order to propagate context attributes.
-//
-// # Log attributes
-//
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
-//
-//	// Pairs of string keys and corresponding values:
-//	logger.Warn(ctx, "Message", "key1", "value1", "key2", 2)
-//	// slog.Attr objects:
-//	logger.Warn(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
-//	// Or a mix of the two:
-//	logger.Warn(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
-//
-// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
-// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
-// your choice, in a more structured manner than if you were to just use string concatenation.
-func (logger Logger) Warn(ctx context.Context, message string, logAttributes ...any) {
-	logger.log(ctx, slog.LevelWarn, message, nil, logAttributes, nil, nil)
-}
-
-// Warnf creates a message from the given format string and arguments using [fmt.Sprintf], and logs
-// it at the WARN log level.
-//
-// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
-// a function without a context parameter, you may pass a nil context. But ideally, you should pass
-// a context wherever you do logging, in order to propagate context attributes.
-func (logger Logger) Warnf(ctx context.Context, formatString string, formatArgs ...any) {
-	logger.log(ctx, slog.LevelWarn, formatString, formatArgs, nil, nil, nil)
-}
-
 // Error logs the given message at the ERROR log level, and adds a 'cause' attribute with the given
 // error, along with any other log attributes.
 //
@@ -487,6 +492,9 @@ func (logger Logger) Error(
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [Logger.Error] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func (logger Logger) Errorf(
 	ctx context.Context,
 	err error,
@@ -537,8 +545,50 @@ func (logger Logger) ErrorMessage(ctx context.Context, message string, logAttrib
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [Logger.ErrorMessage]
+// instead, and format the message directly with [fmt.Sprintf] if you want message formatting as
+// well.
 func (logger Logger) ErrorMessagef(ctx context.Context, formatString string, formatArgs ...any) {
 	logger.log(ctx, slog.LevelError, formatString, formatArgs, nil, nil, nil)
+}
+
+// Warn logs the given message at the WARN log level, along with any given log attributes.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// # Log attributes
+//
+// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.Warn(ctx, "Message", "key1", "value1", "key2", 2)
+//	// slog.Attr objects:
+//	logger.Warn(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
+//	// Or a mix of the two:
+//	logger.Warn(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
+//
+// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
+// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
+// your choice, in a more structured manner than if you were to just use string concatenation.
+func (logger Logger) Warn(ctx context.Context, message string, logAttributes ...any) {
+	logger.log(ctx, slog.LevelWarn, message, nil, logAttributes, nil, nil)
+}
+
+// Warnf creates a message from the given format string and arguments using [fmt.Sprintf], and logs
+// it at the WARN log level.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [Logger.Warn] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
+func (logger Logger) Warnf(ctx context.Context, formatString string, formatArgs ...any) {
+	logger.log(ctx, slog.LevelWarn, formatString, formatArgs, nil, nil, nil)
 }
 
 // WarnError logs the given message at the WARN log level, and adds a 'cause' attribute with the
@@ -580,6 +630,9 @@ func (logger Logger) WarnError(
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [Logger.WarnError] instead,
+// and format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func (logger Logger) WarnErrorf(
 	ctx context.Context,
 	err error,
@@ -596,6 +649,105 @@ func (logger Logger) WarnErrorf(
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
 func (logger Logger) WarnErrors(ctx context.Context, message string, errors ...error) {
+	logger.log(ctx, slog.LevelWarn, message, nil, nil, nil, errors)
+}
+
+// Info logs the given message at the INFO log level, along with any given log attributes.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// # Log attributes
+//
+// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.Info(ctx, "Message", "key1", "value1", "key2", 2)
+//	// slog.Attr objects:
+//	logger.Info(ctx, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
+//	// Or a mix of the two:
+//	logger.Info(ctx, "Message", "key1", "value1", slog.Int("key2", 2))
+//
+// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
+// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
+// your choice, in a more structured manner than if you were to just use string concatenation.
+func (logger Logger) Info(ctx context.Context, message string, logAttributes ...any) {
+	logger.log(ctx, slog.LevelInfo, message, nil, logAttributes, nil, nil)
+}
+
+// Infof creates a message from the given format string and arguments using [fmt.Sprintf], and logs
+// it at the INFO log level.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [Logger.Info] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
+func (logger Logger) Infof(ctx context.Context, formatString string, formatArgs ...any) {
+	logger.log(ctx, slog.LevelInfo, formatString, formatArgs, nil, nil, nil)
+}
+
+// InfoError logs the given message at the INFO log level, and adds a 'cause' attribute with the
+// given error, along with any other log attributes.
+//
+// If you pass a blank string as the message, the error string is used as the log message.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// # Log attributes
+//
+// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
+// following ways:
+//
+//	// Pairs of string keys and corresponding values:
+//	logger.InfoError(ctx, err, "Message", "key1", "value1", "key2", 2)
+//	// slog.Attr objects:
+//	logger.InfoError(ctx, err, "Message", slog.String("key1", "value1"), slog.Int("key2", 2))
+//	// Or a mix of the two:
+//	logger.InfoError(ctx, err, "Message", "key1", "value1", slog.Int("key2", 2))
+//
+// When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
+// JSON object. This allows you to filter and query on the attributes in the log analysis tool of
+// your choice, in a more structured manner than if you were to just use string concatenation.
+func (logger Logger) InfoError(
+	ctx context.Context,
+	err error,
+	message string,
+	logAttributes ...any,
+) {
+	logger.log(ctx, slog.LevelWarn, message, nil, logAttributes, err, nil)
+}
+
+// InfoErrorf logs a formatted message (using [fmt.Sprintf]) at the INFO log level, and adds a
+// 'cause' attribute with the given error.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [Logger.InfoError] instead,
+// and format the message directly with [fmt.Sprintf] if you want message formatting as well.
+func (logger Logger) InfoErrorf(
+	ctx context.Context,
+	err error,
+	formatString string,
+	formatArgs ...any,
+) {
+	logger.log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
+}
+
+// InfoErrors logs the given message at the INFO log level, and adds a 'cause' attribute with the
+// given errors.
+//
+// The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
+// a function without a context parameter, you may pass a nil context. But ideally, you should pass
+// a context wherever you do logging, in order to propagate context attributes.
+func (logger Logger) InfoErrors(ctx context.Context, message string, errors ...error) {
 	logger.log(ctx, slog.LevelWarn, message, nil, nil, nil, errors)
 }
 
@@ -636,6 +788,9 @@ func (logger Logger) Debug(ctx context.Context, message string, logAttributes ..
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [Logger.Debug] instead, and
+// format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func (logger Logger) Debugf(ctx context.Context, formatString string, formatArgs ...any) {
 	logger.log(ctx, slog.LevelDebug, formatString, formatArgs, nil, nil, nil)
 }
@@ -685,6 +840,9 @@ func (logger Logger) DebugError(
 // The context parameter is used to add context attributes from [log.AddContextAttrs]. If you're in
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
+//
+// If you want to add structured attributes to the log, you should call [Logger.DebugError] instead,
+// and format the message directly with [fmt.Sprintf] if you want message formatting as well.
 func (logger Logger) DebugErrorf(
 	ctx context.Context,
 	err error,
