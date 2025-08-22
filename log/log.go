@@ -267,7 +267,7 @@ func Infof(ctx context.Context, formatString string, formatArgs ...any) {
 // JSON object. This allows you to filter and query on the attributes in the log analysis tool of
 // your choice, in a more structured manner than if you were to just use string concatenation.
 func InfoError(ctx context.Context, err error, message string, logAttributes ...any) {
-	Default().log(ctx, slog.LevelWarn, message, nil, logAttributes, err, nil)
+	Default().log(ctx, slog.LevelInfo, message, nil, logAttributes, err, nil)
 }
 
 // InfoErrorf logs a formatted message (using [fmt.Sprintf]) at the INFO log level, and adds a
@@ -283,7 +283,7 @@ func InfoError(ctx context.Context, err error, message string, logAttributes ...
 // formatting. If you want both attributes and a formatted message, you should call [log.InfoError]
 // and format the message directly with [fmt.Sprintf].
 func InfoErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
+	Default().log(ctx, slog.LevelInfo, formatString, formatArgs, nil, err, nil)
 }
 
 // InfoErrors logs the given message at the INFO log level, and adds a 'cause' attribute with the
@@ -293,7 +293,7 @@ func InfoErrorf(ctx context.Context, err error, formatString string, formatArgs 
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
 func InfoErrors(ctx context.Context, message string, errors ...error) {
-	Default().log(ctx, slog.LevelWarn, message, nil, nil, nil, errors)
+	Default().log(ctx, slog.LevelInfo, message, nil, nil, nil, errors)
 }
 
 // Debug logs the given message at the DEBUG log level, along with any given log attributes. It uses
@@ -869,7 +869,7 @@ func (logger Logger) InfoError(
 	message string,
 	logAttributes ...any,
 ) {
-	logger.log(ctx, slog.LevelWarn, message, nil, logAttributes, err, nil)
+	logger.log(ctx, slog.LevelInfo, message, nil, logAttributes, err, nil)
 }
 
 // InfoErrorf logs a formatted message (using [fmt.Sprintf]) at the INFO log level, and adds a
@@ -890,7 +890,7 @@ func (logger Logger) InfoErrorf(
 	formatString string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
+	logger.log(ctx, slog.LevelInfo, formatString, formatArgs, nil, err, nil)
 }
 
 // InfoErrors logs the given message at the INFO log level, and adds a 'cause' attribute with the
@@ -900,7 +900,7 @@ func (logger Logger) InfoErrorf(
 // a function without a context parameter, you may pass a nil context. But ideally, you should pass
 // a context wherever you do logging, in order to propagate context attributes.
 func (logger Logger) InfoErrors(ctx context.Context, message string, errors ...error) {
-	logger.log(ctx, slog.LevelWarn, message, nil, nil, nil, errors)
+	logger.log(ctx, slog.LevelInfo, message, nil, nil, nil, errors)
 }
 
 // Debug logs the given message at the DEBUG log level, along with any given log attributes.
