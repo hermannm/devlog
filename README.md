@@ -1,11 +1,31 @@
 # devlog
 
-A structured log handler for Go, with a human-readable output format designed for development
-builds.
+Go library that provides utilities for structured logging, building on the standard
+[`log/slog`](https://pkg.go.dev/log/slog) package. It provides two independent packages:
+
+- `devlog` implements a [`slog.Handler`](https://pkg.go.dev/log/slog#Handler) with a human-readable
+  output format, designed for local development and CLI tools
+- `devlog/log` is a thin wrapper over the logging API of `log/slog`, providing:
+    - Utility functions for log message formatting (`log.Infof`, `log.Errorf`, etc.)
+    - Error-aware logging functions, which structure errors to be formatted nicely as log attributes
+    - `log.AddContextAttrs`, a function for adding log attributes to a
+      [`context.Context`](https://pkg.go.dev/context), applying the attributes to all logs made in
+      that context
 
 Run `go get hermannm.dev/devlog` to add it to your project!
 
+**Docs:** [pkg.go.dev/hermannm.dev/devlog](https://pkg.go.dev/hermannm.dev/devlog)
+
+**Contents:**
+
+- [Usage](#usage)
+    - [Using the `devlog` output handler](#using-the-devlog-output-handler)
+    - [Using the `devlog/log` logging API](#using-the-devloglog-logging-api)
+- [Credits](#credits)
+
 ## Usage
+
+### Using the `devlog` output handler
 
 `devlog.Handler` implements [`slog.Handler`](https://pkg.go.dev/log/slog#Handler), so it can handle
 output for `slog`'s logging functions. It can be configured as follows:
@@ -43,8 +63,8 @@ slog.Error(
 ![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/ac5ebe0a372e745c30b5afe6eeb71a67c4c44d21/devlog-example-output.png?raw=true)
 
 This output is meant to be easily read by a developer working locally. However, you may want a more
-structured format for production, such as JSON, to make log analysis easier. You can get both by
-conditionally choosing the log handler for your application, like this:
+structured format (like JSON) for production systems, to make log analysis easier. You can get both
+by conditionally choosing the log handler for your application, like this:
 
 <!-- @formatter:off -->
 ```go
@@ -61,18 +81,9 @@ slog.SetDefault(slog.New(logHandler))
 ```
 <!-- @formatter:on -->
 
-## devlog/log
+### Using the `devlog/log` logging API
 
-To complement `devlog`'s output handling, the
-[`devlog/log`](https://pkg.go.dev/hermannm.dev/devlog/log) subpackage provides input handling. It is
-a thin wrapper over the `slog` package, providing:
-
-- Utility functions for log message formatting (`Infof`, `Errorf` etc.)
-- Error-aware logging functions, which structure errors to be formatted nicely as log attributes
-- `log.AddContextAttrs`, a function for adding log attributes to a `context.Context`, applying the
-  attributes to all logs made in that context
-
-Example using `devlog/log`:
+Example:
 
 <!-- @formatter:off -->
 ```go
@@ -91,7 +102,7 @@ func example(ctx context.Context) {
 ```
 <!-- @formatter:on -->
 
-This gives the following output (when using `devlog.NewHandler`):
+This gives the following output (using the `devlog` output handler):
 
 ![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/ac5ebe0a372e745c30b5afe6eeb71a67c4c44d21/devlog-example-output-2.png?raw=true)
 
