@@ -188,19 +188,22 @@ func getLogOutput(t *testing.T, handlerOptions *devlog.Options, logFunc func()) 
 	logFunc()
 
 	output := buffer.String()
-	t.Log(output)
+	t.Log(strings.TrimSuffix(output, "\n"))
 	return output
 }
 
 func assertContains(t *testing.T, output string, expectedInOutput ...string) {
 	t.Helper()
 
+	output = strings.TrimSuffix(output, "\n")
+
 	for _, expected := range expectedInOutput {
 		if !strings.Contains(output, expected) {
 			t.Errorf(`unexpected log output
 got:
 ----------------------------------------
-%s----------------------------------------
+%s
+----------------------------------------
 
 want:
 ----------------------------------------
