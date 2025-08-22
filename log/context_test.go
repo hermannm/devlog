@@ -27,42 +27,51 @@ func TestAddContextAttrs(t *testing.T) {
 
 func TestNestedContextAttrs(t *testing.T) {
 	ctx := log.AddContextAttrs(context.Background(), "ctxKey1", "value1", "ctxKey2", "value2")
-
 	ctx = log.AddContextAttrs(ctx, "ctxKey3", "value3", "ctxKey4", "value4")
 
-	output := getLogOutput(nil, func() {
+	output1 := getLogOutput(nil, func() {
 		log.Info(ctx, "Test")
 	})
 
 	verifyLogAttrs(
 		t,
-		output,
+		output1,
 		// Most recent context attrs should be first
 		`"ctxKey3":"value3","ctxKey4":"value4","ctxKey1":"value1","ctxKey2":"value2"`,
 	)
 }
 
 func TestOverwritingContextAttrs(t *testing.T) {
-	ctx := log.AddContextAttrs(
+	ctx1 := log.AddContextAttrs(
 		context.Background(),
 		"uniqueKey1", "value1",
 		"duplicateKey", "value2",
 	)
-	ctx = log.AddContextAttrs(
-		ctx,
+	ctx2 := log.AddContextAttrs(
+		ctx1,
 		"duplicateKey", "value3",
 		"uniqueKey2", "value4",
 	)
 
-	output := getLogOutput(nil, func() {
-		log.Info(ctx, "Test")
+	output1 := getLogOutput(nil, func() {
+		log.Info(ctx2, "Test")
 	})
-
 	verifyLogAttrs(
 		t,
-		output,
+		output1,
 		// Most recent duplicate key should overwrite older key
 		`"duplicateKey":"value3","uniqueKey2":"value4","uniqueKey1":"value1"`,
+	)
+
+	// Test log with original context, to verify that the new context attributes did not mutate the
+	// old ones
+	output2 := getLogOutput(nil, func() {
+		log.Info(ctx1, "Test")
+	})
+	verifyLogAttrs(
+		t,
+		output2,
+		`"uniqueKey1":"value1","duplicateKey":"value2"`,
 	)
 }
 
