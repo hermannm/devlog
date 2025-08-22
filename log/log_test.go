@@ -4,53 +4,470 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
 	"hermannm.dev/devlog/log"
 )
 
-func TestInfo(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Info(ctx, "this is a test", "key", "value")
-	})
-
-	verifyLogOutput(t, output, "INFO", "this is a test", `"key":"value"`)
+type loggerTestCase[LogFuncT any] struct {
+	// Defaults to name of logFunc if omitted
+	name             string
+	logFunc          LogFuncT
+	expectedLogLevel slog.Level
 }
 
-func TestInfof(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Infof(ctx, "this is a %s", "format arg")
-	})
+func TestLogsWithAttrs(t *testing.T) {
+	logger, outputBuffer := setupLogger()
 
-	verifyLogOutput(t, output, "INFO", "this is a format arg", "")
+	type testCase = loggerTestCase[func(ctx context.Context, message string, attrs ...any)]
+
+	testCases := []testCase{
+		{
+			logFunc:          log.ErrorMessage,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          log.Warn,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          log.Info,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          log.Debug,
+			expectedLogLevel: slog.LevelDebug,
+		},
+		{
+			logFunc:          logger.ErrorMessage,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          logger.Warn,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          logger.Info,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          logger.Debug,
+			expectedLogLevel: slog.LevelDebug,
+		},
+	}
+	// Add test cases for log.Log and Logger.Log functions, for all log levels
+	for _, level := range allLogLevels {
+		testCases = append(
+			testCases,
+			testCase{
+				name: fmt.Sprintf("log.Log(%v)", level),
+				logFunc: func(ctx context.Context, message string, attrs ...any) {
+					log.Log(ctx, level, message, attrs...)
+				},
+				expectedLogLevel: level,
+			},
+			testCase{
+				name: fmt.Sprintf("Logger.Log(%v)", level),
+				logFunc: func(ctx context.Context, message string, attrs ...any) {
+					logger.Log(ctx, level, message, attrs...)
+				},
+				expectedLogLevel: level,
+			},
+		)
+	}
+
+	runTestCases(
+		t,
+		testCases,
+		func(testCase testCase) {
+			testCase.logFunc(ctx, "Test message", "key1", "value1", slog.Int("key2", 2))
+		},
+		expectedOutput{
+			message: "Test message",
+			attrs:   `"key1":"value1","key2":2`,
+		},
+		outputBuffer,
+	)
 }
 
-func TestWarn(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Warn(ctx, "this is a test", "key", "value")
-	})
+func TestLogsWithFormattedMessage(t *testing.T) {
+	logger, outputBuffer := setupLogger()
 
-	verifyLogOutput(t, output, "WARN", "this is a test", `"key":"value"`)
+	type testCase = loggerTestCase[func(ctx context.Context, format string, args ...any)]
+
+	testCases := []testCase{
+		{
+			logFunc:          log.ErrorMessagef,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          log.Warnf,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          log.Infof,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          log.Debugf,
+			expectedLogLevel: slog.LevelDebug,
+		},
+		{
+			logFunc:          logger.ErrorMessagef,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          logger.Warnf,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          logger.Infof,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          logger.Debugf,
+			expectedLogLevel: slog.LevelDebug,
+		},
+	}
+	// Add test cases for log.Logf and Logger.Logf functions, for all log levels
+	for _, level := range allLogLevels {
+		testCases = append(
+			testCases,
+			testCase{
+				name: fmt.Sprintf("log.Logf(%v)", level),
+				logFunc: func(ctx context.Context, format string, args ...any) {
+					log.Logf(ctx, level, format, args...)
+				},
+				expectedLogLevel: level,
+			},
+			testCase{
+				name: fmt.Sprintf("Logger.Logf(%v)", level),
+				logFunc: func(ctx context.Context, format string, args ...any) {
+					logger.Logf(ctx, level, format, args...)
+				},
+				expectedLogLevel: level,
+			},
+		)
+	}
+
+	runTestCases(
+		t,
+		testCases,
+		func(testCase testCase) {
+			testCase.logFunc(ctx, "Test %d with %s message", 2, "formatted")
+		},
+		expectedOutput{
+			message: "Test 2 with formatted message",
+			attrs:   "",
+		},
+		outputBuffer,
+	)
 }
 
-func TestWarnf(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Warnf(ctx, "this is a %s", "format arg")
-	})
+func TestLogsWithErrorAndAttrs(t *testing.T) {
+	logger, outputBuffer := setupLogger()
 
-	verifyLogOutput(t, output, "WARN", "this is a format arg", "")
+	type testCase = loggerTestCase[func(ctx context.Context, err error, message string, attrs ...any)]
+
+	testCases := []testCase{
+		{
+			logFunc:          log.Error,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          log.WarnError,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          log.InfoError,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          log.DebugError,
+			expectedLogLevel: slog.LevelDebug,
+		},
+		{
+			logFunc:          logger.Error,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          logger.WarnError,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          logger.InfoError,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          logger.DebugError,
+			expectedLogLevel: slog.LevelDebug,
+		},
+	}
+	// Add test cases for log.Log and Logger.Log functions, for all log levels
+	for _, level := range allLogLevels {
+		testCases = append(
+			testCases,
+			testCase{
+				name: fmt.Sprintf("log.LogWithError(%v)", level),
+				logFunc: func(ctx context.Context, err error, message string, attrs ...any) {
+					log.LogWithError(ctx, level, err, message, attrs...)
+				},
+				expectedLogLevel: level,
+			},
+			testCase{
+				name: fmt.Sprintf("Logger.LogWithError(%v)", level),
+				logFunc: func(ctx context.Context, err error, message string, attrs ...any) {
+					logger.LogWithError(ctx, level, err, message, attrs...)
+				},
+				expectedLogLevel: level,
+			},
+		)
+	}
+
+	runTestCases(
+		t,
+		testCases,
+		func(testCase testCase) {
+			err := errors.New("an error occurred")
+			testCase.logFunc(ctx, err, "Something went wrong", "key1", "value1", slog.Int("key2", 2))
+		},
+		expectedOutput{
+			message: "Something went wrong",
+			attrs:   `"cause":"an error occurred","key1":"value1","key2":2`,
+		},
+		outputBuffer,
+	)
 }
 
-func TestError(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err := errors.New("error")
-		log.Error(ctx, err, "an error occurred", "errorCode", 6)
-	})
+func TestLogsWithErrorAndFormattedMessage(t *testing.T) {
+	logger, outputBuffer := setupLogger()
 
-	verifyLogOutput(t, output, "ERROR", "an error occurred", `"cause":"error","errorCode":6`)
+	type testCase = loggerTestCase[func(ctx context.Context, err error, format string, args ...any)]
+
+	testCases := []testCase{
+		{
+			logFunc:          log.Errorf,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          log.WarnErrorf,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          log.InfoErrorf,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          log.DebugErrorf,
+			expectedLogLevel: slog.LevelDebug,
+		},
+		{
+			logFunc:          logger.Errorf,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          logger.WarnErrorf,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          logger.InfoErrorf,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          logger.DebugErrorf,
+			expectedLogLevel: slog.LevelDebug,
+		},
+	}
+	// Add test cases for log.LogWithErrorf and Logger.LogWithErrorf functions, for all log levels
+	for _, level := range allLogLevels {
+		testCases = append(
+			testCases,
+			testCase{
+				name: fmt.Sprintf("log.Logf(%v)", level),
+				logFunc: func(ctx context.Context, err error, format string, args ...any) {
+					log.LogWithErrorf(ctx, level, err, format, args...)
+				},
+				expectedLogLevel: level,
+			},
+			testCase{
+				name: fmt.Sprintf("Logger.Logf(%v)", level),
+				logFunc: func(ctx context.Context, err error, format string, args ...any) {
+					logger.LogWithErrorf(ctx, level, err, format, args...)
+				},
+				expectedLogLevel: level,
+			},
+		)
+	}
+
+	runTestCases(
+		t,
+		testCases,
+		func(testCase testCase) {
+			err := errors.New("an error occurred")
+			testCase.logFunc(ctx, err, "Something went %s, try again in %d minute", "wrong", 1)
+		},
+		expectedOutput{
+			message: "Something went wrong, try again in 1 minute",
+			attrs:   `"cause":"an error occurred"`,
+		},
+		outputBuffer,
+	)
+}
+
+func TestLogsWithMultipleErrorsAndAttrs(t *testing.T) {
+	logger, outputBuffer := setupLogger()
+
+	type testCase = loggerTestCase[func(ctx context.Context, errs []error, message string, attrs ...any)]
+
+	testCases := []testCase{
+		{
+			logFunc:          log.Errors,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          log.WarnErrors,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          log.InfoErrors,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          log.DebugErrors,
+			expectedLogLevel: slog.LevelDebug,
+		},
+		{
+			logFunc:          logger.Errors,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          logger.WarnErrors,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          logger.InfoErrors,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          logger.DebugErrors,
+			expectedLogLevel: slog.LevelDebug,
+		},
+	}
+	// Add test cases for log.LogWithErrors and Logger.LogWithErrors functions, for all log levels
+	for _, level := range allLogLevels {
+		testCases = append(
+			testCases,
+			testCase{
+				name: fmt.Sprintf("log.LogWithErrors(%v)", level),
+				logFunc: func(ctx context.Context, errs []error, message string, attrs ...any) {
+					log.LogWithErrors(ctx, level, errs, message, attrs...)
+				},
+				expectedLogLevel: level,
+			},
+			testCase{
+				name: fmt.Sprintf("Logger.LogWithErrors(%v)", level),
+				logFunc: func(ctx context.Context, errs []error, message string, attrs ...any) {
+					logger.LogWithErrors(ctx, level, errs, message, attrs...)
+				},
+				expectedLogLevel: level,
+			},
+		)
+	}
+
+	runTestCases(
+		t,
+		testCases,
+		func(testCase testCase) {
+			errs := []error{errors.New("error 1"), errors.New("error 2")}
+			testCase.logFunc(ctx, errs, "Something went wrong", "key1", "value1", slog.Int("key2", 2))
+		},
+		expectedOutput{
+			message: "Something went wrong",
+			attrs:   `"cause":["error 1","error 2"],"key1":"value1","key2":2`,
+		},
+		outputBuffer,
+	)
+}
+
+func TestLogsWithMultipleErrorsAndFormattedMessage(t *testing.T) {
+	logger, outputBuffer := setupLogger()
+
+	type testCase = loggerTestCase[func(ctx context.Context, errs []error, format string, args ...any)]
+
+	testCases := []testCase{
+		{
+			logFunc:          log.Errorsf,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          log.WarnErrorsf,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          log.InfoErrorsf,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          log.DebugErrorsf,
+			expectedLogLevel: slog.LevelDebug,
+		},
+		{
+			logFunc:          logger.Errorsf,
+			expectedLogLevel: slog.LevelError,
+		},
+		{
+			logFunc:          logger.WarnErrorsf,
+			expectedLogLevel: slog.LevelWarn,
+		},
+		{
+			logFunc:          logger.InfoErrorsf,
+			expectedLogLevel: slog.LevelInfo,
+		},
+		{
+			logFunc:          logger.DebugErrorsf,
+			expectedLogLevel: slog.LevelDebug,
+		},
+	}
+	// Add test cases for log.LogWithErrorsf and Logger.LogWithErrorsf functions, for all log levels
+	for _, level := range allLogLevels {
+		testCases = append(
+			testCases,
+			testCase{
+				name: fmt.Sprintf("log.LogWithErrorsf(%v)", level),
+				logFunc: func(ctx context.Context, errs []error, format string, args ...any) {
+					log.LogWithErrorsf(ctx, level, errs, format, args...)
+				},
+				expectedLogLevel: level,
+			},
+			testCase{
+				name: fmt.Sprintf("Logger.LogWithErrorsf(%v)", level),
+				logFunc: func(ctx context.Context, errs []error, format string, args ...any) {
+					logger.LogWithErrorsf(ctx, level, errs, format, args...)
+				},
+				expectedLogLevel: level,
+			},
+		)
+	}
+
+	runTestCases(
+		t,
+		testCases,
+		func(testCase testCase) {
+			errs := []error{errors.New("error 1"), errors.New("error 2")}
+			testCase.logFunc(ctx, errs, "Something went %s, try again in %d minute", "wrong", 1)
+		},
+		expectedOutput{
+			message: "Something went wrong, try again in 1 minute",
+			attrs:   `"cause":["error 1","error 2"]`,
+		},
+		outputBuffer,
+	)
 }
 
 func TestErrorWithBlankMessage(t *testing.T) {
@@ -60,133 +477,6 @@ func TestErrorWithBlankMessage(t *testing.T) {
 	})
 
 	verifyLogOutput(t, output, "ERROR", "error", `"errorCode":6`)
-}
-
-func TestErrorf(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err := errors.New("error")
-		log.Errorf(ctx, err, "a %s error occurred", "formatted")
-	})
-
-	verifyLogOutput(t, output, "ERROR", "a formatted error occurred", `"cause":"error"`)
-}
-
-func TestErrors(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err1 := errors.New("error 1")
-		err2 := errors.New("error 2")
-		log.Errors(ctx, "multiple errors occurred", err1, err2)
-	})
-
-	verifyLogOutput(t, output, "ERROR", "multiple errors occurred", `"cause":["error 1","error 2"]`)
-}
-
-func TestErrorMessage(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.ErrorMessage(ctx, "this is a test", "key", "value")
-	})
-
-	verifyLogOutput(t, output, "ERROR", "this is a test", `"key":"value"`)
-}
-
-func TestErrorMessagef(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.ErrorMessagef(ctx, "this is a %s", "format arg")
-	})
-
-	verifyLogOutput(t, output, "ERROR", "this is a format arg", "")
-}
-
-func TestWarnError(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err := errors.New("error")
-		log.WarnError(ctx, err, "an error occurred", "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "WARN", "an error occurred", `"cause":"error","errorCode":6`)
-}
-
-func TestWarnErrorWithBlankMessage(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err := errors.New("error")
-		log.WarnError(ctx, err, "", "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "WARN", "error", `"errorCode":6`)
-}
-
-func TestWarnErrorf(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err := errors.New("error")
-		log.WarnErrorf(ctx, err, "a %s error occurred", "formatted")
-	})
-
-	verifyLogOutput(t, output, "WARN", "a formatted error occurred", `"cause":"error"`)
-}
-
-func TestWarnErrors(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err1 := errors.New("error 1")
-		err2 := errors.New("error 2")
-		log.WarnErrors(ctx, "multiple errors occurred", err1, err2)
-	})
-
-	verifyLogOutput(t, output, "WARN", "multiple errors occurred", `"cause":["error 1","error 2"]`)
-}
-
-var enableDebug = &slog.HandlerOptions{Level: slog.LevelDebug}
-
-func TestDebug(t *testing.T) {
-	output := getLogOutput(enableDebug, func() {
-		log.Debug(ctx, "this is a test", "key", "value")
-	})
-
-	verifyLogOutput(t, output, "DEBUG", "this is a test", `"key":"value"`)
-}
-
-func TestDebugf(t *testing.T) {
-	output := getLogOutput(enableDebug, func() {
-		log.Debugf(ctx, "this is a %s", "format arg")
-	})
-
-	verifyLogOutput(t, output, "DEBUG", "this is a format arg", "")
-}
-
-func TestDebugError(t *testing.T) {
-	output := getLogOutput(enableDebug, func() {
-		err := errors.New("error")
-		log.DebugError(ctx, err, "an error occurred", "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "DEBUG", "an error occurred", `"cause":"error","errorCode":6`)
-}
-
-func TestDebugErrorWithBlankMessage(t *testing.T) {
-	output := getLogOutput(enableDebug, func() {
-		err := errors.New("error")
-		log.DebugError(ctx, err, "", "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "DEBUG", "error", `"errorCode":6`)
-}
-
-func TestDebugErrorf(t *testing.T) {
-	output := getLogOutput(enableDebug, func() {
-		err := errors.New("error")
-		log.DebugErrorf(ctx, err, "a %s error occurred", "formatted")
-	})
-
-	verifyLogOutput(t, output, "DEBUG", "a formatted error occurred", `"cause":"error"`)
-}
-
-func TestDebugErrors(t *testing.T) {
-	output := getLogOutput(enableDebug, func() {
-		err1 := errors.New("error 1")
-		err2 := errors.New("error 2")
-		log.DebugErrors(ctx, "multiple errors occurred", err1, err2)
-	})
-
-	verifyLogOutput(t, output, "DEBUG", "multiple errors occurred", `"cause":["error 1","error 2"]`)
 }
 
 func TestDisabledLogLevel(t *testing.T) {
@@ -211,231 +501,6 @@ func TestLogSource(t *testing.T) {
 	)
 
 	assertContains(t, output, `"source":`, `"function":`, "TestLogSource", `"file":`, "log_test.go")
-}
-
-func TestLoggerInfo(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		logger.Info(ctx, "this is a test", "key", "value")
-	})
-
-	verifyLogOutput(t, output, "INFO", "this is a test", `"key":"value"`)
-}
-
-func TestLoggerInfof(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		logger.Infof(ctx, "this is a %s", "format arg")
-	})
-
-	verifyLogOutput(t, output, "INFO", "this is a format arg", "")
-}
-
-func TestLoggerWarn(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		logger.Warn(ctx, "this is a test", "key", "value")
-	})
-
-	verifyLogOutput(t, output, "WARN", "this is a test", `"key":"value"`)
-}
-
-func TestLoggerWarnf(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		logger.Warnf(ctx, "this is a %s", "format arg")
-	})
-
-	verifyLogOutput(t, output, "WARN", "this is a format arg", "")
-}
-
-func TestLoggerError(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err := errors.New("error")
-		logger.Error(ctx, err, "an error occurred", "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "ERROR", "an error occurred", `"cause":"error","errorCode":6`)
-}
-
-func TestLoggerErrorWithBlankMessage(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err := errors.New("error")
-		logger.Error(ctx, err, "", "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "ERROR", "error", `"errorCode":6`)
-}
-
-func TestLoggerErrorf(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err := errors.New("error")
-		logger.Errorf(ctx, err, "a %s error occurred", "formatted")
-	})
-
-	verifyLogOutput(t, output, "ERROR", "a formatted error occurred", `"cause":"error"`)
-}
-
-func TestLoggerErrors(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err1 := errors.New("error 1")
-		err2 := errors.New("error 2")
-		logger.Errors(ctx, "multiple errors occurred", err1, err2)
-	})
-
-	verifyLogOutput(t, output, "ERROR", "multiple errors occurred", `"cause":["error 1","error 2"]`)
-}
-
-func TestLoggerErrorMessage(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		logger.ErrorMessage(ctx, "this is a test", "key", "value")
-	})
-
-	verifyLogOutput(t, output, "ERROR", "this is a test", `"key":"value"`)
-}
-
-func TestLoggerErrorMessagef(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		logger.ErrorMessagef(ctx, "this is a %s", "format arg")
-	})
-
-	verifyLogOutput(t, output, "ERROR", "this is a format arg", "")
-}
-
-func TestLoggerWarnError(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err := errors.New("error")
-		logger.WarnError(ctx, err, "an error occurred", "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "WARN", "an error occurred", `"cause":"error","errorCode":6`)
-}
-
-func TestLoggerWarnErrorWithBlankMessage(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err := errors.New("error")
-		logger.WarnError(ctx, err, "", "errorCode", 6)
-	})
-
-	verifyLogOutput(t, output, "WARN", "error", `"errorCode":6`)
-}
-
-func TestLoggerWarnErrorf(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err := errors.New("error")
-		logger.WarnErrorf(ctx, err, "a %s error occurred", "formatted")
-	})
-
-	verifyLogOutput(t, output, "WARN", "a formatted error occurred", `"cause":"error"`)
-}
-
-func TestLoggerWarnErrors(t *testing.T) {
-	output := getLoggerOutput(nil, func(logger log.Logger) {
-		err1 := errors.New("error 1")
-		err2 := errors.New("error 2")
-		logger.WarnErrors(ctx, "multiple errors occurred", err1, err2)
-	})
-
-	verifyLogOutput(t, output, "WARN", "multiple errors occurred", `"cause":["error 1","error 2"]`)
-}
-
-func TestLoggerDebug(t *testing.T) {
-	output := getLoggerOutput(
-		enableDebug,
-		func(logger log.Logger) {
-			logger.Debug(ctx, "this is a test", "key", "value")
-		},
-	)
-
-	verifyLogOutput(t, output, "DEBUG", "this is a test", `"key":"value"`)
-}
-
-func TestLoggerDebugf(t *testing.T) {
-	output := getLoggerOutput(
-		enableDebug,
-		func(logger log.Logger) {
-			logger.Debugf(ctx, "this is a %s", "format arg")
-		},
-	)
-
-	verifyLogOutput(t, output, "DEBUG", "this is a format arg", "")
-}
-
-func TestLoggerDebugError(t *testing.T) {
-	output := getLoggerOutput(
-		enableDebug,
-		func(logger log.Logger) {
-			err := errors.New("error")
-			logger.DebugError(ctx, err, "an error occurred", "errorCode", 6)
-		},
-	)
-
-	verifyLogOutput(t, output, "DEBUG", "an error occurred", `"cause":"error","errorCode":6`)
-}
-
-func TestLoggerDebugErrorWithBlankMessage(t *testing.T) {
-	output := getLoggerOutput(
-		enableDebug,
-		func(logger log.Logger) {
-			err := errors.New("error")
-			logger.DebugError(ctx, err, "", "errorCode", 6)
-		},
-	)
-
-	verifyLogOutput(t, output, "DEBUG", "error", `"errorCode":6`)
-}
-
-func TestLoggerDebugErrorf(t *testing.T) {
-	output := getLoggerOutput(
-		enableDebug,
-		func(logger log.Logger) {
-			err := errors.New("error")
-			logger.DebugErrorf(ctx, err, "a %s error occurred", "formatted")
-		},
-	)
-
-	verifyLogOutput(t, output, "DEBUG", "a formatted error occurred", `"cause":"error"`)
-}
-
-func TestLoggerDebugErrors(t *testing.T) {
-	output := getLoggerOutput(
-		enableDebug,
-		func(logger log.Logger) {
-			err1 := errors.New("error 1")
-			err2 := errors.New("error 2")
-			logger.DebugErrors(ctx, "multiple errors occurred", err1, err2)
-		},
-	)
-
-	verifyLogOutput(t, output, "DEBUG", "multiple errors occurred", `"cause":["error 1","error 2"]`)
-}
-
-func TestLoggerDisabledLogLevel(t *testing.T) {
-	output := getLoggerOutput(
-		&slog.HandlerOptions{Level: slog.LevelInfo},
-		func(logger log.Logger) {
-			logger.Debug(ctx, "this is a test")
-		},
-	)
-
-	if output != "" {
-		t.Errorf("expected log output to be empty for disabled log level, but got: %s", output)
-	}
-}
-
-func TestLoggerSource(t *testing.T) {
-	output := getLoggerOutput(
-		&slog.HandlerOptions{AddSource: true},
-		func(logger log.Logger) {
-			logger.Info(ctx, "this is a test")
-		},
-	)
-
-	assertContains(
-		t,
-		output,
-		`"source":`,
-		`"function":`,
-		"TestLoggerSource",
-		`"file":`,
-		"log_test.go",
-	)
 }
 
 func TestLoggerWith(t *testing.T) {
@@ -499,13 +564,6 @@ func getLogOutput(handlerOptions *slog.HandlerOptions, logFunc func()) string {
 	return buffer.String()
 }
 
-func getLoggerOutput(handlerOptions *slog.HandlerOptions, loggerFunc func(log.Logger)) string {
-	var buffer bytes.Buffer
-	logger := log.New(slog.NewJSONHandler(&buffer, handlerOptions))
-	loggerFunc(logger)
-	return buffer.String()
-}
-
 func assertContains(t *testing.T, output string, expectedInOutput ...string) {
 	t.Helper()
 
@@ -513,6 +571,67 @@ func assertContains(t *testing.T, output string, expectedInOutput ...string) {
 		if !strings.Contains(output, expected) {
 			unexpectedLogOutput(t, "log output", output, expected)
 		}
+	}
+}
+
+func setupLogger() (logger log.Logger, outputBuffer *bytes.Buffer) {
+	var buffer bytes.Buffer
+	handler := slog.NewJSONHandler(&buffer, &slog.HandlerOptions{Level: slog.LevelDebug})
+	logger = log.New(handler)
+	slog.SetDefault(slog.New(handler))
+	return logger, &buffer
+}
+
+var allLogLevels = []slog.Level{slog.LevelError, slog.LevelWarn, slog.LevelInfo, slog.LevelDebug}
+
+type expectedOutput struct {
+	message string
+	attrs   string
+}
+
+func runTestCases[LogFuncT any](
+	t *testing.T,
+	testCases []loggerTestCase[LogFuncT],
+	runLogFunc func(testCase loggerTestCase[LogFuncT]),
+	expected expectedOutput,
+	outputBuffer *bytes.Buffer,
+) {
+	t.Helper()
+
+	// There are 4 log levels. For each log level (using INFO as an example), we want to test the
+	// following functions:
+	// - log.Info
+	// - Logger.Info
+	// - log.Log(slog.LevelInfo)
+	// - Logger.Log(slog.LevelInfo)
+	//
+	// So 4 x 4 = 16
+	const expectedTestCases = 16
+
+	if len(testCases) != expectedTestCases {
+		t.Fatalf("Expected %d test cases in runTestCases, got %d", expectedTestCases, len(testCases))
+	}
+
+	for _, testCase := range testCases {
+		if testCase.name == "" {
+			testCase.name = getFunctionName(testCase.logFunc)
+		}
+
+		t.Run(testCase.name, func(t *testing.T) {
+			runLogFunc(testCase)
+
+			output := outputBuffer.String()
+			t.Log(strings.TrimSuffix(output, "\n"))
+			outputBuffer.Reset()
+
+			verifyLogOutput(
+				t,
+				output,
+				testCase.expectedLogLevel.String(),
+				expected.message,
+				expected.attrs,
+			)
+		})
 	}
 }
 
@@ -562,14 +681,28 @@ func parseLogOutput(t *testing.T, output string) (level string, message string, 
 func unexpectedLogOutput(t *testing.T, descriptor string, actual string, expected string) {
 	t.Helper()
 
+	actual = strings.TrimSuffix(actual, "\n")
+
 	t.Errorf(`Unexpected %s
 Got:
 ----------------------------------------
-%s----------------------------------------
+%s
+----------------------------------------
 
 Want:
 ----------------------------------------
 %s
 ----------------------------------------
 `, descriptor, actual, expected)
+}
+
+func getFunctionName(function any) string {
+	name := runtime.FuncForPC(reflect.ValueOf(function).Pointer()).Name()
+	name = strings.TrimPrefix(name, "hermannm.dev/devlog/")
+	if strings.HasPrefix(name, "log.Logger.") {
+		name = strings.TrimPrefix(name, "log.")
+	}
+	// Suffix added to names of method references, like `logger.Warn`
+	name = strings.TrimSuffix(name, "-fm")
+	return name
 }
