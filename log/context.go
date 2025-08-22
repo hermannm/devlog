@@ -19,8 +19,8 @@ import (
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	ctx = log.AddContextAttrs(ctx, "key1", "value1", "key2", 2)

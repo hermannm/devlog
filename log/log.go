@@ -19,8 +19,8 @@ import (
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.Error(ctx, err, "Message", "key1", "value1", "key2", 2)
@@ -71,8 +71,8 @@ func Errors(ctx context.Context, message string, errors ...error) {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.ErrorMessage(ctx, "Message", "key1", "value1", "key2", 2)
@@ -113,8 +113,8 @@ func ErrorMessagef(ctx context.Context, formatString string, formatArgs ...any) 
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.Warn(ctx, "Message", "key1", "value1", "key2", 2)
@@ -157,8 +157,8 @@ func Warnf(ctx context.Context, formatString string, formatArgs ...any) {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.WarnError(ctx, err, "Message", "key1", "value1", "key2", 2)
@@ -209,8 +209,8 @@ func WarnErrors(ctx context.Context, message string, errors ...error) {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.Info(ctx, "Message", "key1", "value1", "key2", 2)
@@ -253,8 +253,8 @@ func Infof(ctx context.Context, formatString string, formatArgs ...any) {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.InfoError(ctx, err, "Message", "key1", "value1", "key2", 2)
@@ -308,8 +308,8 @@ func InfoErrors(ctx context.Context, message string, errors ...error) {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.Debug(ctx, "Message", "key1", "value1", "key2", 2)
@@ -358,8 +358,8 @@ func Debugf(ctx context.Context, formatString string, formatArgs ...any) {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.DebugError(ctx, err, "Message", "key1", "value1", "key2", 2)
@@ -419,8 +419,8 @@ func DebugErrors(ctx context.Context, message string, errors ...error) {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.Log(ctx, level, "Message", "key1", "value1", "key2", 2)
@@ -469,8 +469,8 @@ func Logf(ctx context.Context, level slog.Level, formatString string, formatArgs
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	log.LogWithError(ctx, level, err, "Message", "key1", "value1", "key2", 2)
@@ -551,8 +551,8 @@ func Default() Logger {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.With("key1", "value1", "key2", 2)
@@ -599,8 +599,8 @@ func (logger Logger) Handler() slog.Handler {
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.Error(ctx, err, "Message", "key1", "value1", "key2", 2)
@@ -660,8 +660,8 @@ func (logger Logger) Errors(ctx context.Context, message string, errors ...error
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.ErrorMessage(ctx, "Message", "key1", "value1", "key2", 2)
@@ -701,8 +701,8 @@ func (logger Logger) ErrorMessagef(ctx context.Context, formatString string, for
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.Warn(ctx, "Message", "key1", "value1", "key2", 2)
@@ -745,8 +745,8 @@ func (logger Logger) Warnf(ctx context.Context, formatString string, formatArgs 
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.WarnError(ctx, err, "Message", "key1", "value1", "key2", 2)
@@ -806,8 +806,8 @@ func (logger Logger) WarnErrors(ctx context.Context, message string, errors ...e
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.Info(ctx, "Message", "key1", "value1", "key2", 2)
@@ -850,8 +850,8 @@ func (logger Logger) Infof(ctx context.Context, formatString string, formatArgs 
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.InfoError(ctx, err, "Message", "key1", "value1", "key2", 2)
@@ -914,8 +914,8 @@ func (logger Logger) InfoErrors(ctx context.Context, message string, errors ...e
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.Debug(ctx, "Message", "key1", "value1", "key2", 2)
@@ -964,8 +964,8 @@ func (logger Logger) Debugf(ctx context.Context, formatString string, formatArgs
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.DebugError(ctx, err, "Message", "key1", "value1", "key2", 2)
@@ -1034,8 +1034,8 @@ func (logger Logger) DebugErrors(ctx context.Context, message string, errors ...
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.Log(ctx, level, "Message", "key1", "value1", "key2", 2)
@@ -1091,8 +1091,8 @@ func (logger Logger) Logf(ctx context.Context, level slog.Level, formatString st
 //
 // # Log attributes
 //
-// Log attributes are key/value pairs attached to a log line. You can pass attributes in the
-// following ways:
+// Attributes are key/value pairs attached to a log line (often abbreviated as "attrs"). You can
+// pass attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
 //	logger.LogWithError(ctx, level, err, "Message", "key1", "value1", "key2", 2)
