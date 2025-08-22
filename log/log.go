@@ -48,8 +48,8 @@ func Error(ctx context.Context, err error, message string, logAttributes ...any)
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [log.Error] and format the
 // message directly with [fmt.Sprintf].
-func Errorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelError, formatString, formatArgs, nil, err, nil)
+func Errorf(ctx context.Context, err error, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelError, messageFormat, formatArgs, nil, err, nil)
 }
 
 // Errors logs the given message at the ERROR log level, and adds a 'cause' attribute with the given
@@ -90,8 +90,8 @@ func Errors(ctx context.Context, errors []error, message string, logAttributes .
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [log.Errors] and format the
 // message directly with [fmt.Sprintf].
-func Errorsf(ctx context.Context, errors []error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelError, formatString, formatArgs, nil, nil, errors)
+func Errorsf(ctx context.Context, errors []error, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelError, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // ErrorMessage logs the given message at the ERROR log level, along with any given log attributes.
@@ -132,8 +132,8 @@ func ErrorMessage(ctx context.Context, message string, logAttributes ...any) {
 // the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call
 // [log.ErrorMessage] and format the message directly with [fmt.Sprintf].
-func ErrorMessagef(ctx context.Context, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelError, formatString, formatArgs, nil, nil, nil)
+func ErrorMessagef(ctx context.Context, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelError, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // Warn logs the given message at the WARN log level, along with any given log attributes. It uses
@@ -174,8 +174,8 @@ func Warn(ctx context.Context, message string, logAttributes ...any) {
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [log.Warn] and format the
 // message directly with [fmt.Sprintf].
-func Warnf(ctx context.Context, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, nil, nil)
+func Warnf(ctx context.Context, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelWarn, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // WarnError logs the given message at the WARN log level, and adds a 'cause' attribute with the
@@ -218,8 +218,8 @@ func WarnError(ctx context.Context, err error, message string, logAttributes ...
 // the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call [log.WarnError]
 // and format the message directly with [fmt.Sprintf].
-func WarnErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
+func WarnErrorf(ctx context.Context, err error, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelWarn, messageFormat, formatArgs, nil, err, nil)
 }
 
 // WarnErrors logs the given message at the WARN log level, and adds a 'cause' attribute with the
@@ -260,8 +260,8 @@ func WarnErrors(ctx context.Context, errors []error, message string, logAttribut
 // the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call [log.WarnErrors]
 // and format the message directly with [fmt.Sprintf].
-func WarnErrorsf(ctx context.Context, errors []error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelWarn, formatString, formatArgs, nil, nil, errors)
+func WarnErrorsf(ctx context.Context, errors []error, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelWarn, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // Info logs the given message at the INFO log level, along with any given log attributes. It uses
@@ -302,8 +302,8 @@ func Info(ctx context.Context, message string, logAttributes ...any) {
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [log.Info] and format the
 // message directly with [fmt.Sprintf].
-func Infof(ctx context.Context, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelInfo, formatString, formatArgs, nil, nil, nil)
+func Infof(ctx context.Context, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelInfo, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // InfoError logs the given message at the INFO log level, and adds a 'cause' attribute with the
@@ -346,8 +346,8 @@ func InfoError(ctx context.Context, err error, message string, logAttributes ...
 // the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call [log.InfoError]
 // and format the message directly with [fmt.Sprintf].
-func InfoErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelInfo, formatString, formatArgs, nil, err, nil)
+func InfoErrorf(ctx context.Context, err error, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelInfo, messageFormat, formatArgs, nil, err, nil)
 }
 
 // InfoErrors logs the given message at the INFO log level, and adds a 'cause' attribute with the
@@ -388,8 +388,8 @@ func InfoErrors(ctx context.Context, errors []error, message string, logAttribut
 // the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call [log.InfoErrors]
 // and format the message directly with [fmt.Sprintf].
-func InfoErrorsf(ctx context.Context, errors []error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelInfo, formatString, formatArgs, nil, nil, errors)
+func InfoErrorsf(ctx context.Context, errors []error, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelInfo, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // Debug logs the given message at the DEBUG log level, along with any given log attributes. It uses
@@ -436,8 +436,8 @@ func Debug(ctx context.Context, message string, logAttributes ...any) {
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [log.Debug] and format the
 // message directly with [fmt.Sprintf].
-func Debugf(ctx context.Context, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelDebug, formatString, formatArgs, nil, nil, nil)
+func Debugf(ctx context.Context, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelDebug, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // DebugError logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
@@ -486,8 +486,8 @@ func DebugError(ctx context.Context, err error, message string, logAttributes ..
 // the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call [log.DebugError]
 // and format the message directly with [fmt.Sprintf].
-func DebugErrorf(ctx context.Context, err error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelDebug, formatString, formatArgs, nil, err, nil)
+func DebugErrorf(ctx context.Context, err error, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelDebug, messageFormat, formatArgs, nil, err, nil)
 }
 
 // DebugErrors logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
@@ -534,8 +534,8 @@ func DebugErrors(ctx context.Context, errors []error, message string, logAttribu
 // the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call
 // [log.DebugErrors] and format the message directly with [fmt.Sprintf].
-func DebugErrorsf(ctx context.Context, errors []error, formatString string, formatArgs ...any) {
-	Default().log(ctx, slog.LevelDebug, formatString, formatArgs, nil, nil, errors)
+func DebugErrorsf(ctx context.Context, errors []error, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, slog.LevelDebug, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // Log logs a message at the given log level, along with any given log attributes. It uses the
@@ -582,8 +582,8 @@ func Log(ctx context.Context, level slog.Level, message string, logAttributes ..
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [log.Log] and format the
 // message directly with [fmt.Sprintf].
-func Logf(ctx context.Context, level slog.Level, formatString string, formatArgs ...any) {
-	Default().log(ctx, level, formatString, formatArgs, nil, nil, nil)
+func Logf(ctx context.Context, level slog.Level, messageFormat string, formatArgs ...any) {
+	Default().log(ctx, level, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // LogWithError logs a message at the given log level, and adds a 'cause' attribute with the given
@@ -643,10 +643,10 @@ func LogWithErrorf(
 	ctx context.Context,
 	level slog.Level,
 	err error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	Default().log(ctx, level, formatString, formatArgs, nil, err, nil)
+	Default().log(ctx, level, messageFormat, formatArgs, nil, err, nil)
 }
 
 // LogWithErrors logs a message at the given log level, and adds a 'cause' attribute with the given
@@ -705,10 +705,10 @@ func LogWithErrorsf(
 	ctx context.Context,
 	level slog.Level,
 	errors []error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	Default().log(ctx, level, formatString, formatArgs, nil, nil, errors)
+	Default().log(ctx, level, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // A Logger provides methods to produce structured log records for its output handler.
@@ -821,10 +821,10 @@ func (logger Logger) Error(
 func (logger Logger) Errorf(
 	ctx context.Context,
 	err error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelError, formatString, formatArgs, nil, err, nil)
+	logger.log(ctx, slog.LevelError, messageFormat, formatArgs, nil, err, nil)
 }
 
 // Errors logs the given message at the ERROR log level, and adds a 'cause' attribute with the given
@@ -873,10 +873,10 @@ func (logger Logger) Errors(
 func (logger Logger) Errorsf(
 	ctx context.Context,
 	errors []error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelError, formatString, formatArgs, nil, nil, errors)
+	logger.log(ctx, slog.LevelError, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // ErrorMessage logs the given message at the ERROR log level, along with any given log attributes.
@@ -916,8 +916,8 @@ func (logger Logger) ErrorMessage(ctx context.Context, message string, logAttrib
 // in the log analysis tool of your choice, in a more structured manner than arbitrary message
 // formatting. If you want both attributes and a formatted message, you should call
 // [Logger.ErrorMessage] and format the message directly with [fmt.Sprintf].
-func (logger Logger) ErrorMessagef(ctx context.Context, formatString string, formatArgs ...any) {
-	logger.log(ctx, slog.LevelError, formatString, formatArgs, nil, nil, nil)
+func (logger Logger) ErrorMessagef(ctx context.Context, messageFormat string, formatArgs ...any) {
+	logger.log(ctx, slog.LevelError, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // Warn logs the given message at the WARN log level, along with any given log attributes.
@@ -957,8 +957,8 @@ func (logger Logger) Warn(ctx context.Context, message string, logAttributes ...
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [Logger.Warn] and format
 // the message directly with [fmt.Sprintf].
-func (logger Logger) Warnf(ctx context.Context, formatString string, formatArgs ...any) {
-	logger.log(ctx, slog.LevelWarn, formatString, formatArgs, nil, nil, nil)
+func (logger Logger) Warnf(ctx context.Context, messageFormat string, formatArgs ...any) {
+	logger.log(ctx, slog.LevelWarn, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // WarnError logs the given message at the WARN log level, and adds a 'cause' attribute with the
@@ -1009,10 +1009,10 @@ func (logger Logger) WarnError(
 func (logger Logger) WarnErrorf(
 	ctx context.Context,
 	err error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelWarn, formatString, formatArgs, nil, err, nil)
+	logger.log(ctx, slog.LevelWarn, messageFormat, formatArgs, nil, err, nil)
 }
 
 // WarnErrors logs the given message at the WARN log level, and adds a 'cause' attribute with the
@@ -1061,10 +1061,10 @@ func (logger Logger) WarnErrors(
 func (logger Logger) WarnErrorsf(
 	ctx context.Context,
 	errors []error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelWarn, formatString, formatArgs, nil, nil, errors)
+	logger.log(ctx, slog.LevelWarn, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // Info logs the given message at the INFO log level, along with any given log attributes.
@@ -1104,8 +1104,8 @@ func (logger Logger) Info(ctx context.Context, message string, logAttributes ...
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [Logger.Info] and format
 // the message directly with [fmt.Sprintf].
-func (logger Logger) Infof(ctx context.Context, formatString string, formatArgs ...any) {
-	logger.log(ctx, slog.LevelInfo, formatString, formatArgs, nil, nil, nil)
+func (logger Logger) Infof(ctx context.Context, messageFormat string, formatArgs ...any) {
+	logger.log(ctx, slog.LevelInfo, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // InfoError logs the given message at the INFO log level, and adds a 'cause' attribute with the
@@ -1156,10 +1156,10 @@ func (logger Logger) InfoError(
 func (logger Logger) InfoErrorf(
 	ctx context.Context,
 	err error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelInfo, formatString, formatArgs, nil, err, nil)
+	logger.log(ctx, slog.LevelInfo, messageFormat, formatArgs, nil, err, nil)
 }
 
 // InfoErrors logs the given message at the INFO log level, and adds a 'cause' attribute with the
@@ -1208,10 +1208,10 @@ func (logger Logger) InfoErrors(
 func (logger Logger) InfoErrorsf(
 	ctx context.Context,
 	errors []error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelInfo, formatString, formatArgs, nil, nil, errors)
+	logger.log(ctx, slog.LevelInfo, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // Debug logs the given message at the DEBUG log level, along with any given log attributes.
@@ -1257,8 +1257,8 @@ func (logger Logger) Debug(ctx context.Context, message string, logAttributes ..
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [Logger.Debug] and format
 // the message directly with [fmt.Sprintf].
-func (logger Logger) Debugf(ctx context.Context, formatString string, formatArgs ...any) {
-	logger.log(ctx, slog.LevelDebug, formatString, formatArgs, nil, nil, nil)
+func (logger Logger) Debugf(ctx context.Context, messageFormat string, formatArgs ...any) {
+	logger.log(ctx, slog.LevelDebug, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // DebugError logs the given message at the DEBUG log level, and adds a 'cause' attribute with
@@ -1315,10 +1315,10 @@ func (logger Logger) DebugError(
 func (logger Logger) DebugErrorf(
 	ctx context.Context,
 	err error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelDebug, formatString, formatArgs, nil, err, nil)
+	logger.log(ctx, slog.LevelDebug, messageFormat, formatArgs, nil, err, nil)
 }
 
 // DebugErrors logs the given message at the DEBUG log level, and adds a 'cause' attribute with the
@@ -1373,10 +1373,10 @@ func (logger Logger) DebugErrors(
 func (logger Logger) DebugErrorsf(
 	ctx context.Context,
 	errors []error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, slog.LevelDebug, formatString, formatArgs, nil, nil, errors)
+	logger.log(ctx, slog.LevelDebug, messageFormat, formatArgs, nil, nil, errors)
 }
 
 // Log logs a message at the given log level, along with any given log attributes.
@@ -1428,8 +1428,8 @@ func (logger Logger) Log(
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [Logger.Log] and format the
 // message directly with [fmt.Sprintf].
-func (logger Logger) Logf(ctx context.Context, level slog.Level, formatString string, formatArgs ...any) {
-	logger.log(ctx, level, formatString, formatArgs, nil, nil, nil)
+func (logger Logger) Logf(ctx context.Context, level slog.Level, messageFormat string, formatArgs ...any) {
+	logger.log(ctx, level, messageFormat, formatArgs, nil, nil, nil)
 }
 
 // LogWithError logs a message at the given log level, and adds a 'cause' attribute with the given
@@ -1490,10 +1490,10 @@ func (logger Logger) LogWithErrorf(
 	ctx context.Context,
 	level slog.Level,
 	err error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, level, formatString, formatArgs, nil, err, nil)
+	logger.log(ctx, level, messageFormat, formatArgs, nil, err, nil)
 }
 
 // LogWithErrors logs a message at the given log level, and adds a 'cause' attribute with the given
@@ -1552,10 +1552,10 @@ func (logger Logger) LogWithErrorsf(
 	ctx context.Context,
 	level slog.Level,
 	errors []error,
-	formatString string,
+	messageFormat string,
 	formatArgs ...any,
 ) {
-	logger.log(ctx, level, formatString, formatArgs, nil, nil, errors)
+	logger.log(ctx, level, messageFormat, formatArgs, nil, nil, errors)
 }
 
 func (logger Logger) log(
