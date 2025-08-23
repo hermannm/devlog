@@ -4,43 +4,41 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"strings"
 )
 
-// wrappedError is an interface for errors that wrap an inner error with a wrapping message.
+// Same interface that the standard [errors] package uses to support error wrapping.
+type wrappedError interface {
+	error
+	Unwrap() error
+}
+
+// Same interface that the standard [errors] package uses to support wrapping of multiple errors.
+type wrappedErrors interface {
+	error
+	Unwrap() []error
+}
+
+// hasWrappingMessage is an interface for errors that wrap an inner error with a wrapping message.
 // When an error logging function in this package receives such an error, it is unwrapped to display
-// the error cause as a list.
+// the error chain as a list.
 //
 // We don't export this interface, as we don't want library consumers to depend on it directly. The
 // interface type itself is an implementation detail - we only use it to check if errors logged by
-// this library implicitly implement these methods. This is the same approach that the standard
+// this library implicitly implement this method. This is the same approach that the standard
 // [errors] package uses to support Unwrap().
 //
 // This interface is implemented by the [hermannm.dev/wrap] library.
 //
 // [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
-type wrappedError interface {
+type hasWrappingMessage interface {
 	WrappingMessage() string
-	Unwrap() error
-}
-
-// wrappedErrors is an interface for errors that wrap multiple inner errors with a wrapping message.
-// When an error logging function in this package receives such an error, it is unwrapped to display
-// the error cause as a list.
-//
-// We don't export this interface, for the same reason as [wrappedError].
-//
-// This interface is implemented by the [hermannm.dev/wrap] library.
-//
-// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
-type wrappedErrors interface {
-	WrappingMessage() string
-	Unwrap() []error
 }
 
 // hasLogAttributes is an interface for errors that carry log attributes, to provide structured
 // context when the error is logged.
 //
-// We don't export this interface, for the same reason as [wrappedError].
+// We don't export this interface, for the same reason as [hasWrappingMessage].
 //
 // This interface is implemented by the [hermannm.dev/wrap] library.
 //
@@ -56,7 +54,7 @@ type hasLogAttributes interface {
 // error carry its context, we don't lose the original context of the exception as it is propagated
 // up.
 //
-// We don't export this interface, for the same reason as [wrappedError].
+// We don't export this interface, for the same reason as [hasWrappingMessage].
 //
 // This interface is implemented by the [hermannm.dev/wrap/ctxwrap] library.
 //
@@ -78,22 +76,44 @@ func appendCauseErrors(attrs []slog.Attr, errors []error) []slog.Attr {
 func buildErrorLog(err error, attrs []slog.Attr) (errorLog any, newAttrs []slog.Attr) {
 	attrs = appendErrorAttrs(attrs, err)
 
+	//goland:noinspection GoTypeAssertionOnErrors - We check wrapped errors ourselves
 	switch err := err.(type) {
-	case wrappedErrors:
-		errorLog, attrs = appendErrors(
-			initErrorLogValue(err.WrappingMessage(), 2),
-			attrs,
-			err.Unwrap(),
-		)
 	case wrappedError:
-		errorLog, attrs = appendError(
-			initErrorLogValue(err.WrappingMessage(), 4),
-			attrs,
-			err.Unwrap(),
-			false,
-		)
+		unwrapped, errMessage, errMessageIsWrappingMessage := unwrapError(err)
+		if errMessageIsWrappingMessage {
+			errorLog, attrs = appendError(
+				initErrorLogValue(errMessage, 4),
+				attrs,
+				unwrapped,
+				false,
+			)
+		} else {
+			errorLog = errMessage
+			// Even if we couldn't unwrap a message, we still want to traverse the error chain for
+			// attrs from hasLogAttributes or hasContext
+			attrs = traverseErrorChainForAttrs(attrs, unwrapped)
+		}
+	case wrappedErrors:
+		unwrapped, errMessage, errMessageIsWrappingMessage := unwrapErrors(err)
+		if errMessageIsWrappingMessage {
+			errorListLogValue, newAttrs := buildErrorListLog(unwrapped, attrs, false)
+			attrs = newAttrs
+
+			if errorListLogValue != nil {
+				errorLog = []any{errMessage, errorListLogValue}
+			} else {
+				errorLog = errMessage
+			}
+		} else {
+			errorLog = errMessage
+			// Even if we couldn't unwrap a message, we still want to traverse the error chain for
+			// attrs from hasLogAttributes or hasContext
+			for _, err := range unwrapped {
+				attrs = traverseErrorChainForAttrs(attrs, err)
+			}
+		}
 	default:
-		errorLog = errorLogFromPlainError(err)
+		errorLog = err.Error()
 	}
 
 	attrs = appendErrorContextAttrs(attrs, err)
@@ -108,31 +128,88 @@ func appendError(
 ) (newErrorLog []any, newAttrs []slog.Attr) {
 	attrs = appendErrorAttrs(attrs, err)
 
+	//goland:noinspection GoTypeAssertionOnErrors - We check wrapped errors ourselves
 	switch err := err.(type) {
-	case wrappedErrors:
-		errorLog, attrs = appendWrappedErrors(errorLog, attrs, err, partOfList)
 	case wrappedError:
-		errorLog, attrs = appendWrappedError(errorLog, attrs, err, partOfList)
+		unwrapped, errMessage, errMessageIsWrappingMessage := unwrapError(err)
+		if errMessageIsWrappingMessage {
+			errorLog, attrs = appendWrappedError(
+				errorLog,
+				attrs,
+				errMessage,
+				unwrapped,
+				partOfList,
+			)
+		} else {
+			errorLog = append(errorLog, errMessage)
+			// Even if we couldn't unwrap a message, we still want to traverse the error chain for
+			// attrs from hasLogAttributes or hasContext
+			attrs = traverseErrorChainForAttrs(attrs, unwrapped)
+		}
+	case wrappedErrors:
+		unwrapped, errMessage, errMessageIsWrappingMessage := unwrapErrors(err)
+		if errMessageIsWrappingMessage {
+			errorLog, attrs = appendWrappedErrors(
+				errorLog,
+				attrs,
+				errMessage,
+				unwrapped,
+				partOfList,
+			)
+		} else {
+			errorLog = append(errorLog, errMessage)
+			// Even if we couldn't unwrap a message, we still want to traverse the error chain for
+			// attrs from hasLogAttributes or hasContext
+			for _, err := range unwrapped {
+				attrs = traverseErrorChainForAttrs(attrs, err)
+			}
+		}
 	default:
-		errorLog = appendPlainError(errorLog, err, partOfList)
+		errorLog = append(errorLog, err.Error())
 	}
 
 	attrs = appendErrorContextAttrs(attrs, err)
 	return errorLog, attrs
 }
 
-func appendErrors(
+func appendWrappedError(
 	errorLog []any,
 	attrs []slog.Attr,
-	errors []error,
+	wrappingMessage string,
+	unwrappedErr error,
+	partOfList bool,
 ) (newErrorLog []any, newAttrs []slog.Attr) {
-	errorListLogValue, attrs := buildErrorListLog(errors, attrs, false)
-	if errorListLogValue != nil {
-		errorLog = append(errorLog, errorListLogValue)
+	if partOfList {
+		errorLog = appendToErrorLog(errorLog, wrappingMessage, 2)
+
+		var nestedErrorLog []any
+		nestedErrorLog, attrs = appendError(nestedErrorLog, attrs, unwrappedErr, partOfList)
+		errorLog = append(errorLog, nestedErrorLog)
+	} else {
+		errorLog = appendToErrorLog(errorLog, wrappingMessage, 4)
+		errorLog, attrs = appendError(errorLog, attrs, unwrappedErr, partOfList)
 	}
+
 	return errorLog, attrs
 }
 
+func appendWrappedErrors(
+	errorLog []any,
+	attrs []slog.Attr,
+	wrappingMessage string,
+	unwrappedErrs []error,
+	partOfList bool,
+) (newErrorLog []any, newAttrs []slog.Attr) {
+	errorLog = appendToErrorLog(errorLog, wrappingMessage, 2)
+	errorListLogValue, attrs := buildErrorListLog(unwrappedErrs, attrs, partOfList)
+	if errorListLogValue != nil {
+		errorLog = append(errorLog, errorListLogValue)
+	}
+
+	return errorLog, attrs
+}
+
+// Returns nil if the given error list was empty.
 func buildErrorListLog(
 	errors []error,
 	attrs []slog.Attr,
@@ -154,64 +231,90 @@ func buildErrorListLog(
 	return errorListLogValue, attrs
 }
 
-func appendWrappedError(
-	errorLog []any,
-	attrs []slog.Attr,
-	err wrappedError,
-	partOfList bool,
-) (newErrorLog []any, newAttrs []slog.Attr) {
-	errorLog = appendToErrorLog(errorLog, err.WrappingMessage(), 4)
+// If errMessageIsWrappingMessage is true, then the returned errMessage is the wrapping message
+// around the wrapped error. Otherwise, the returned errMessage is the full error message of the
+// given err.
+//
+// Same implementation that the [hermannm.dev/wrap] library uses for formatting error messages.
+//
+// [hermannm.dev/wrap]: https://github.com/hermannm/wrap/blob/v0.4.0/internal/error_message.go
+func unwrapError(err wrappedError) (
+	unwrapped error,
+	errMessage string,
+	errMessageIsWrappingMessage bool,
+) {
+	unwrapped = err.Unwrap()
 
-	if partOfList {
-		var nestedErrorLog []any
-		nestedErrorLog, attrs = appendError(nestedErrorLog, attrs, err.Unwrap(), partOfList)
-		errorLog = append(errorLog, nestedErrorLog)
-	} else {
-		errorLog, attrs = appendError(errorLog, attrs, err.Unwrap(), partOfList)
+	// If err has a WrappingMessage() string method, we use that as the wrapping message
+	if wrapper, ok := err.(hasWrappingMessage); ok {
+		return unwrapped, wrapper.WrappingMessage(), true
 	}
 
-	return errorLog, attrs
-}
-
-func appendWrappedErrors(
-	errorLog []any,
-	attrs []slog.Attr,
-	err wrappedErrors,
-	partOfList bool,
-) (newErrorLog []any, newAttrs []slog.Attr) {
-	errorLog = appendToErrorLog(errorLog, err.WrappingMessage(), 2)
-	errorListLogValue, attrs := buildErrorListLog(err.Unwrap(), attrs, partOfList)
-	if errorListLogValue != nil {
-		errorLog = append(errorLog, errorListLogValue)
+	errMessage = err.Error()
+	if unwrapped == nil {
+		return nil, errMessage, false
 	}
 
-	return errorLog, attrs
-}
+	// If err did not implement WrappingMessage(), we look for a common pattern for wrapping errors:
+	//	fmt.Errorf("wrapping message: %w", unwrapped)
+	// If the full error message is suffixed by the unwrapped error message, with a ": " separator,
+	// we can get the wrapping message before the separator.
+	unwrappedMessage := unwrapped.Error()
 
-func errorLogFromPlainError(err error) any {
-	splits, splitCount, firstSplit := splitLongErrorMessage(err.Error())
-	if splitCount == 1 {
-		return firstSplit
-	} else {
-		return splits
-	}
-}
+	// -2 for ": " separator between wrapping message and unwrapped error
+	wrappingMessageEndIndex := len(errMessage) - len(unwrappedMessage) - 2
 
-func appendPlainError(errorLog []any, err error, partOfList bool) (newErrorLog []any) {
-	splits, splitCount, firstSplit := splitLongErrorMessage(err.Error())
-	if partOfList {
-		errorLog = appendToErrorLog(errorLog, firstSplit, 2)
-		if len(splits) > 1 {
-			errorLog = append(errorLog, splits[1:])
-		}
-	} else {
-		if splitCount == 1 {
-			errorLog = append(errorLog, firstSplit)
-		} else {
-			errorLog = append(errorLog, splits...)
+	if wrappingMessageEndIndex > 0 &&
+		strings.HasSuffix(errMessage, unwrappedMessage) &&
+		errMessage[wrappingMessageEndIndex] == ':' {
+		// Check for either space or newline in character after colon
+		charAfterColon := errMessage[wrappingMessageEndIndex+1]
+
+		if charAfterColon == ' ' || charAfterColon == '\n' {
+			wrappingMessage := errMessage[0:wrappingMessageEndIndex]
+			return unwrapped, wrappingMessage, true
 		}
 	}
-	return errorLog
+
+	return unwrapped, errMessage, false
+}
+
+// If errMessageIsWrappingMessage is true, then the returned errMessage is the wrapping message
+// around the wrapped errors. Otherwise, the returned errMessage is the full error message of the
+// given err.
+//
+// Same implementation that the [hermannm.dev/wrap] library uses for formatting error messages.
+//
+// [hermannm.dev/wrap]: https://github.com/hermannm/wrap/blob/v0.4.0/internal/error_message.go
+func unwrapErrors(err wrappedErrors) (
+	unwrapped []error,
+	errMessage string,
+	errMessageIsWrappingMessage bool,
+) {
+	unwrapped = err.Unwrap()
+
+	if wrapper, ok := err.(hasWrappingMessage); ok {
+		return unwrapped, wrapper.WrappingMessage(), true
+	} else {
+		return unwrapped, err.Error(), false
+	}
+}
+
+func traverseErrorChainForAttrs(attrs []slog.Attr, err error) []slog.Attr {
+	attrs = appendErrorAttrs(attrs, err)
+
+	//goland:noinspection GoTypeAssertionOnErrors - We check wrapped errors ourselves
+	switch err := err.(type) {
+	case wrappedError:
+		attrs = traverseErrorChainForAttrs(attrs, err.Unwrap())
+	case wrappedErrors:
+		for _, err := range err.Unwrap() {
+			attrs = traverseErrorChainForAttrs(attrs, err)
+		}
+	}
+
+	attrs = appendErrorContextAttrs(attrs, err)
+	return attrs
 }
 
 func initErrorLogValue(firstErrorItem any, capacity int) []any {
@@ -253,87 +356,37 @@ func getErrorMessageAndCause(
 ) (message string, newAttrs []slog.Attr) {
 	attrs = appendErrorAttrs(attrs, err)
 
+	//goland:noinspection GoTypeAssertionOnErrors - We check wrapped errors ourselves
 	switch err := err.(type) {
-	case wrappedErrors:
-		message = err.WrappingMessage()
-		attrs = appendCauseErrors(attrs, err.Unwrap())
 	case wrappedError:
-		message = err.WrappingMessage()
-		attrs = appendCauseError(attrs, err.Unwrap())
+		unwrapped, errMessage, errMessageIsWrappingMessage := unwrapError(err)
+		message = errMessage
+		if errMessageIsWrappingMessage {
+			attrs = appendCauseError(attrs, unwrapped)
+		} else {
+			// If we couldn't unwrap a wrapping message, we still want to traverse the error chain
+			// for attrs from hasLogAttributes or hasContext
+			attrs = traverseErrorChainForAttrs(attrs, unwrapped)
+		}
+	case wrappedErrors:
+		unwrapped, errMessage, errMessageIsWrappingMessage := unwrapErrors(err)
+		message = errMessage
+
+		if errMessageIsWrappingMessage {
+			attrs = appendCauseErrors(attrs, unwrapped)
+		} else {
+			// If we couldn't unwrap a wrapping message, we still want to traverse the error chain
+			// for attrs from hasLogAttributes or hasContext
+			for _, err := range unwrapped {
+				attrs = traverseErrorChainForAttrs(attrs, err)
+			}
+		}
 	default:
-		message, attrs = getErrorMessageAndCauseFromPlainError(err, attrs)
+		message = err.Error()
 	}
 
 	attrs = appendErrorContextAttrs(attrs, err)
 	return message, attrs
-}
-
-func getErrorMessageAndCauseFromPlainError(
-	err error,
-	attrs []slog.Attr,
-) (message string, newAttrs []slog.Attr) {
-	splits, _, firstSplit := splitLongErrorMessage(err.Error())
-	if len(splits) > 1 {
-		errorLog := splits[1:]
-		attrs = prependCauseErrorAttr(errorLog, attrs)
-	}
-	return firstSplit, attrs
-}
-
-// Splits error messages longer than 64 characters at ": " (typically used for error wrapping), if
-// present. Ensures that no splits are shorter than 16 characters (except the last one).
-func splitLongErrorMessage(message string) (splits []any, splitCount int, firstSplit string) {
-	const minSplitLength = 16
-	const maxSplitLength = 64
-
-	msgBytes := []byte(message)
-	msgLength := len(msgBytes)
-
-	if msgLength <= maxSplitLength {
-		return nil, 1, message
-	}
-
-	lastWriteIndex := 0
-
-MessageLoop:
-	for i := 0; i < msgLength-1; i++ {
-		switch msgBytes[i] {
-		case ':':
-			// Safe to index [i+1], since we loop until the second-to-last index
-			switch msgBytes[i+1] {
-			case ' ', '\n':
-				if i-lastWriteIndex < minSplitLength {
-					continue MessageLoop // This split is too short, include in next split instead
-				}
-
-				split := string(msgBytes[lastWriteIndex:i])
-				splits = append(splits, split)
-				if firstSplit == "" {
-					firstSplit = split
-				}
-
-				lastWriteIndex = i + 2 // +2 for ': '
-				if msgLength-lastWriteIndex <= maxSplitLength {
-					break MessageLoop // Remaining message is short enough, we're done
-				}
-
-				i++ // Skips next character, since we already looked at it
-			}
-		case '\n':
-			// Once we hit a newline (not preceded by ':'), we stop splitting, as doing so may lead
-			// to weird formatting
-			break MessageLoop
-		}
-	}
-
-	if firstSplit == "" {
-		return nil, 1, message
-	}
-
-	// Adds remainder after last split
-	splits = append(splits, string(msgBytes[lastWriteIndex:]))
-
-	return splits, len(splits), firstSplit
 }
 
 func appendErrorAttrs(attrs []slog.Attr, err error) []slog.Attr {

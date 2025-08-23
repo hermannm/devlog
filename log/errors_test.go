@@ -2,30 +2,98 @@ package log_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"hermannm.dev/devlog/log"
 )
 
 func TestWrappedError(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Error(ctx, wrappedError{"wrapping message", errors.New("wrapped error")}, "")
-	})
+	err := wrappedError{"wrapping message", errors.New("wrapped error")}
 
-	verifyLogOutput(t, output, "ERROR", "wrapping message", `"cause":"wrapped error"`)
+	output := getErrorLogOutput(err)
+
+	verifyLogAttrs(t, output, `"cause":["wrapping message","wrapped error"]`)
 }
 
-func TestNestedWrappedError(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Error(
-			ctx,
-			wrappedError{
-				"wrapping message 1",
-				wrappedError{"wrapping message 2", errors.New("wrapped error")},
+func TestWrappedErrors(t *testing.T) {
+	err := wrappedErrors{
+		"wrapping message",
+		[]error{errors.New("wrapped error 1"), errors.New("wrapped error 2")},
+	}
+
+	output := getErrorLogOutput(err)
+
+	verifyLogAttrs(t, output, `"cause":["wrapping message",["wrapped error 1","wrapped error 2"]]`)
+}
+
+func TestNestedWrappedErrors(t *testing.T) {
+	err := wrappedErrors{
+		"invalid user data",
+		[]error{
+			wrappedErrors{
+				"invalid email",
+				[]error{
+					errors.New("missing @"),
+					errors.New("missing top-level domain"),
+				},
 			},
-			"",
-		)
-	})
+			wrappedError{
+				"invalid username",
+				errors.New("username exceeds 30 characters"),
+			},
+		},
+	}
+
+	output := getErrorLogOutput(err)
+
+	verifyLogAttrs(
+		t,
+		output,
+		`"cause":["invalid user data",["invalid email",["missing @","missing top-level domain"],"invalid username",["username exceeds 30 characters"]]]`,
+	)
+}
+
+func TestSingleWrappedErrors(t *testing.T) {
+	err := wrappedErrors{"wrapping message", []error{errors.New("wrapped error")}}
+
+	output := getErrorLogOutput(err)
+
+	verifyLogAttrs(t, output, `"cause":["wrapping message","wrapped error"]`)
+}
+
+func TestErrorWrappedWithFmt(t *testing.T) {
+	err1 := errors.New("the underlying error")
+	// Should split on ": "
+	err2 := fmt.Errorf("something went wrong: %w", err1)
+	// Should work to have an implementation of hasWrappingMessage in the middle of the chain
+	err3 := wrappedError{"wrapping message", err2}
+	// Should not split on : in middle of string
+	err4 := fmt.Errorf("error string with : in the middle: %w", err3)
+	// Should split on both ": " and ":\n"
+	err5 := fmt.Errorf("an error occurred:\n%w", err4)
+
+	output := getErrorLogOutput(err5)
+
+	verifyLogAttrs(
+		t,
+		output,
+		`"cause":["an error occurred","error string with : in the middle","wrapping message","something went wrong","the underlying error"]`,
+	)
+}
+
+func TestErrorLoggedWithBlankMessage(t *testing.T) {
+	err := wrappedError{
+		"wrapping message 1",
+		wrappedError{"wrapping message 2", errors.New("wrapped error")},
+	}
+
+	output := getLogOutput(
+		nil,
+		func() {
+			log.Error(ctx, err, "")
+		},
+	)
 
 	verifyLogOutput(
 		t,
@@ -36,140 +104,7 @@ func TestNestedWrappedError(t *testing.T) {
 	)
 }
 
-func TestWrappedErrors(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Error(
-			ctx,
-			wrappedErrors{
-				"wrapping message",
-				[]error{errors.New("wrapped error 1"), errors.New("wrapped error 2")},
-			},
-			"",
-		)
-	})
-
-	verifyLogOutput(
-		t,
-		output,
-		"ERROR",
-		"wrapping message",
-		`"cause":["wrapped error 1","wrapped error 2"]`,
-	)
-}
-
-func TestNestedWrappedErrors(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Error(
-			ctx,
-			wrappedErrors{
-				"invalid user data",
-				[]error{
-					wrappedErrors{
-						"invalid email",
-						[]error{
-							errors.New("missing @"),
-							errors.New("missing top-level domain"),
-						},
-					},
-					wrappedError{"invalid username", errors.New("username exceeds 30 characters")},
-				},
-			},
-			"",
-		)
-	})
-
-	verifyLogOutput(
-		t,
-		output,
-		"ERROR",
-		"invalid user data",
-		`"cause":["invalid email",["missing @","missing top-level domain"],"invalid username",["username exceeds 30 characters"]]`,
-	)
-}
-
-func TestSingleWrappedErrors(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Error(ctx, wrappedErrors{"wrapping message", []error{errors.New("wrapped error")}}, "")
-	})
-
-	verifyLogOutput(
-		t,
-		output,
-		"ERROR",
-		"wrapping message",
-		`"cause":"wrapped error"`,
-	)
-}
-
-func TestLongErrorMessage(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Error(
-			ctx,
-			errors.New(
-				"this error message is more than 16 characters: "+
-					"less than 16: "+
-					"now again longer than 16 characters: "+
-					"this is a long error message, of barely less than 64 characters: "+
-					"short message",
-			),
-			"",
-		)
-	})
-
-	verifyLogOutput(
-		t,
-		output,
-		"ERROR",
-		"this error message is more than 16 characters",
-		`"cause":["less than 16: now again longer than 16 characters",`+
-			`"this is a long error message, of barely less than 64 characters",`+
-			`"short message"]`,
-	)
-}
-
-func TestUnsplittableErrorMessage(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Error(
-			ctx,
-			errors.New(
-				"this is a super long error message of more than 64 characters in total",
-			),
-			"",
-		)
-	})
-
-	verifyLogOutput(
-		t,
-		output,
-		"ERROR",
-		"this is a super long error message of more than 64 characters in total",
-		"",
-	)
-}
-
-func TestLongMultilineErrorMessage(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		log.Error(
-			ctx,
-			errors.New(`this error message ends in a newline and colon:
-more than 16 characters: this message ends in a newline
-another message ending in a newline and colon:
-another newline message`),
-			"",
-		)
-	})
-
-	verifyLogOutput(
-		t,
-		output,
-		"ERROR",
-		"this error message ends in a newline and colon",
-		`"cause":["more than 16 characters",`+
-			`"this message ends in a newline\nanother message ending in a newline and colon:\nanother newline message"]`,
-	)
-}
-
-// Implements wrappedError interface from devlog/log.
+// Implements wrappedError and hasWrappingMessage interface from devlog/log.
 type wrappedError struct {
 	msg   string
 	cause error
@@ -203,4 +138,13 @@ func (err wrappedErrors) Unwrap() []error {
 
 func (err wrappedErrors) Error() string {
 	return err.msg
+}
+
+func getErrorLogOutput(err error) string {
+	return getLogOutput(
+		nil,
+		func() {
+			log.Error(ctx, err, "Test")
+		},
+	)
 }
