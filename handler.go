@@ -100,7 +100,7 @@ func (handler *Handler) Enabled(_ context.Context, level slog.Level) bool {
 }
 
 // Handle writes the given log record to the handler's output.
-// See the package-level documentation for more on the output format.
+// See the [devlog] package docs for more on the output format.
 func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	buffer := newBuffer()
 	defer buffer.free()
@@ -139,10 +139,12 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 		// record has attributes - otherwise we end up with writing groups with no attributes
 		buffer.join(handler.preformattedGroups)
 
-		record.Attrs(func(attr slog.Attr) bool {
-			handler.writeAttribute(buffer, attr, handler.indent)
-			return true
-		})
+		record.Attrs(
+			func(attr slog.Attr) bool {
+				handler.writeAttribute(buffer, attr, handler.indent)
+				return true
+			},
+		)
 	}
 
 	// write preformatted attributes last, so they are shown beneath the current record's attributes

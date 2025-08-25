@@ -3,8 +3,8 @@
 //
 // A devlog.Handler can be configured as follows:
 //
-//	logger := slog.New(devlog.NewHandler(os.Stdout, nil))
-//	slog.SetDefault(logger)
+//	logHandler := devlog.NewHandler(os.Stdout, nil)
+//	slog.SetDefault(slog.New(logHandler))
 //
 // Following calls to [log/slog]'s logging functions will use this handler, giving output on the
 // following format:
@@ -16,8 +16,9 @@
 //
 // Check the [README] to see the output format with colors.
 //
-// To complement devlog's output handling, the devlog/log subpackage provides input handling. It is
-// a thin wrapper over the slog package, with utility functions for log message formatting.
+// To complement devlog's output handling, the [hermannm.dev/devlog/log] subpackage provides input
+// handling. It is a thin wrapper over the slog package, with utility functions for log message
+// and error formatting.
 //
 // [README]: https://github.com/hermannm/devlog#readme
 package devlog

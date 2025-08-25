@@ -48,6 +48,16 @@ import (
 // The [hermannm.dev/wrap/ctxwrap] package supports this use-case by providing error-wrapping
 // functions that take a [context.Context] parameter.
 //
+// # Adding context attributes to logs made by log/slog
+//
+// When using AddContextAttrs, context attributes are added to the log output when you use the
+// logging functions provided by this package. But you may have places in your application that use
+// [log/slog] directly (such as an SDK that does request logging). To propagate context attributes
+// to those logs as well, you can wrap your slog.Handler with [log.ContextHandler], as follows:
+//
+//	logHandler := devlog.NewHandler(os.Stdout, nil) // Or any other Handler
+//	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
+//
 // [hermannm.dev/wrap/ctxwrap]: https://pkg.go.dev/hermannm.dev/wrap/ctxwrap
 func AddContextAttrs(parent context.Context, logAttributes ...any) context.Context {
 	if parent == nil {
