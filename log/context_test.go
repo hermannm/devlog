@@ -1,6 +1,7 @@
 package log_test
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
 	"testing"
@@ -94,4 +95,36 @@ func TestAddContextAttrsNilParent(t *testing.T) {
 	)
 
 	verifyLogAttrs(t, output, `"ctxKey":"value"`)
+}
+
+func TestContextHandler(t *testing.T) {
+	var output bytes.Buffer
+	// Use plain slog.Logger, since we want to test that ContextHandler works when we don't log
+	// through this library
+	logger := slog.New(log.ContextHandler(slog.NewJSONHandler(&output, nil)))
+
+	ctx := log.AddContextAttrs(
+		context.Background(),
+		"contextKey1", "contextValue1",
+		"duplicateKey", "contextValue",
+		"contextKey2", "contextValue2",
+	)
+
+	logger.InfoContext(
+		ctx,
+		"Test message",
+		"logKey1", "logValue1",
+		"duplicateKey", "logValue",
+		"logKey2", "logValue2",
+	)
+
+	verifyLogAttrs(
+		t,
+		output.String(),
+		`"logKey1":"logValue1",`+
+			`"duplicateKey":"logValue",`+
+			`"logKey2":"logValue2",`+
+			`"contextKey1":"contextValue1",`+
+			`"contextKey2":"contextValue2"`,
+	)
 }
