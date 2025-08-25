@@ -48,15 +48,15 @@ type hasLogAttributes interface {
 }
 
 // hasContext is an interface for errors that carry the [context.Context] from where they were
-// created. We use this to add context attributes ([log.AddContextAttrs]) from the error's context,
-// not just the context in which the log is made. This is useful when error is produced somewhere
-// down in the stack, and then propagated up multiple levels before it is logged. By letting the
-// error carry its context, we don't lose the original context of the exception as it is propagated
-// up.
+// created. We use this to add context attributes (see [log.AddContextAttrs]) from the error's
+// context, not just the context in which the log is made. This is useful when error is produced
+// somewhere down in the stack, and then propagated up multiple levels before it is logged. By
+// letting the error carry its context, we don't lose the original context of the exception as it
+// is propagated up.
 //
 // We don't export this interface, for the same reason as [hasWrappingMessage].
 //
-// This interface is implemented by the [hermannm.dev/wrap/ctxwrap] library.
+// This interface is implemented by the [hermannm.dev/wrap/ctxwrap] package.
 //
 // [hermannm.dev/wrap/ctxwrap]: https://pkg.go.dev/hermannm.dev/wrap/ctxwrap
 type hasContext interface {

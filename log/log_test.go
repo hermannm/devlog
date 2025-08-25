@@ -173,7 +173,12 @@ func TestLogsWithFormattedMessage(t *testing.T) {
 func TestLogsWithErrorAndAttrs(t *testing.T) {
 	logger, outputBuffer := setupLogger()
 
-	type testCase = loggerTestCase[func(ctx context.Context, err error, message string, attrs ...any)]
+	type testCase = loggerTestCase[func(
+		ctx context.Context,
+		err error,
+		message string,
+		attrs ...any,
+	)]
 
 	testCases := []testCase{
 		{
@@ -235,7 +240,14 @@ func TestLogsWithErrorAndAttrs(t *testing.T) {
 		testCases,
 		func(testCase testCase) {
 			err := errors.New("an error occurred")
-			testCase.logFunc(ctx, err, "Something went wrong", "key1", "value1", slog.Int("key2", 2))
+			testCase.logFunc(
+				ctx,
+				err,
+				"Something went wrong",
+				"key1",
+				"value1",
+				slog.Int("key2", 2),
+			)
 		},
 		expectedOutput{
 			message: "Something went wrong",
@@ -323,7 +335,12 @@ func TestLogsWithErrorAndFormattedMessage(t *testing.T) {
 func TestLogsWithMultipleErrorsAndAttrs(t *testing.T) {
 	logger, outputBuffer := setupLogger()
 
-	type testCase = loggerTestCase[func(ctx context.Context, errs []error, message string, attrs ...any)]
+	type testCase = loggerTestCase[func(
+		ctx context.Context,
+		errs []error,
+		message string,
+		attrs ...any,
+	)]
 
 	testCases := []testCase{
 		{
@@ -385,7 +402,14 @@ func TestLogsWithMultipleErrorsAndAttrs(t *testing.T) {
 		testCases,
 		func(testCase testCase) {
 			errs := []error{errors.New("error 1"), errors.New("error 2")}
-			testCase.logFunc(ctx, errs, "Something went wrong", "key1", "value1", slog.Int("key2", 2))
+			testCase.logFunc(
+				ctx,
+				errs,
+				"Something went wrong",
+				"key1",
+				"value1",
+				slog.Int("key2", 2),
+			)
 		},
 		expectedOutput{
 			message: "Something went wrong",
@@ -398,7 +422,12 @@ func TestLogsWithMultipleErrorsAndAttrs(t *testing.T) {
 func TestLogsWithMultipleErrorsAndFormattedMessage(t *testing.T) {
 	logger, outputBuffer := setupLogger()
 
-	type testCase = loggerTestCase[func(ctx context.Context, errs []error, format string, args ...any)]
+	type testCase = loggerTestCase[func(
+		ctx context.Context,
+		errs []error,
+		format string,
+		args ...any,
+	)]
 
 	testCases := []testCase{
 		{
@@ -471,16 +500,18 @@ func TestLogsWithMultipleErrorsAndFormattedMessage(t *testing.T) {
 }
 
 func TestErrorWithBlankMessage(t *testing.T) {
-	output := getLogOutput(nil, func() {
-		err := errors.New("error")
-		log.Error(ctx, err, "", "errorCode", 6)
-	})
+	output := getLogOutput(
+		func() {
+			err := errors.New("error")
+			log.Error(ctx, err, "", "errorCode", 6)
+		},
+	)
 
 	verifyLogOutput(t, output, "ERROR", "error", `"errorCode":6`)
 }
 
 func TestDisabledLogLevel(t *testing.T) {
-	output := getLogOutput(
+	output := getLogOutputWithOptions(
 		&slog.HandlerOptions{Level: slog.LevelInfo},
 		func() {
 			log.Debug(ctx, "this is a test")
@@ -493,7 +524,7 @@ func TestDisabledLogLevel(t *testing.T) {
 }
 
 func TestLogSource(t *testing.T) {
-	output := getLogOutput(
+	output := getLogOutputWithOptions(
 		&slog.HandlerOptions{AddSource: true},
 		func() {
 			log.Info(ctx, "this is a test")
@@ -557,9 +588,14 @@ func TestLoggerWithGroup(t *testing.T) {
 
 var ctx = context.Background()
 
-func getLogOutput(handlerOptions *slog.HandlerOptions, logFunc func()) string {
+func getLogOutput(logFunc func()) string {
+	options := &slog.HandlerOptions{Level: slog.LevelDebug}
+	return getLogOutputWithOptions(options, logFunc)
+}
+
+func getLogOutputWithOptions(options *slog.HandlerOptions, logFunc func()) string {
 	var buffer bytes.Buffer
-	slog.SetDefault(slog.New(slog.NewJSONHandler(&buffer, handlerOptions)))
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buffer, options)))
 	logFunc()
 	return buffer.String()
 }
@@ -609,7 +645,11 @@ func runTestCases[LogFuncT any](
 	const expectedTestCases = 16
 
 	if len(testCases) != expectedTestCases {
-		t.Fatalf("Expected %d test cases in runTestCases, got %d", expectedTestCases, len(testCases))
+		t.Fatalf(
+			"Expected %d test cases in runTestCases, got %d",
+			expectedTestCases,
+			len(testCases),
+		)
 	}
 
 	for _, testCase := range testCases {
@@ -617,21 +657,23 @@ func runTestCases[LogFuncT any](
 			testCase.name = getFunctionName(testCase.logFunc)
 		}
 
-		t.Run(testCase.name, func(t *testing.T) {
-			runLogFunc(testCase)
+		t.Run(
+			testCase.name, func(t *testing.T) {
+				runLogFunc(testCase)
 
-			output := outputBuffer.String()
-			t.Log(strings.TrimSuffix(output, "\n"))
-			outputBuffer.Reset()
+				output := outputBuffer.String()
+				t.Log(strings.TrimSuffix(output, "\n"))
+				outputBuffer.Reset()
 
-			verifyLogOutput(
-				t,
-				output,
-				testCase.expectedLogLevel.String(),
-				expected.message,
-				expected.attrs,
-			)
-		})
+				verifyLogOutput(
+					t,
+					output,
+					testCase.expectedLogLevel.String(),
+					expected.message,
+					expected.attrs,
+				)
+			},
+		)
 	}
 }
 
@@ -661,7 +703,62 @@ func verifyLogAttrs(t *testing.T, output string, expectedAttrs string) {
 
 	_, _, attrs := parseLogOutput(t, output)
 	if attrs != expectedAttrs {
-		unexpectedLogOutput(t, "log attrs", attrs, expectedAttrs)
+		unexpectedLogOutput(t, "log attributes", attrs, expectedAttrs)
+	}
+}
+
+// Verifies attributes in log output except the "cause" attribute from error logs.
+func verifyErrorLogAttrs(t *testing.T, output string, expectedAttrsWithoutCause string) {
+	t.Helper()
+
+	_, _, attrs := parseLogOutput(t, output)
+
+	causeAttrKey := `"cause":`
+	if !strings.HasPrefix(attrs, causeAttrKey) {
+		t.Fatalf(
+			"Expected attributes in log output to include 'cause' attribute, but got:\n%s",
+			attrs,
+		)
+	}
+
+	attrBytes := []byte(attrs)
+
+	startIndex := len(causeAttrKey)
+	causeAttrEndIndex := 0
+	delimiter := attrBytes[startIndex]
+
+	switch delimiter {
+	case '"':
+		for i, char := range attrBytes[startIndex+1:] {
+			if char == '"' {
+				causeAttrEndIndex = i + startIndex + 1
+				break
+			}
+		}
+	case '[':
+		openBracketCount := 1
+		for i, char := range attrBytes[startIndex+1:] {
+			if char == '[' {
+				openBracketCount++
+			} else if char == ']' {
+				openBracketCount--
+				if openBracketCount == 0 {
+					causeAttrEndIndex = i + startIndex + 1
+					break
+				}
+			}
+		}
+	default:
+		t.Fatalf("Expected cause attribute value to start with \" or [, but got:\n%s", attrs)
+	}
+	if causeAttrEndIndex == 0 {
+		t.Fatalf("Failed to strip 'cause' attribute from error log output:\n%s", attrs)
+	}
+
+	attrsWithoutCause := string(attrBytes[causeAttrEndIndex+2:])
+
+	if attrsWithoutCause != expectedAttrsWithoutCause {
+		unexpectedLogOutput(t, "log attributes", attrsWithoutCause, expectedAttrsWithoutCause)
 	}
 }
 
@@ -670,12 +767,11 @@ var logOutputRegex = regexp.MustCompile(`^\{"time":"[^"]+","level":"([^"]+)","ms
 func parseLogOutput(t *testing.T, output string) (level string, message string, attrs string) {
 	t.Helper()
 
-	expectedMatches := 3
-	matches := logOutputRegex.FindAllStringSubmatch(output, expectedMatches)
-	if len(matches) != 1 || len(matches[0]) != 4 {
+	matches := logOutputRegex.FindStringSubmatch(output)
+	if len(matches) != 4 {
 		t.Fatalf("Failed to parse log output:\n%s", output)
 	}
-	return matches[0][1], matches[0][2], matches[0][3]
+	return matches[1], matches[2], matches[3]
 }
 
 func unexpectedLogOutput(t *testing.T, descriptor string, actual string, expected string) {
@@ -683,7 +779,8 @@ func unexpectedLogOutput(t *testing.T, descriptor string, actual string, expecte
 
 	actual = strings.TrimSuffix(actual, "\n")
 
-	t.Errorf(`Unexpected %s
+	t.Errorf(
+		`Unexpected %s
 Got:
 ----------------------------------------
 %s
@@ -693,7 +790,8 @@ Want:
 ----------------------------------------
 %s
 ----------------------------------------
-`, descriptor, actual, expected)
+`, descriptor, actual, expected,
+	)
 }
 
 func getFunctionName(function any) string {

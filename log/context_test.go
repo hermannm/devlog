@@ -2,9 +2,10 @@ package log_test
 
 import (
 	"context"
-	"hermannm.dev/devlog/log"
 	"log/slog"
 	"testing"
+
+	"hermannm.dev/devlog/log"
 )
 
 func TestAddContextAttrs(t *testing.T) {
@@ -14,9 +15,11 @@ func TestAddContextAttrs(t *testing.T) {
 		slog.String("ctxKey2", "value2"),
 	)
 
-	output := getLogOutput(nil, func() {
-		log.Info(ctx, "Test", "logKey", "value3")
-	})
+	output := getLogOutput(
+		func() {
+			log.Info(ctx, "Test", "logKey", "value3")
+		},
+	)
 
 	verifyLogAttrs(
 		t,
@@ -29,9 +32,11 @@ func TestNestedContextAttrs(t *testing.T) {
 	ctx := log.AddContextAttrs(context.Background(), "ctxKey1", "value1", "ctxKey2", "value2")
 	ctx = log.AddContextAttrs(ctx, "ctxKey3", "value3", "ctxKey4", "value4")
 
-	output1 := getLogOutput(nil, func() {
-		log.Info(ctx, "Test")
-	})
+	output1 := getLogOutput(
+		func() {
+			log.Info(ctx, "Test")
+		},
+	)
 
 	verifyLogAttrs(
 		t,
@@ -41,7 +46,7 @@ func TestNestedContextAttrs(t *testing.T) {
 	)
 }
 
-func TestOverwritingContextAttrs(t *testing.T) {
+func TestDuplicateContextAttrKeys(t *testing.T) {
 	ctx1 := log.AddContextAttrs(
 		context.Background(),
 		"uniqueKey1", "value1",
@@ -53,9 +58,11 @@ func TestOverwritingContextAttrs(t *testing.T) {
 		"uniqueKey2", "value4",
 	)
 
-	output1 := getLogOutput(nil, func() {
-		log.Info(ctx2, "Test")
-	})
+	output1 := getLogOutput(
+		func() {
+			log.Info(ctx2, "Test")
+		},
+	)
 	verifyLogAttrs(
 		t,
 		output1,
@@ -65,9 +72,11 @@ func TestOverwritingContextAttrs(t *testing.T) {
 
 	// Test log with original context, to verify that the new context attributes did not mutate the
 	// old ones
-	output2 := getLogOutput(nil, func() {
-		log.Info(ctx1, "Test")
-	})
+	output2 := getLogOutput(
+		func() {
+			log.Info(ctx1, "Test")
+		},
+	)
 	verifyLogAttrs(
 		t,
 		output2,
@@ -78,9 +87,11 @@ func TestOverwritingContextAttrs(t *testing.T) {
 func TestAddContextAttrsNilParent(t *testing.T) {
 	ctx := log.AddContextAttrs(nil, "ctxKey", "value")
 
-	output := getLogOutput(nil, func() {
-		log.Warn(ctx, "Test")
-	})
+	output := getLogOutput(
+		func() {
+			log.Warn(ctx, "Test")
+		},
+	)
 
 	verifyLogAttrs(t, output, `"ctxKey":"value"`)
 }
