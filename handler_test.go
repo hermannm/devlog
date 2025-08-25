@@ -21,10 +21,12 @@ func TestSlog(t *testing.T) {
 		t,
 		func(t *testing.T) slog.Handler {
 			buffer.Reset()
-			return devlog.NewHandler(&buffer, &devlog.Options{
-				DisableColors: true,
-				TimeFormat:    devlog.TimeFormatFull,
-			})
+			return devlog.NewHandler(
+				&buffer, &devlog.Options{
+					DisableColors: true,
+					TimeFormat:    devlog.TimeFormatFull,
+				},
+			)
 		},
 		func(t *testing.T) map[string]any {
 			entries, err := parseLogEntry(buffer.String())
@@ -58,10 +60,13 @@ func TestTimeFormat(t *testing.T) {
 
 	for _, testCase := range testCases {
 		var buffer bytes.Buffer
-		handler := devlog.NewHandler(&buffer, &devlog.Options{
-			DisableColors: true,
-			TimeFormat:    testCase.format,
-		})
+		handler := devlog.NewHandler(
+			&buffer,
+			&devlog.Options{
+				DisableColors: true,
+				TimeFormat:    testCase.format,
+			},
+		)
 
 		record := slog.NewRecord(timeValue, slog.LevelInfo, "Message", 0)
 		if err := handler.Handle(context.Background(), record); err != nil {
@@ -83,9 +88,11 @@ func TestStructAttr(t *testing.T) {
 		Name: "hermannm",
 	}
 
-	output := getLogOutput(t, nil, func() {
-		slog.Info("user created", "user", user)
-	})
+	output := getLogOutput(
+		func() {
+			slog.Info("user created", "user", user)
+		},
+	)
 
 	expectedOutput := `user: {
     "id": 1,
@@ -126,12 +133,16 @@ func TestListAttrs(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		t.Run(testCase.attr.Key, func(t *testing.T) {
-			output := getLogOutput(t, nil, func() {
-				slog.Info("", testCase.attr)
-			})
-			assertContains(t, output, testCase.expectedOutput)
-		})
+		t.Run(
+			testCase.attr.Key, func(t *testing.T) {
+				output := getLogOutput(
+					func() {
+						slog.Info("", testCase.attr)
+					},
+				)
+				assertContains(t, output, testCase.expectedOutput)
+			},
+		)
 	}
 }
 
@@ -145,9 +156,11 @@ func TestCauseError(t *testing.T) {
 		[]any{"underlying cause 2", "underlying cause 3"},
 	}
 
-	output := getLogOutput(t, nil, func() {
-		slog.Error("", "cause", errorLog)
-	})
+	output := getLogOutput(
+		func() {
+			slog.Error("", "cause", errorLog)
+		},
+	)
 
 	assertContains(
 		t,
@@ -163,22 +176,27 @@ func TestCauseError(t *testing.T) {
 }
 
 func TestSource(t *testing.T) {
-	output := getLogOutput(t, &devlog.Options{AddSource: true}, func() {
-		slog.Info("Test")
-	})
+	output := getLogOutputWithOptions(
+		&devlog.Options{AddSource: true},
+		func() {
+			slog.Info("Test")
+		},
+	)
 
 	assertContains(
 		t,
 		output,
 		"\n  source: hermannm.dev/devlog_test.TestSource",
-		"handler_test.go:167",
+		"handler_test.go:182",
 	)
 }
 
-func getLogOutput(t *testing.T, handlerOptions *devlog.Options, logFunc func()) string {
-	if handlerOptions == nil {
-		handlerOptions = &devlog.Options{}
-	}
+func getLogOutput(logFunc func()) string {
+	options := &devlog.Options{Level: slog.LevelDebug}
+	return getLogOutputWithOptions(options, logFunc)
+}
+
+func getLogOutputWithOptions(handlerOptions *devlog.Options, logFunc func()) string {
 	// Must disable color output to parse reliably
 	handlerOptions.DisableColors = true
 
@@ -188,7 +206,7 @@ func getLogOutput(t *testing.T, handlerOptions *devlog.Options, logFunc func()) 
 	logFunc()
 
 	output := buffer.String()
-	t.Log(strings.TrimSuffix(output, "\n"))
+
 	return output
 }
 
@@ -196,20 +214,23 @@ func assertContains(t *testing.T, output string, expectedInOutput ...string) {
 	t.Helper()
 
 	output = strings.TrimSuffix(output, "\n")
+	t.Log(output)
 
 	for _, expected := range expectedInOutput {
 		if !strings.Contains(output, expected) {
-			t.Errorf(`unexpected log output
-got:
+			t.Errorf(
+				`Unexpected log output
+Want:
 ----------------------------------------
 %s
 ----------------------------------------
-
-want:
+Got:
 ----------------------------------------
 %s
-----------------------------------------
-`, output, expected)
+----------------------------------------`,
+				expected,
+				output,
+			)
 		}
 	}
 }

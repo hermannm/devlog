@@ -671,7 +671,6 @@ func runTestCases[LogFuncT any](
 				runLogFunc(testCase)
 
 				output := outputBuffer.String()
-				t.Log(strings.TrimSuffix(output, "\n"))
 				outputBuffer.Reset()
 
 				verifyLogOutput(
@@ -695,6 +694,8 @@ func verifyLogOutput(
 ) {
 	t.Helper()
 
+	t.Log(strings.TrimSuffix(output, "\n"))
+
 	level, message, attrs := parseLogOutput(t, output)
 	if level != expectedLevel {
 		unexpectedLogOutput(t, "log level", level, expectedLevel)
@@ -710,6 +711,8 @@ func verifyLogOutput(
 func verifyLogAttrs(t *testing.T, output string, expectedAttrs string) {
 	t.Helper()
 
+	t.Log(strings.TrimSuffix(output, "\n"))
+
 	_, _, attrs := parseLogOutput(t, output)
 	if attrs != expectedAttrs {
 		unexpectedLogOutput(t, "log attributes", attrs, expectedAttrs)
@@ -719,6 +722,8 @@ func verifyLogAttrs(t *testing.T, output string, expectedAttrs string) {
 // Verifies attributes in log output except the "cause" attribute from error logs.
 func verifyErrorLogAttrs(t *testing.T, output string, expectedAttrsWithoutCause string) {
 	t.Helper()
+
+	t.Log(strings.TrimSuffix(output, "\n"))
 
 	_, _, attrs := parseLogOutput(t, output)
 
@@ -790,16 +795,17 @@ func unexpectedLogOutput(t *testing.T, descriptor string, actual string, expecte
 
 	t.Errorf(
 		`Unexpected %s
-Got:
-----------------------------------------
-%s
-----------------------------------------
-
 Want:
 ----------------------------------------
 %s
 ----------------------------------------
-`, descriptor, actual, expected,
+Got:
+----------------------------------------
+%s
+----------------------------------------`,
+		descriptor,
+		expected,
+		actual,
 	)
 }
 
