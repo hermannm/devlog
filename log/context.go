@@ -76,7 +76,12 @@ func AddContextAttrs(parent context.Context, logAttributes ...any) context.Conte
 //
 //	logHandler := devlog.NewHandler(os.Stdout, nil)
 //	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
+//
+// ContextHandler panics if the given handler is nil.
 func ContextHandler(wrapped slog.Handler) slog.Handler {
+	if wrapped == nil {
+		panic("nil slog.Handler given to ContextHandler")
+	}
 	return contextHandler{wrapped}
 }
 

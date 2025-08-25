@@ -128,3 +128,27 @@ func TestContextHandler(t *testing.T) {
 			`"contextKey2":"contextValue2"`,
 	)
 }
+
+func TestNilContextHandler(t *testing.T) {
+	var panicValue any
+
+	passNilToContextHandler := func() {
+		defer func() {
+			panicValue = recover()
+		}()
+
+		log.ContextHandler(nil)
+	}
+	passNilToContextHandler()
+
+	expectedPanicValue := "nil slog.Handler given to ContextHandler"
+	if panicValue != expectedPanicValue {
+		t.Errorf(
+			`Unexpected panic value
+Want: %v
+ Got: %v`,
+			expectedPanicValue,
+			panicValue,
+		)
+	}
+}
