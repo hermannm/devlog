@@ -32,6 +32,23 @@ import (
 // When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
 // JSON object. This allows you to filter and query on the attributes in the log analysis tool of
 // your choice, in a more structured manner than if you were to just use string concatenation.
+//
+// # Attaching context attributes to errors
+//
+// Typically, when an error occurs, it is returned up the stack before being logged. This means that
+// an error can escape its original context, and thus lose any context attributes that would
+// otherwise be included in the log. To alleviate this, this library looks for the following method
+// on logged errors:
+//
+//	Context() context.Context
+//
+// If an error implements this method, then we include any attributes from the error's context in
+// the log.
+//
+// The [hermannm.dev/wrap/ctxwrap] package supports this use-case by providing error-wrapping
+// functions that take a [context.Context] parameter.
+//
+// [hermannm.dev/wrap/ctxwrap]: https://pkg.go.dev/hermannm.dev/wrap/ctxwrap
 func AddContextAttrs(parent context.Context, logAttributes ...any) context.Context {
 	if parent == nil {
 		parent = context.Background()
