@@ -534,6 +534,15 @@ func TestLogSource(t *testing.T) {
 	assertContains(t, output, `"source":`, `"function":`, "TestLogSource", `"file":`, "log_test.go")
 }
 
+func TestNilContext(t *testing.T) {
+	output := getLogOutput(
+		func() {
+			log.Info(nil, "Test")
+		},
+	)
+	verifyLogOutput(t, output, "INFO", "Test", "")
+}
+
 func TestLoggerWith(t *testing.T) {
 	var buffer bytes.Buffer
 	logger1 := log.New(slog.NewJSONHandler(&buffer, nil))
