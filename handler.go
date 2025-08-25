@@ -265,15 +265,17 @@ func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, inden
 		value := attr.Value.Any()
 		if attr.Key == causeErrorAttrKey {
 			handler.writeCauseError(buffer, value, indent)
+			buffer.writeByte('\n')
 		} else {
 			buffer.writeByte(' ')
 			if stringValue, ok := value.(string); ok {
 				buffer.writeString(stringValue)
+				buffer.writeByte('\n')
 			} else {
+				// JSON encoder adds its own trailing newline, so we don't need to add it here
 				handler.writeJSON(buffer, value, indent)
 			}
 		}
-		buffer.writeByte('\n')
 	default:
 		handler.writeAttributeKey(buffer, attr.Key)
 		buffer.writeByte(' ')
