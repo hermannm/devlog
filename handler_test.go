@@ -77,26 +77,26 @@ func TestTimeFormat(t *testing.T) {
 	}
 }
 
-type user struct {
+type event struct {
 	ID   int    `json:"id"`
-	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 func TestStructAttr(t *testing.T) {
-	user := user{
-		ID:   1,
-		Name: "hermannm",
+	event := event{
+		ID:   1234,
+		Type: "ORDER_UPDATED",
 	}
 
 	output := getLogOutput(
 		func() {
-			slog.Info("user created", "user", user)
+			slog.Error("Failed to process event", "event", event)
 		},
 	)
 
-	expectedOutput := `user: {
-    "id": 1,
-    "name": "hermannm"
+	expectedOutput := `event: {
+    "id": 1234,
+    "type": "ORDER_UPDATED"
   }`
 
 	assertContains(t, output, expectedOutput)
