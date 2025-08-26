@@ -7,7 +7,8 @@ Go library that provides utilities for structured logging, building on the stand
   output format, designed for local development and CLI tools
 - `devlog/log` is a thin wrapper over the logging API of `log/slog`, providing:
     - Utility functions for log message formatting (`log.Infof`, `log.Errorf`, etc.)
-    - Error-aware logging functions, which structure errors to be formatted nicely as log attributes
+    - Error-aware logging functions, which structure errors to be formatted consistently as log
+      attributes
     - `log.AddContextAttrs`, a function for adding log attributes to a
       [`context.Context`](https://pkg.go.dev/context), applying the attributes to all logs made in
       that context
@@ -45,26 +46,40 @@ func main() {
 ```
 <!-- @formatter:on -->
 
-Logging with `slog` will now use this handler:
+Logging with `slog` will now use this handler. So the following log:
 
 <!-- @formatter:off -->
 ```go
-slog.Warn("No value found for 'PORT' in env, defaulting to 8000")
 slog.Info("Server started", "port", 8000, "environment", "DEV")
-slog.Error(
-	"Database query failed",
-	slog.Group("dbError", "code", 60, "message", "UNKNOWN_TABLE"),
-)
 ```
 <!-- @formatter:on -->
 
-...giving the following output (using a gruvbox terminal color scheme):
+...will give the following output (using a gruvbox terminal color scheme):
 
-![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/ac5ebe0a372e745c30b5afe6eeb71a67c4c44d21/devlog-example-output.png?raw=true)
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/9d573edd9318a43272543fca918224430dfdaf01/devlog-example-output.png?raw=true)
 
-This output is meant to be easily read by a developer working locally. However, you may want a more
-structured format (like JSON) for production systems, to make log analysis easier. You can get both
-by conditionally choosing the log handler for your application, like this:
+Structs, slices and other non-primitive types are encoded as pretty-formatted JSON, so this
+example:
+
+<!-- @formatter:off -->
+```go
+type Event struct {
+	ID   int    `json:"id"`
+	Type string `json:"type"`
+}
+event := Event{ID: 1234, Type: "ORDER_UPDATED"}
+
+slog.Error("Failed to process event", "event", event)
+```
+<!-- @formatter:on -->
+
+...gives this output:
+
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/9d573edd9318a43272543fca918224430dfdaf01/devlog-example-output-2.png?raw=true)
+
+`devlog`'s output is meant to be easily read by a developer working locally. However, you may want a
+more structured format for production systems, to make log analysis easier. You can get both by
+conditionally choosing the log handler for your application, like this:
 
 <!-- @formatter:off -->
 ```go
@@ -83,7 +98,9 @@ slog.SetDefault(slog.New(logHandler))
 
 ### Using the `devlog/log` logging API
 
-Example:
+Unlike `log/slog`, `devlog/log` provides logging functions that take an `error`. When an error is
+passed to such a logging function, it is attached to the log as a `cause` attribute, so errors are
+structured consistently between logs.
 
 <!-- @formatter:off -->
 ```go
@@ -95,16 +112,43 @@ import (
 )
 
 func example(ctx context.Context) {
-	user := map[string]any{"id": 2, "username": "hermannm"}
-	err := errors.New("username taken")
-	log.Error(ctx, err, "Failed to create user", "user", user)
+	err := errors.New("database insert failed")
+	log.Error(ctx, err, "Failed to store event")
 }
 ```
 <!-- @formatter:on -->
 
 This gives the following output (using the `devlog` output handler):
 
-![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/ac5ebe0a372e745c30b5afe6eeb71a67c4c44d21/devlog-example-output-2.png?raw=true)
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/9d573edd9318a43272543fca918224430dfdaf01/devlog-example-output-3.png?raw=true)
+
+The package also provides `log.AddContextAttrs`, a function for adding log attributes to a
+`context.Context`. These attributes are added to all logs where the context is passed, so this
+example:
+
+<!-- @formatter:off -->
+```go
+func processEvent(ctx context.Context, event Event) {
+	ctx = log.AddContextAttrs(ctx, "eventId", event.ID)
+
+	log.Debug(ctx, "Started processing event")
+	// ...
+	log.Debug(ctx, "Finished processing event")
+}
+```
+<!-- @formatter:on -->
+
+...gives this output:
+
+![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/9d573edd9318a43272543fca918224430dfdaf01/devlog-example-output-4.png?raw=true)
+
+This can help you trace connected logs in your system (especially when using a more structured JSON
+output in production, allowing you to filter on all logs with a specific `eventId`).
+
+In order to encourage propagating context attributes, all log functions in this package take a
+`context.Context`. If you're in a function without a context parameter, you may pass a `nil`
+context. But ideally, you should pass a context wherever you do logging, in order to propagate
+context attributes.
 
 ## Credits
 
