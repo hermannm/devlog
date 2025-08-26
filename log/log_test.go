@@ -595,6 +595,53 @@ func TestLoggerWithGroup(t *testing.T) {
 	}
 }
 
+func TestSetDefault(t *testing.T) {
+	var buffer bytes.Buffer
+
+	handler := slog.NewJSONHandler(&buffer, nil).
+		// Attach attr to handler, so we can verify that this specific handler is used
+		WithAttrs([]slog.Attr{slog.Bool("newDefaultLogger", true)})
+
+	log.SetDefault(handler)
+
+	// SetDefault should wrap handler in log.ContextHandler, so we want to verify that it outputs
+	// context attributes as expected
+	ctx := log.AddContextAttrs(context.Background(), "contextKey", "contextValue")
+
+	// Log with plain slog instead of devlog/log, to verify ContextHandler
+	slog.InfoContext(ctx, "Test 1")
+	verifyLogAttrs(t, buffer.String(), `"newDefaultLogger":true,"contextKey":"contextValue"`)
+	buffer.Reset()
+
+	// Test that log with devlog/log works as expected too
+	log.Info(ctx, "Test 2")
+	verifyLogAttrs(t, buffer.String(), `"newDefaultLogger":true,"contextKey":"contextValue"`)
+}
+
+func TestNilDefaultHandler(t *testing.T) {
+	var panicValue any
+
+	passNilToSetDefault := func() {
+		defer func() {
+			panicValue = recover()
+		}()
+
+		log.SetDefault(nil)
+	}
+	passNilToSetDefault()
+
+	expectedPanicValue := "nil slog.Handler given to log.SetDefault"
+	if panicValue != expectedPanicValue {
+		t.Errorf(
+			`Unexpected panic value
+Want: %v
+ Got: %v`,
+			expectedPanicValue,
+			panicValue,
+		)
+	}
+}
+
 var ctx = context.Background()
 
 func getLogOutput(logFunc func()) string {

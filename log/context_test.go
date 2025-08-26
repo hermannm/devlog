@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
+	"os"
+	"reflect"
 	"testing"
 
 	"hermannm.dev/devlog/log"
@@ -127,6 +129,21 @@ func TestContextHandler(t *testing.T) {
 			`"contextKey1":"contextValue1",`+
 			`"contextKey2":"contextValue2"`,
 	)
+}
+
+func TestAlreadyWrappedContextHandler(t *testing.T) {
+	handler1 := log.ContextHandler(slog.NewJSONHandler(os.Stdout, nil))
+	handler2 := log.ContextHandler(handler1)
+
+	if !reflect.DeepEqual(handler1, handler2) {
+		t.Errorf(
+			`Expected nested ContextHandler calls to not wrap multiple times
+Handler 1: %+v
+Handler 2: %+v`,
+			handler1,
+			handler2,
+		)
+	}
 }
 
 func TestNilContextHandler(t *testing.T) {

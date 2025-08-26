@@ -731,6 +731,21 @@ func Default() Logger {
 	return Logger{handler: slog.Default().Handler()}
 }
 
+// SetDefault is short-hand for calling:
+//
+//	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
+//
+// The handler is wrapped with [log.ContextHandler] (unless it's already wrapped), so that context
+// attributes from [log.AddContextAttrs] are also added to logs made outside of this library.
+//
+// SetDefault panics if the given handler is nil.
+func SetDefault(logHandler slog.Handler) {
+	if logHandler == nil {
+		panic("nil slog.Handler given to log.SetDefault")
+	}
+	slog.SetDefault(slog.New(ContextHandler(logHandler)))
+}
+
 // With returns a Logger that includes the given attributes in each log.
 // If no attributes are given, the logger is returned as-is.
 //
@@ -1428,7 +1443,12 @@ func (logger Logger) Log(
 // log analysis tool of your choice, in a more structured manner than arbitrary message formatting.
 // If you want both attributes and a formatted message, you should call [Logger.Log] and format the
 // message directly with [fmt.Sprintf].
-func (logger Logger) Logf(ctx context.Context, level slog.Level, messageFormat string, formatArgs ...any) {
+func (logger Logger) Logf(
+	ctx context.Context,
+	level slog.Level,
+	messageFormat string,
+	formatArgs ...any,
+) {
 	logger.log(ctx, level, messageFormat, formatArgs, nil, nil, nil)
 }
 

@@ -52,11 +52,15 @@ import (
 //
 // When using AddContextAttrs, context attributes are added to the log output when you use the
 // logging functions provided by this package. But you may have places in your application that use
-// [log/slog] directly (such as an SDK that does request logging). To propagate context attributes
-// to those logs as well, you can wrap your slog.Handler with [log.ContextHandler], as follows:
+// [log/slog] directly (such as an SDK that does request logging). To add context attributes to
+// those logs as well, you can wrap your slog.Handler with [log.ContextHandler], as follows:
 //
 //	logHandler := devlog.NewHandler(os.Stdout, nil) // Or any other Handler
 //	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
+//
+// Alternatively, you can use [log.SetDefault], which applies [log.ContextHandler] for you:
+//
+//	log.SetDefault(devlog.NewHandler(os.Stdout, nil))
 //
 // [hermannm.dev/wrap/ctxwrap]: https://pkg.go.dev/hermannm.dev/wrap/ctxwrap
 func AddContextAttrs(parent context.Context, logAttributes ...any) context.Context {
@@ -87,10 +91,19 @@ func AddContextAttrs(parent context.Context, logAttributes ...any) context.Conte
 //	logHandler := devlog.NewHandler(os.Stdout, nil)
 //	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
 //
-// ContextHandler panics if the given handler is nil.
+// Alternatively, you can use [log.SetDefault], which applies [log.ContextHandler] for you:
+//
+//	log.SetDefault(devlog.NewHandler(os.Stdout, nil))
+//
+// ContextHandler panics if the given handler is nil. If the handler is already wrapped by
+// ContextHandler, then it's returned as-is.
 func ContextHandler(wrapped slog.Handler) slog.Handler {
 	if wrapped == nil {
 		panic("nil slog.Handler given to ContextHandler")
+	}
+	// If the given log handler is already wrapped by ContextHandler, then we return it as-is
+	if _, alreadyWrapped := wrapped.(contextHandler); alreadyWrapped {
+		return wrapped
 	}
 	return contextHandler{wrapped}
 }

@@ -35,6 +35,10 @@
 //	logHandler := devlog.NewHandler(os.Stdout, nil) // Or any other Handler
 //	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
 //
+// Alternatively, you can use [log.SetDefault], which applies [log.ContextHandler] for you:
+//
+//	log.SetDefault(devlog.NewHandler(os.Stdout, nil))
+//
 // [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
 // [hermannm.dev/wrap/ctxwrap]: https://pkg.go.dev/hermannm.dev/wrap/ctxwrap
 package log
