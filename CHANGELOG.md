@@ -1,5 +1,112 @@
 # Changelog
 
+## [Unreleased]
+
+- `devlog`:
+    - **Breaking:** Remove `InitDefaultLogHandler`
+        - This function made it harder to configure other log handlers, which we do not want
+        - To migrate, replace:
+          ```go
+          devlog.InitDefaultLogHandler(output, options)
+          ```
+          ...with:
+          ```go
+          logHandler := devlog.NewHandler(output, options)
+          slog.SetDefault(slog.New(logHandler))
+          ```
+            - Alternatively, use the new `log.SetDefault` function from `devlog/log` (see notes
+              below):
+              ```go
+              log.SetDefault(devlog.NewHandler(output, options))
+              ```
+    - Encode log attributes with values of type `any` as pretty-formatted JSON
+        - This makes `devlog`'s attribute encoding more consistent with the JSON log handler that
+          you'll typically use for production, to avoid discrepancies between local and production
+          log output
+- `devlog/log`:
+    - Add `log.AddContextAttrs` function for attaching log attributes to a `context.Context`
+    - **Breaking:** Add `context.Context` parameter to all logging functions, to ensure that
+      attributes from `AddContextAttrs` are propagated
+        - To migrate, replace:
+          ```go
+          log.Info("Message", ...attributes)
+          ```
+          ...with:
+          ```go
+          log.Info(ctx, "Message", ...attributes)
+          ```
+            - If you're in a function without a context parameter, you may pass a `nil` context:
+              ```go
+              log.Info(nil, "Message", ...attributes)
+              ```
+    - **Breaking:** Remove `log.Error`, `log.WarnError` and `log.DebugError` functions that don't
+      take a log message, and replace them with the error-logging functions that previously had a
+      `Cause` suffix
+        - Renamed functions:
+            - `log.ErrorCause` -> `log.Error`
+            - `log.ErrorCausef` -> `log.Errorf`
+            - `log.WarnErrorCause` -> `log.WarnError`
+            - `log.WarnErrorCausef` -> `log.WarnErrorf`
+            - `log.DebugErrorCause` -> `log.DebugError`
+            - `log.DebugErrorCausef` -> `log.DebugErrorf`
+        - To migrate uses of `Error`, `WarnError` and `DebugError` without a log message, you can
+          add a blank log message, which behaves the same (error string is used as the message).
+          Replace:
+          ```go
+          log.Error(err, ...attributes)
+          log.WarnError(err, ...attributes)
+          log.DebugError(err, ...attributes)
+          ```
+          ...with:
+          ```go
+          log.Error(ctx, err, "", ...attributes)
+          log.WarnError(ctx, err, "", ...attributes)
+          log.DebugError(ctx, err, "", ...attributes)
+          ```
+    - **Breaking:** Change variadic parameter in `log.Errors` to slice of errors, to allow passing
+      log attributes
+        - To migrate, replace:
+          ```go
+          log.Errors("Message", err1, err2)
+          ```
+          ...with:
+          ```go
+          log.Errors(ctx, []error{err1, err2}, "Message")
+          ```
+    - Add functions for wrapping multiple errors with a formatted message:
+        - `log.Errorsf`
+        - `log.WarnErrorsf`
+        - `log.DebugErrorsf`
+    - Add functions for logging errors at the `INFO` log level (for completeness with the other
+      error-logging functions):
+        - `log.InfoError`
+        - `log.InfoErrorf`
+        - `log.InfoErrors`
+        - `log.InfoErrorsf`
+    - Add log functions that allow passing the log level as a parameter, to dynamically set the
+      level
+        - `log.Log`
+        - `log.Logf`
+        - `log.LogWithError`
+        - `log.LogWithErrorf`
+        - `log.LogWithErrors`
+        - `log.LogWithErrorsf`
+    - **Breaking:** Remove `log.JSON` attribute function
+        - This is redundant now that `devlog` encodes `any` values as JSON
+    - Add support for errors with structured log attributes attached
+        - The [hermannm.dev/wrap](https://pkg.go.dev/hermannm.dev/wrap) package uses this, in its
+          `wrap.ErrorWithAttrs` function
+    - Add support for errors with `context.Context` attached, in order to propagate attributes from
+      `log.AddContextAttrs` from the error's original context
+        - The [hermannm.dev/wrap/ctxwrap](https://pkg.go.dev/hermannm.dev/wrap/ctxwrap) package uses
+          this
+    - Add `log.ContextHandler`, which wraps a `slog.Handler` to support attributes from
+      `log.AddContextAttrs` for logs made outside of this package
+    - Add `log.SetDefault`, short-hand utility for calling
+      `slog.SetDefault(slog.New(log.ContextHandler(logHandler)))`
+    - Make error unwrapping of plain errors more robust (check for `Unwrap() error` method instead
+      of just splitting on ": ")
+
 ## [v0.5.0] - 2024-10-02
 
 - `devlog`:
@@ -72,6 +179,8 @@
 ## [v0.1.0] - 2023-10-21
 
 - Initial release
+
+[Unreleased]: https://github.com/hermannm/devlog/compare/v0.5.0...HEAD
 
 [v0.5.0]: https://github.com/hermannm/devlog/compare/v0.4.1...v0.5.0
 
