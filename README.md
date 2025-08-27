@@ -22,6 +22,7 @@ Run `go get hermannm.dev/devlog` to add it to your project!
 - [Usage](#usage)
     - [Using the `devlog` output handler](#using-the-devlog-output-handler)
     - [Using the `devlog/log` logging API](#using-the-devloglog-logging-api)
+- [Developer's guide](#developers-guide)
 - [Credits](#credits)
 
 ## Usage
@@ -149,6 +150,26 @@ In order to encourage propagating context attributes, all log functions in this 
 `context.Context`. If you're in a function without a context parameter, you may pass a `nil`
 context. But ideally, you should pass a context wherever you do logging, in order to propagate
 context attributes.
+
+## Developer's guide
+
+When publishing a new release:
+
+- Run tests:
+  ```
+  go test ./...
+  ```
+- Add an entry to `CHANGELOG.md` (with the current date)
+    - Remember to update the link section, and bump the version for the `[Unreleased]` link
+- Create commit and tag for the release (update `TAG` variable in below command):
+  ```
+  TAG=vX.Y.Z && git commit -m "Release ${TAG}" && git tag -a "${TAG}" -m "Release ${TAG}" && git log --oneline -2
+  ```
+- Push the commit and tag:
+  ```
+  git push && git push --tags
+  ```
+    - Our release workflow will then create a GitHub release with the pushed tag's changelog entry
 
 ## Credits
 
