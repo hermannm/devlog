@@ -104,6 +104,7 @@
       `log.AddContextAttrs` for logs made outside of this package
     - Add `log.SetDefault`, short-hand utility for calling
       `slog.SetDefault(slog.New(log.ContextHandler(logHandler)))`
+    - Add `log.Enabled` and `Logger.Enabled` for checking if log output is enabled for a log level
     - Make error unwrapping of plain errors more robust (check for `Unwrap() error` method instead
       of just splitting on ": ")
 

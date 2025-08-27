@@ -711,6 +711,21 @@ func LogWithErrorsf(
 	Default().log(ctx, level, messageFormat, formatArgs, nil, nil, errors)
 }
 
+// Enabled returns true if log output is enabled for the given log level in the default logger's
+// handler.
+//
+// The logging functions in this package already check this before outputting logs (and before
+// performing any message formatting), so you don't have to check this if you're just making a
+// normal log. But if you're constructing some expensive value for the log, you can use this to
+// check if the level is enabled before paying that cost.
+//
+// The context parameter may be used by the log handler to determine whether the level is enabled.
+// If you're in a function without a context parameter, you may pass a nil context. But ideally, you
+// should pass a context wherever you do logging, in order to propagate context attributes.
+func Enabled(ctx context.Context, level slog.Level) bool {
+	return Default().Enabled(ctx, level)
+}
+
 // A Logger provides methods to produce structured log records for its output handler.
 // It is analogous to [slog.Logger], but provides more utilities for log message formatting.
 //
@@ -1576,6 +1591,23 @@ func (logger Logger) LogWithErrorsf(
 	formatArgs ...any,
 ) {
 	logger.log(ctx, level, messageFormat, formatArgs, nil, nil, errors)
+}
+
+// Enabled returns true if log output is enabled for the given log level in the logger's handler.
+//
+// The logging functions in this package already check this before outputting logs (and before
+// performing any message formatting), so you don't have to check this if you're just making a
+// normal log. But if you're constructing some expensive value for the log, you can use this to
+// check if the level is enabled before paying that cost.
+//
+// The context parameter may be used by the log handler to determine whether the level is enabled.
+// If you're in a function without a context parameter, you may pass a nil context. But ideally, you
+// should pass a context wherever you do logging, in order to propagate context attributes.
+func (logger Logger) Enabled(ctx context.Context, level slog.Level) bool {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return logger.handler.Enabled(ctx, level)
 }
 
 func (logger Logger) log(

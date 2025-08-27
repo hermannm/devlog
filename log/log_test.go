@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -523,6 +524,50 @@ func TestDisabledLogLevel(t *testing.T) {
 	}
 }
 
+func TestEnabled(t *testing.T) {
+	ctx := context.Background()
+
+	for _, level := range allLogLevels {
+		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+		logger := log.New(handler)
+
+		if !logger.Enabled(ctx, level) {
+			t.Errorf("Expected logger to be enabled for log level '%v'", level)
+		}
+		if logger.Enabled(ctx, level-1) {
+			t.Errorf("Expected logger to be disabled for 1 less than '%v'", level)
+		}
+
+		slog.SetDefault(slog.New(handler))
+
+		if !log.Enabled(ctx, level) {
+			t.Errorf("Expected default logger to be enabled for log level '%v'", level)
+		}
+		if log.Enabled(ctx, level-1) {
+			t.Errorf("Expected default logger to be disabled for 1 less than '%v'", level)
+		}
+	}
+}
+
+// We fall back to [context.Background] if a nil context is passed to [log.Enabled], and we want to
+// verify that it works.
+func TestNilContextInEnabled(t *testing.T) {
+	level := slog.LevelInfo
+
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	logger := log.New(handler)
+
+	if !logger.Enabled(nil, level) {
+		t.Errorf("Expected logger to be enabled for log level '%v'", level)
+	}
+
+	slog.SetDefault(slog.New(handler))
+
+	if !log.Enabled(nil, level) {
+		t.Errorf("Expected default logger to be enabled for log level '%v'", level)
+	}
+}
+
 func TestLogSource(t *testing.T) {
 	output := getLogOutputWithOptions(
 		&slog.HandlerOptions{AddSource: true},
@@ -534,7 +579,9 @@ func TestLogSource(t *testing.T) {
 	assertContains(t, output, `"source":`, `"function":`, "TestLogSource", `"file":`, "log_test.go")
 }
 
-func TestNilContext(t *testing.T) {
+// We allow passing a nil context to log functions (falling back to [context.Background]), and we
+// want to verify that it works.
+func TestNilContextInLogFunction(t *testing.T) {
 	output := getLogOutput(
 		func() {
 			log.Info(nil, "Test")
