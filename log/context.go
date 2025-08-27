@@ -143,6 +143,11 @@ func (handler contextHandler) WithGroup(name string) slog.Handler {
 }
 
 func getContextAttrs(ctx context.Context) []slog.Attr {
+	// We want to avoid a possible nil pointer dereference on Context.Value below
+	if ctx == nil {
+		return nil
+	}
+
 	contextValue := ctx.Value(contextAttrsKey)
 	if contextValue == nil {
 		return nil

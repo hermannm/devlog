@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"os"
 	"reflect"
+	"runtime"
 	"testing"
+	"time"
 
 	"hermannm.dev/devlog/log"
 )
@@ -143,6 +145,20 @@ Handler 2: %+v`,
 			handler1,
 			handler2,
 		)
+	}
+}
+
+// We do a defensive check for nil context in getContextAttrs. We want to verify that this works, so
+// we invoke ContextHandler (which calls getContextAttrs) with a nil context here.
+func TestNilContextInContextHandler(t *testing.T) {
+	handler := log.ContextHandler(slog.NewJSONHandler(os.Stdout, nil))
+
+	var programCounters [1]uintptr
+	runtime.Callers(0, programCounters[:])
+	record := slog.NewRecord(time.Now(), slog.LevelInfo, "Test", programCounters[0])
+
+	if err := handler.Handle(nil, record); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 
