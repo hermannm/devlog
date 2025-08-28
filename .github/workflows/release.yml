@@ -4,6 +4,8 @@ on:
     # Trigger release when a new semantic version tag (vX.Y.Z) is pushed
     tags:
       - v[0-9]+\.[0-9]+\.[0-9]+
+env:
+  FORCE_COLOR: 1 # For color output in GitHub Actions console (see https://force-color.org/)
 jobs:
   create-release:
     name: Create release
@@ -20,4 +22,4 @@ jobs:
       # Creates GitHub release from CHANGELOG.md entry for the pushed tag
       # https://github.com/hermannm/release-from-changelog
       - name: Create release from changelog
-        uses: hermannm/release-from-changelog@v0.1.7
+        uses: hermannm/release-from-changelog@v0.2.3
