@@ -28,6 +28,7 @@ func TestLogsWithAttrs(t *testing.T) {
 
 	type testCase = loggerTestCase[func(ctx context.Context, message string, attrs ...any)]
 
+	//nolint:exhaustruct
 	testCases := []testCase{
 		{
 			logFunc:          log.ErrorMessage,
@@ -102,6 +103,7 @@ func TestLogsWithFormattedMessage(t *testing.T) {
 
 	type testCase = loggerTestCase[func(ctx context.Context, format string, args ...any)]
 
+	//nolint:exhaustruct
 	testCases := []testCase{
 		{
 			logFunc:          log.ErrorMessagef,
@@ -181,6 +183,7 @@ func TestLogsWithErrorAndAttrs(t *testing.T) {
 		attrs ...any,
 	)]
 
+	//nolint:exhaustruct
 	testCases := []testCase{
 		{
 			logFunc:          log.Error,
@@ -263,6 +266,7 @@ func TestLogsWithErrorAndFormattedMessage(t *testing.T) {
 
 	type testCase = loggerTestCase[func(ctx context.Context, err error, format string, args ...any)]
 
+	//nolint:exhaustruct
 	testCases := []testCase{
 		{
 			logFunc:          log.Errorf,
@@ -343,6 +347,7 @@ func TestLogsWithMultipleErrorsAndAttrs(t *testing.T) {
 		attrs ...any,
 	)]
 
+	//nolint:exhaustruct
 	testCases := []testCase{
 		{
 			logFunc:          log.Errors,
@@ -430,6 +435,7 @@ func TestLogsWithMultipleErrorsAndFormattedMessage(t *testing.T) {
 		args ...any,
 	)]
 
+	//nolint:exhaustruct
 	testCases := []testCase{
 		{
 			logFunc:          log.Errorsf,
@@ -870,7 +876,9 @@ func verifyErrorLogAttrs(t *testing.T, output string, expectedAttrsWithoutCause 
 	}
 }
 
-var logOutputRegex = regexp.MustCompile(`^\{"time":"[^"]+","level":"([^"]+)","msg":"([^"]+)",?(.*)}\n$`)
+var logOutputRegex = regexp.MustCompile(
+	`^\{"time":"[^"]+","level":"([^"]+)","msg":"([^"]+)",?(.*)}\n$`,
+)
 
 func parseLogOutput(t *testing.T, output string) (level string, message string, attrs string) {
 	t.Helper()

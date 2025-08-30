@@ -323,8 +323,7 @@ func TestNestedErrorContextAttrs(t *testing.T) {
 					wrappedErrorsWithCtx{
 						ctx: log.AddContextAttrs(ctx, "ctx1_1_7_2", "value18"),
 						causes: []error{
-							wrappedErrorWithMsgAndCtx{
-								msg: "test",
+							errorWithCtx{
 								ctx: log.AddContextAttrs(ctx, "ctx1_1_7_2_1", "value19"),
 							},
 							wrappedErrorsWithMsgAndCtx{
@@ -828,6 +827,8 @@ func (err errorWithAttrsAndCtx) Context() context.Context {
 }
 
 // Verify that the errors we expect to implement the wrappedError interface actually do.
+//
+//nolint:exhaustruct
 var _ = []interface{ Unwrap() error }{
 	wrappedErrorWithMsg{},
 	wrappedErrorWithMsgAndAttrs{},
@@ -840,6 +841,8 @@ var _ = []interface{ Unwrap() error }{
 }
 
 // Verify that the errors we expect to implement the wrappedErrors interface actually do.
+//
+//nolint:exhaustruct
 var _ = []interface{ Unwrap() []error }{
 	wrappedErrorsWithMsg{},
 	wrappedErrorsWithMsgAndAttrs{},
@@ -852,6 +855,8 @@ var _ = []interface{ Unwrap() []error }{
 }
 
 // Verify that the errors we expect to implement the hasWrappingMessage interface actually do.
+//
+//nolint:exhaustruct
 var _ = []interface{ WrappingMessage() string }{
 	wrappedErrorWithMsg{},
 	wrappedErrorsWithMsg{},
@@ -864,6 +869,8 @@ var _ = []interface{ WrappingMessage() string }{
 }
 
 // Verify that the errors we expect to implement the hasLogAttributes interface actually do.
+//
+//nolint:exhaustruct
 var _ = []interface{ LogAttrs() []slog.Attr }{
 	wrappedErrorWithMsgAndAttrs{},
 	wrappedErrorsWithMsgAndAttrs{},
@@ -878,6 +885,8 @@ var _ = []interface{ LogAttrs() []slog.Attr }{
 }
 
 // Verify that the errors we expect to implement the hasContext interface actually do.
+//
+//nolint:exhaustruct
 var _ = []interface{ Context() context.Context }{
 	wrappedErrorWithMsgAndCtx{},
 	wrappedErrorsWithMsgAndCtx{},

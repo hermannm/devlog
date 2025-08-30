@@ -14,6 +14,8 @@ import (
 )
 
 // Tests our handler against the standard library test suite for structured log handlers.
+//
+//nolint:thelper // We don't need to mark these as helper functions
 func TestSlog(t *testing.T) {
 	var buffer bytes.Buffer
 
@@ -137,7 +139,7 @@ func TestListAttrs(t *testing.T) {
 			testCase.attr.Key, func(t *testing.T) {
 				output := getLogOutput(
 					func() {
-						slog.Info("", testCase.attr)
+						slog.Info("", testCase.attr) //nolint:loggercheck // False positive
 					},
 				)
 				assertContains(t, output, testCase.expectedOutput)

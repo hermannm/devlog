@@ -155,9 +155,9 @@ context attributes.
 
 When publishing a new release:
 
-- Run tests:
+- Run tests and linter ([`golangci-lint`](https://golangci-lint.run/)):
   ```
-  go test ./...
+  go test ./... && golangci-lint run
   ```
 - Add an entry to `CHANGELOG.md` (with the current date)
     - Remember to update the link section, and bump the version for the `[Unreleased]` link

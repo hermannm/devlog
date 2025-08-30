@@ -61,7 +61,7 @@ const (
 	// This is the default time format.
 	TimeFormatShort TimeFormat = iota
 
-	// TimeFormatFull includes both date and time, formatted as: [2024-09-29 10:57:30]
+	// TimeFormatFull includes both date and time, formatted as: [2024-09-29 10:57:30].
 	TimeFormatFull
 )
 
@@ -232,7 +232,7 @@ func (handler *Handler) writeLevel(buffer *byteBuffer, level slog.Level) {
 
 func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, indent int) {
 	attr.Value = attr.Value.Resolve()
-	if attr.Equal(slog.Attr{}) {
+	if attr.Equal(slog.Attr{}) { //nolint:exhaustruct // Checking empty attr on purpose
 		return
 	}
 
@@ -383,14 +383,12 @@ func (handler *Handler) writeLogSource(buffer *byteBuffer, programCounter uintpt
 	}
 
 	// If we don't have the source function, but do have the source file, we want to print that
-	if hasFile {
-		buffer.writeString(frame.File)
-		if hasLine {
-			buffer.writeByte(':')
-			buffer.writeDecimal(frame.Line)
-		}
-		buffer.writeByte('\n')
+	buffer.writeString(frame.File)
+	if hasLine {
+		buffer.writeByte(':')
+		buffer.writeDecimal(frame.Line)
 	}
+	buffer.writeByte('\n')
 }
 
 // Should be the same key as in log/errors.go (we don't import this across packages, as that would
