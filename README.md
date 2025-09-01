@@ -57,7 +57,7 @@ slog.Info("Server started", "port", 8000, "environment", "DEV")
 
 ...will give the following output (using a gruvbox terminal color scheme):
 
-![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/9d573edd9318a43272543fca918224430dfdaf01/devlog-example-output.png?raw=true)
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/3089fbac4d2cecd3d55b422a7ba742f788d5dace/devlog-example-output.png?raw=true)
 
 Structs, slices and other non-primitive types are encoded as pretty-formatted JSON, so this
 example:
@@ -68,7 +68,7 @@ type Event struct {
 	ID   int    `json:"id"`
 	Type string `json:"type"`
 }
-event := Event{ID: 1234, Type: "ORDER_UPDATED"}
+event := Event{ID: 1000, Type: "ORDER_UPDATED"}
 
 slog.Error("Failed to process event", "event", event)
 ```
@@ -76,7 +76,7 @@ slog.Error("Failed to process event", "event", event)
 
 ...gives this output:
 
-![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/9d573edd9318a43272543fca918224430dfdaf01/devlog-example-output-2.png?raw=true)
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/3089fbac4d2cecd3d55b422a7ba742f788d5dace/devlog-example-output-2.png?raw=true)
 
 `devlog`'s output is meant to be easily read by a developer working locally. However, you may want a
 more structured format for production systems, to make log analysis easier. You can get both by
@@ -121,7 +121,7 @@ func example(ctx context.Context) {
 
 This gives the following output (using the `devlog` output handler):
 
-![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/9d573edd9318a43272543fca918224430dfdaf01/devlog-example-output-3.png?raw=true)
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/3089fbac4d2cecd3d55b422a7ba742f788d5dace/devlog-example-output-3.png?raw=true)
 
 The package also provides `log.AddContextAttrs`, a function for adding log attributes to a
 `context.Context`. These attributes are added to all logs where the context is passed, so this
@@ -141,7 +141,7 @@ func processEvent(ctx context.Context, event Event) {
 
 ...gives this output:
 
-![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/9d573edd9318a43272543fca918224430dfdaf01/devlog-example-output-4.png?raw=true)
+![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/3089fbac4d2cecd3d55b422a7ba742f788d5dace/devlog-example-output-4.png?raw=true)
 
 This can help you trace connected logs in your system (especially when using a more structured JSON
 output in production, allowing you to filter on all logs with a specific `eventId`).

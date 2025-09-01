@@ -86,7 +86,7 @@ type event struct {
 
 func TestStructAttr(t *testing.T) {
 	event := event{
-		ID:   1234,
+		ID:   1000,
 		Type: "ORDER_UPDATED",
 	}
 
@@ -97,7 +97,7 @@ func TestStructAttr(t *testing.T) {
 	)
 
 	expectedOutput := `event: {
-    "id": 1234,
+    "id": 1000,
     "type": "ORDER_UPDATED"
   }`
 
