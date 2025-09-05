@@ -22,7 +22,7 @@ Run `go get hermannm.dev/devlog` to add it to your project!
 - [Usage](#usage)
     - [Using the `devlog` output handler](#using-the-devlog-output-handler)
     - [Using the `devlog/log` logging API](#using-the-devloglog-logging-api)
-- [Developer's guide](#developers-guide)
+- [Maintainer's guide](#maintainers-guide)
 - [Credits](#credits)
 
 ## Usage
@@ -151,9 +151,9 @@ In order to encourage propagating context attributes, all log functions in this 
 context. But ideally, you should pass a context wherever you do logging, in order to propagate
 context attributes.
 
-## Developer's guide
+## Maintainer's guide
 
-When publishing a new release:
+### Publishing a new release
 
 - Run tests and linter ([`golangci-lint`](https://golangci-lint.run/)):
   ```
