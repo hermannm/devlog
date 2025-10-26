@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/neilotoole/jsoncolor"
 )
@@ -108,24 +109,8 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	buffer := newBuffer()
 	defer buffer.free()
 
-	if !record.Time.IsZero() && handler.options.TimeFormat != TimeFormatNone {
-		handler.setColor(buffer, colorGray)
-		buffer.writeByte('[')
-
-		// TimeFormatNone is handled above, since then we don't want to write the surrounding
-		// brackets
-		switch handler.options.TimeFormat {
-		case TimeFormatFull:
-			buffer.writeDateTime(record.Time)
-		case TimeFormatShort:
-			fallthrough
-		default:
-			buffer.writeTime(record.Time)
-		}
-
-		buffer.writeByte(']')
-		handler.resetColor(buffer)
-		buffer.writeByte(' ')
+	if !record.Time.IsZero() {
+		handler.writeTime(buffer, record.Time)
 	}
 
 	handler.writeLevel(buffer, record.Level)
@@ -211,6 +196,30 @@ func (handler *Handler) WithGroup(name string) slog.Handler {
 	newHandler.indent++
 
 	return &newHandler
+}
+
+func (handler *Handler) writeTime(buffer *byteBuffer, time time.Time) {
+	if handler.options.TimeFormat == TimeFormatNone {
+		return
+	}
+
+	handler.setColor(buffer, colorGray)
+	buffer.writeByte('[')
+
+	// TimeFormatNone is handled above, since then we don't want to write the surrounding
+	// brackets
+	switch handler.options.TimeFormat {
+	case TimeFormatFull:
+		buffer.writeDateTime(time)
+	case TimeFormatShort:
+		fallthrough
+	default:
+		buffer.writeTime(time)
+	}
+
+	buffer.writeByte(']')
+	handler.resetColor(buffer)
+	buffer.writeByte(' ')
 }
 
 func (handler *Handler) writeLevel(buffer *byteBuffer, level slog.Level) {
