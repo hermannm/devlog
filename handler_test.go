@@ -64,10 +64,7 @@ func TestTimeFormat(t *testing.T) {
 		var buffer bytes.Buffer
 		handler := devlog.NewHandler(
 			&buffer,
-			&devlog.Options{
-				DisableColors: true,
-				TimeFormat:    testCase.format,
-			},
+			&devlog.Options{DisableColors: true, TimeFormat: testCase.format},
 		)
 
 		record := slog.NewRecord(timeValue, slog.LevelInfo, "Message", 0)
@@ -76,6 +73,46 @@ func TestTimeFormat(t *testing.T) {
 		}
 
 		assertContains(t, buffer.String(), testCase.expectedOutput)
+	}
+}
+
+func TestTimeFormatNone(t *testing.T) {
+	timeValue, err := time.Parse(time.DateTime, "2024-09-29 10:57:30")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buffer bytes.Buffer
+	handler := devlog.NewHandler(
+		&buffer,
+		&devlog.Options{DisableColors: true, TimeFormat: devlog.TimeFormatNone},
+	)
+
+	if err := handler.Handle(
+		context.Background(),
+		slog.NewRecord(timeValue, slog.LevelInfo, "Message", 0),
+	); err != nil {
+		t.Fatalf("Handle failed: %v", err)
+	}
+
+	output := buffer.String()
+	t.Log(output)
+	failTest := func(reason string) {
+		t.Errorf(
+			`Unexpected log output: %s
+----------------------------------------
+%s
+----------------------------------------`,
+			reason,
+			output,
+		)
+	}
+
+	if strings.Contains(output, "[") || strings.Contains(output, "]") {
+		failTest("Should not contain brackets")
+	}
+	if strings.Contains(output, "2024-09-29") || strings.Contains(output, "10:57:30") {
+		failTest("Should not contain time or date")
 	}
 }
 

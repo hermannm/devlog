@@ -63,6 +63,9 @@ const (
 
 	// TimeFormatFull includes both date and time, formatted as: [2024-09-29 10:57:30].
 	TimeFormatFull
+
+	// TimeFormatNone excludes time from the log output.
+	TimeFormatNone
 )
 
 // NewHandler creates a log [Handler] that writes to output, using the given options.
@@ -105,10 +108,12 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 	buffer := newBuffer()
 	defer buffer.free()
 
-	if !record.Time.IsZero() {
+	if !record.Time.IsZero() && handler.options.TimeFormat != TimeFormatNone {
 		handler.setColor(buffer, colorGray)
 		buffer.writeByte('[')
 
+		// TimeFormatNone is handled above, since then we don't want to write the surrounding
+		// brackets
 		switch handler.options.TimeFormat {
 		case TimeFormatFull:
 			buffer.writeDateTime(record.Time)
