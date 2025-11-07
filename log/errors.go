@@ -346,7 +346,7 @@ func prependCauseErrorAttr(
 	}
 }
 
-// Should be the same key as in devlog/handler.go (we don't import this across packages, as that
+// Should be the same key as in devlog/devlog.go (we don't import this across packages, as that
 // would require a dependency between them, whereas they're currently independent from each other).
 const causeErrorAttrKey = "cause"
 

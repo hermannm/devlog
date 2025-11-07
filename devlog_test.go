@@ -10,6 +10,8 @@ import (
 	"testing/slogtest"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"hermannm.dev/devlog"
 )
 
@@ -72,7 +74,7 @@ func TestTimeFormat(t *testing.T) {
 			t.Fatalf("Handle failed: %v", err)
 		}
 
-		assertContains(t, buffer.String(), testCase.expectedOutput)
+		assert.Contains(t, buffer.String(), testCase.expectedOutput)
 	}
 }
 
@@ -85,7 +87,7 @@ func TestTimeFormatNone(t *testing.T) {
 	var buffer bytes.Buffer
 	handler := devlog.NewHandler(
 		&buffer,
-		&devlog.Options{DisableColors: true, TimeFormat: devlog.TimeFormatNone},
+		&devlog.Options{DisableColors: true, TimeFormat: devlog.TimeFormatFull},
 	)
 
 	if err := handler.Handle(
@@ -96,24 +98,12 @@ func TestTimeFormatNone(t *testing.T) {
 	}
 
 	output := buffer.String()
-	t.Log(output)
-	failTest := func(reason string) {
-		t.Errorf(
-			`Unexpected log output: %s
-----------------------------------------
-%s
-----------------------------------------`,
-			reason,
-			output,
-		)
-	}
 
-	if strings.Contains(output, "[") || strings.Contains(output, "]") {
-		failTest("Should not contain brackets")
-	}
-	if strings.Contains(output, "2024-09-29") || strings.Contains(output, "10:57:30") {
-		failTest("Should not contain time or date")
-	}
+	assert.NotContains(t, output, "[", "Should not contain brackets")
+	assert.NotContains(t, output, "]", "Should not contain brackets")
+
+	assert.NotContains(t, output, "2024-09-29", "Should not contain date")
+	assert.NotContains(t, output, "10:57:30", "Should not contain time")
 }
 
 type event struct {
@@ -138,7 +128,7 @@ func TestStructAttr(t *testing.T) {
     "type": "ORDER_UPDATED"
   }`
 
-	assertContains(t, output, expectedOutput)
+	assert.Contains(t, output, expectedOutput)
 }
 
 func TestListAttrs(t *testing.T) {
@@ -179,7 +169,7 @@ func TestListAttrs(t *testing.T) {
 						slog.Info("", testCase.attr) //nolint:loggercheck // False positive
 					},
 				)
-				assertContains(t, output, testCase.expectedOutput)
+				assert.Contains(t, output, testCase.expectedOutput)
 			},
 		)
 	}
@@ -201,7 +191,7 @@ func TestCauseError(t *testing.T) {
 		},
 	)
 
-	assertContains(
+	assert.Contains(
 		t,
 		output,
 		`  cause:
@@ -222,12 +212,8 @@ func TestSource(t *testing.T) {
 		},
 	)
 
-	assertContains(
-		t,
-		output,
-		"\n  source: hermannm.dev/devlog_test.TestSource",
-		"handler_test.go:221",
-	)
+	assert.Contains(t, output, "\n  source: hermannm.dev/devlog_test.TestSource")
+	assert.Contains(t, output, "devlog_test.go:221")
 }
 
 func getLogOutput(logFunc func()) string {
@@ -247,31 +233,6 @@ func getLogOutputWithOptions(handlerOptions *devlog.Options, logFunc func()) str
 	output := buffer.String()
 
 	return output
-}
-
-func assertContains(t *testing.T, output string, expectedInOutput ...string) {
-	t.Helper()
-
-	output = strings.TrimSuffix(output, "\n")
-	t.Log(output)
-
-	for _, expected := range expectedInOutput {
-		if !strings.Contains(output, expected) {
-			t.Errorf(
-				`Unexpected log output
-Want:
-----------------------------------------
-%s
-----------------------------------------
-Got:
-----------------------------------------
-%s
-----------------------------------------`,
-				expected,
-				output,
-			)
-		}
-	}
 }
 
 // slogtest.Run requires us to parse our log output to a map[string]any.
