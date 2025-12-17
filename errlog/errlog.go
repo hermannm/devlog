@@ -1,6 +1,7 @@
 package errlog
 
 import (
+	"context"
 	"log/slog"
 	"slices"
 	"strconv"
@@ -11,45 +12,119 @@ func Cause(err error) slog.Attr {
 	return slog.Any("error", err)
 }
 
-func ReplaceErrorAttr(groups []string, attr slog.Attr) slog.Attr {
-	return replaceErrorAttr(groups, attr, nil)
+func ErrorAttrHandler(wrapped slog.Handler) slog.Handler {
+	if wrapped == nil {
+		panic("nil slog.Handler given to ErrorAttrHandler")
+	}
+	// If the given log handler is already wrapped by errorAttrHandler, then we return it as-is
+	if _, alreadyWrapped := wrapped.(errorAttrHandler); alreadyWrapped {
+		return wrapped
+	}
+	return errorAttrHandler{wrapped}
 }
 
-func ReplaceErrorAttrAnd(replaceAttr ReplaceAttrFunc) (wrappedReplaceAttr ReplaceAttrFunc) {
-	return func(groups []string, attr slog.Attr) slog.Attr {
-		return replaceErrorAttr(groups, attr, replaceAttr)
-	}
+type errorAttrHandler struct {
+	wrapped slog.Handler
 }
 
-type ReplaceAttrFunc = func(groups []string, attr slog.Attr) slog.Attr
-
-func replaceErrorAttr(groupsSlice []string, attr slog.Attr, replaceAttr ReplaceAttrFunc) slog.Attr {
-	groups := copyGroupsIfNecessary(groupsSlice, replaceAttr)
-
-	var ok bool
-	attr, ok = resolveAttr(attr, replaceAttr, groups)
-	if !ok {
-		return slog.Attr{}
+func (handler errorAttrHandler) Handle(ctx context.Context, record slog.Record) error {
+	numAttrs := record.NumAttrs()
+	// Return early if record has no attrs
+	if numAttrs == 0 {
+		return handler.wrapped.Handle(ctx, record)
 	}
 
-	if attr.Value.Kind() != slog.KindAny {
-		return attr
+	// Check if there are any error attributes on the record: If there are none, we can return early
+	// to avoid allocating a new attrs slice
+	hasErrorAttr := false
+	for attr := range record.Attrs {
+		if isErrorAttr(attr) {
+			hasErrorAttr = true
+			break
+		}
+	}
+	if !hasErrorAttr {
+		return handler.wrapped.Handle(ctx, record)
 	}
 
-	err, ok := attr.Value.Any().(error)
-	if !ok {
-		return attr
+	// Record does not support changing attrs in-place. So we have to transform the record's attrs,
+	// and then create a new record with these attrs
+	attrs := make([]slog.Attr, 0, numAttrs)
+	for attr := range record.Attrs {
+		newAttr, _ := replaceErrorAttr(attr)
+		attrs = append(attrs, newAttr)
 	}
 
-	return createErrorAttr(attr.Key, err, replaceAttr, groups)
+	newRecord := slog.NewRecord(record.Time, record.Level, record.Message, record.PC)
+	newRecord.AddAttrs(attrs...)
+	return handler.wrapped.Handle(ctx, newRecord)
 }
 
-func createErrorAttr(
-	key string,
-	err error,
-	replaceAttr ReplaceAttrFunc,
-	groups *[]string,
-) slog.Attr {
+func (handler errorAttrHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return handler.wrapped.Enabled(ctx, level)
+}
+
+func (handler errorAttrHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	// We don't replace error attrs here, as it would be strange to attach an error to an entire
+	// handler. So if the user does that, that's likely a deliberate choice we don't want to touch.
+	return errorAttrHandler{wrapped: handler.wrapped.WithAttrs(attrs)}
+}
+
+func (handler errorAttrHandler) WithGroup(name string) slog.Handler {
+	return errorAttrHandler{wrapped: handler.wrapped.WithGroup(name)}
+}
+
+func isErrorAttr(attr slog.Attr) bool {
+	switch attr.Value.Kind() {
+	case slog.KindAny:
+		if _, isErr := attr.Value.Any().(error); isErr {
+			return true
+		}
+	case slog.KindGroup:
+		for _, childAttr := range attr.Value.Group() {
+			if isErrorAttr(childAttr) {
+				return true
+			}
+		}
+	default:
+		// Other kinds not relevant
+	}
+
+	return false
+}
+
+func replaceErrorAttr(attr slog.Attr) (newAttr slog.Attr, replaced bool) {
+	switch attr.Value.Kind() {
+	case slog.KindAny:
+		if err, isErr := attr.Value.Any().(error); isErr {
+			return createErrorAttr(attr.Key, err), true
+		}
+	case slog.KindGroup:
+		group := attr.Value.Group()
+		var newGroup []slog.Attr
+		for i, childAttr := range group {
+			newChildAttr, childReplaced := replaceErrorAttr(childAttr)
+			if childReplaced {
+				if newGroup == nil {
+					newGroup = make([]slog.Attr, len(group))
+					copy(newGroup, group)
+				}
+
+				newGroup[i] = newChildAttr
+			}
+		}
+
+		if newGroup != nil {
+			return slog.GroupAttrs(attr.Key, newGroup...), true
+		}
+	default:
+		// Other kinds not relevant
+	}
+
+	return attr, false
+}
+
+func createErrorAttr(key string, err error) slog.Attr {
 	message, isWrappingMessage, cause, causes := unwrapError(err)
 
 	errAttrs := getErrorAttrs(err)
@@ -60,34 +135,26 @@ func createErrorAttr(
 	}
 
 	attrs := make([]slog.Attr, 0, size)
-	attrs = appendAttr(attrs, slog.String("msg", message), replaceAttr, groups)
-	attrs = appendAttrs(attrs, errAttrs, replaceAttr, groups)
+	attrs = append(attrs, slog.String("msg", message))
+	attrs = append(attrs, errAttrs...)
 
 	if cause != nil {
 		if isWrappingMessage {
-			pushGroup(groups, "cause")
-			attrs = append(attrs, createErrorAttr("cause", cause, replaceAttr, groups))
-			popGroup(groups)
+			attrs = append(attrs, createErrorAttr("cause", cause))
 		} else {
-			attrs = traverseErrorChainForAttrs(attrs, cause, replaceAttr, groups)
+			attrs = traverseErrorChainForAttrs(attrs, cause)
 		}
 	} else if len(causes) != 0 {
 		if isWrappingMessage {
-			pushGroup(groups, "cause")
-
-			var causeAttrs []slog.Attr
+			causeAttrs := make([]slog.Attr, 0, len(causes))
 			for i, cause := range causes {
 				key := strconv.Itoa(i)
-				pushGroup(groups, key)
-				causeAttrs = append(causeAttrs, createErrorAttr(key, cause, replaceAttr, groups))
-				popGroup(groups)
+				causeAttrs = append(causeAttrs, createErrorAttr(key, cause))
 			}
 			attrs = append(attrs, slog.GroupAttrs("cause", causeAttrs...))
-
-			popGroup(groups)
 		} else {
 			for _, cause := range causes {
-				attrs = traverseErrorChainForAttrs(attrs, cause, replaceAttr, groups)
+				attrs = traverseErrorChainForAttrs(attrs, cause)
 			}
 		}
 	}
@@ -171,7 +238,7 @@ func unwrapWrappedError(err wrappedError) (
 ) {
 	cause = err.Unwrap()
 
-	// If err has a WrappingMessage() string method, we use that as the wrapping message
+	// If err has a WrappingMessage() method, we use that as the wrapping message
 	if wrapper, ok := err.(hasWrappingMessage); ok {
 		return wrapper.WrappingMessage(), true, cause
 	}
@@ -183,8 +250,8 @@ func unwrapWrappedError(err wrappedError) (
 
 	// If err did not implement WrappingMessage(), we look for a common pattern for wrapping errors:
 	//	fmt.Errorf("wrapping message: %w", cause)
-	// If the full error message is suffixed by the cause error message, with a ": " separator,
-	// we can get the wrapping message before the separator.
+	// If the full error message is suffixed by the cause error message, with a ": " separator, we
+	// get the wrapping message before the separator.
 	unwrappedMessage := cause.Error()
 
 	// -2 for ": " separator between wrapping message and cause error
@@ -226,89 +293,6 @@ func unwrapWrappedErrors(err wrappedErrors) (
 	}
 }
 
-func appendAttr(
-	attrs []slog.Attr,
-	newAttr slog.Attr,
-	replaceAttr ReplaceAttrFunc,
-	groups *[]string,
-) []slog.Attr {
-	if newAttr, ok := resolveAttr(newAttr, replaceAttr, groups); ok {
-		return append(attrs, newAttr)
-	} else {
-		return attrs
-	}
-}
-
-func appendAttrs(
-	attrs []slog.Attr,
-	newAttrs []slog.Attr,
-	replaceAttr ReplaceAttrFunc,
-	groups *[]string,
-) []slog.Attr {
-	attrs = slices.Grow(attrs, len(newAttrs))
-	for _, newAttr := range newAttrs {
-		attrs = appendAttr(attrs, newAttr, replaceAttr, groups)
-	}
-	return attrs
-}
-
-func resolveAttr(
-	attr slog.Attr,
-	replaceAttr ReplaceAttrFunc,
-	groups *[]string,
-) (newAttr slog.Attr, ok bool) {
-	attr.Value = attr.Value.Resolve()
-
-	if replaceAttr == nil {
-		ok = !isEmpty(attr)
-	} else {
-		if attr.Value.Kind() == slog.KindGroup {
-			pushGroup(groups, attr.Key)
-			newValue := resolveGroupAttrs(attr.Value.Group(), replaceAttr, groups)
-			popGroup(groups)
-
-			if len(newValue) == 0 {
-				return slog.Attr{}, false
-			}
-			attr.Value = slog.GroupValue(newValue...)
-			ok = true
-		} else {
-			attr = replaceAttr(*groups, attr)
-			attr.Value = attr.Value.Resolve()
-			ok = !isEmpty(attr)
-		}
-	}
-
-	return attr, ok
-}
-
-func resolveGroupAttrs(
-	attrs []slog.Attr,
-	replaceAttr ReplaceAttrFunc,
-	groups *[]string,
-) []slog.Attr {
-	newAttrs := attrs
-	attrsCopied := false
-	for i, originalAttr := range attrs {
-		newAttr, ok := resolveAttr(originalAttr, replaceAttr, groups)
-		if ok && newAttr.Equal(originalAttr) {
-			if attrsCopied {
-				newAttrs = append(newAttrs, newAttr)
-			}
-		} else {
-			if !attrsCopied {
-				newAttrs = make([]slog.Attr, i, len(attrs))
-				copy(newAttrs, attrs)
-				attrsCopied = true
-			}
-			if ok {
-				newAttrs = append(newAttrs, newAttr)
-			}
-		}
-	}
-	return newAttrs
-}
-
 func getErrorAttrs(err error) []slog.Attr {
 	if err, ok := err.(hasLogAttributes); ok {
 		return err.LogAttrs()
@@ -320,57 +304,27 @@ func getErrorAttrs(err error) []slog.Attr {
 func traverseErrorChainForAttrs(
 	attrs []slog.Attr,
 	err error,
-	replaceAttr ReplaceAttrFunc,
-	groups *[]string,
 ) []slog.Attr {
 	errAttrs := getErrorAttrs(err)
 
 	attrs = slices.Grow(attrs, len(errAttrs))
 	for _, errAttr := range errAttrs {
 		if !hasKey(attrs, errAttr.Key) {
-			attrs = appendAttr(attrs, errAttr, replaceAttr, groups)
+			attrs = append(attrs, errAttr)
 		}
 	}
 
 	//goland:noinspection GoTypeAssertionOnErrors - We check wrapped errors ourselves
 	switch err := err.(type) {
 	case wrappedError:
-		attrs = traverseErrorChainForAttrs(attrs, err.Unwrap(), replaceAttr, groups)
+		attrs = traverseErrorChainForAttrs(attrs, err.Unwrap())
 	case wrappedErrors:
 		for _, err := range err.Unwrap() {
-			attrs = traverseErrorChainForAttrs(attrs, err, replaceAttr, groups)
+			attrs = traverseErrorChainForAttrs(attrs, err)
 		}
 	}
 
 	return attrs
-}
-
-func copyGroupsIfNecessary(groups []string, replaceAttr ReplaceAttrFunc) *[]string {
-	if replaceAttr == nil {
-		return nil
-	}
-
-	copiedGroups := make([]string, len(groups)+4)
-	copy(copiedGroups, groups)
-	return &copiedGroups
-}
-
-func pushGroup(groups *[]string, newGroup string) {
-	if groups != nil {
-		*groups = append(*groups, newGroup)
-	}
-}
-
-func popGroup(groups *[]string) {
-	if groups != nil {
-		groupsSlice := *groups
-		length := len(groupsSlice)
-		*groups = slices.Delete(groupsSlice, length-1, length)
-	}
-}
-
-func isEmpty(attr slog.Attr) bool {
-	return attr.Equal(slog.Attr{}) //nolint:exhaustruct // We want to check empty attr here
 }
 
 func hasKey(attrs []slog.Attr, key string) bool {

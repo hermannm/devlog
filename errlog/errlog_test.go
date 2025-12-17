@@ -9,8 +9,11 @@ import (
 )
 
 func TestReplaceErrorAttr(t *testing.T) {
-	slog.NewJSONHandler(
-		os.Stdout,
-		&slog.HandlerOptions{ReplaceAttr: errlog.ReplaceErrorAttr},
+	slog.SetDefault(
+		slog.New(
+			errlog.ErrorAttrHandler(
+				slog.NewJSONHandler(os.Stdout, nil),
+			),
+		),
 	)
 }
