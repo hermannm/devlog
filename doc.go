@@ -1,5 +1,5 @@
 // Package devlog implements a structured log (slog) handler, with a human-readable output format
-// designed for development builds.
+// designed for local development and CLI tools.
 //
 // A devlog.Handler can be configured as follows:
 //
@@ -16,9 +16,10 @@
 //
 // Check the [README] to see the output format with colors.
 //
-// To complement devlog's output handling, the [hermannm.dev/devlog/log] subpackage provides input
-// handling. It is a thin wrapper over the slog package, with utility functions for log message
-// and error formatting.
+// You can also use the [hermannm.dev/devlog/slogconfig] package for shorter initialization:
 //
-// [README]: https://github.com/hermannm/devlog#readme
+//	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
+//
+// ...which also configures [hermannm.dev/devlog/errlog.ErrorAttrHandler] and
+// [hermannm.dev/devlog/ctxlog.ContextAttrHandler].
 package devlog

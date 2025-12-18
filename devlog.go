@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log/slog"
-	"reflect"
 	"runtime"
 	"slices"
 	"strings"
@@ -12,12 +11,11 @@ import (
 	"time"
 
 	"github.com/neilotoole/jsoncolor"
-
-	"hermannm.dev/devlog/errlog"
 )
 
 // Handler is a [slog.Handler] that outputs log records in a human-readable format, designed for
-// development builds. See the package-level documentation for more on the output format.
+// local development and CLI tools. See the package-level documentation for more on the output
+// format.
 type Handler struct {
 	output     io.Writer
 	outputLock *sync.Mutex
@@ -26,9 +24,6 @@ type Handler struct {
 	// Current indent for new attributes, based on the current number of preformatted groups.
 	indent int
 
-	// False if [Options.ReplaceAttr] is nil, because then we don't need to maintain the groups
-	// slice.
-	needsGroups bool
 	// Groups opened by [Handler.WithGroup]. Nil if needsGroups is false.
 	groups []string
 
@@ -114,7 +109,6 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 		outputLock:                  &sync.Mutex{},
 		options:                     Options{},
 		indent:                      0,
-		needsGroups:                 needsGroups(options),
 		groups:                      nil,
 		preformattedAttrs:           nil,
 		preformattedGroups:          nil,
@@ -230,7 +224,7 @@ func (handler *Handler) WithGroup(name string) slog.Handler {
 	// Copies the old handler, but keeps the same mutex since we hold a pointer to it
 	newHandler := *handler
 
-	if newHandler.needsGroups {
+	if newHandler.needsGroups() {
 		// Copy groups slice, so we don't mutate the old underlying array
 		newHandler.groups = make([]string, len(handler.groups), len(handler.groups)+1)
 		copy(newHandler.groups, handler.groups)
@@ -484,21 +478,8 @@ func isEmpty(attr slog.Attr) bool {
 	return attr.Key == "" && attr.Value.Equal(slog.Value{}) //nolint:exhaustruct
 }
 
-func needsGroups(options *Options) bool {
-	if options == nil {
-		return false
-	}
-	if options.ReplaceAttr == nil {
-		return false
-	}
-
-	replaceAttr := reflect.ValueOf(options.ReplaceAttr)
-	replaceErrorAttr := reflect.ValueOf(errlog.ReplaceErrorAttr)
-	return replaceAttr.Pointer() != replaceErrorAttr.Pointer()
-}
-
 func (handler *Handler) copyGroupsIfNecessary() *[]string {
-	if !handler.needsGroups {
+	if !handler.needsGroups() {
 		return nil
 	}
 
@@ -506,6 +487,12 @@ func (handler *Handler) copyGroupsIfNecessary() *[]string {
 	copiedGroups := make([]string, len(groups)+4)
 	copy(copiedGroups, groups)
 	return &copiedGroups
+}
+
+// Returns false if [Options.ReplaceAttr] is nil, because then we don't need to maintain the groups
+// slice.
+func (handler *Handler) needsGroups() bool {
+	return handler.options.ReplaceAttr != nil
 }
 
 func pushGroup(groups *[]string, newGroup string) {
