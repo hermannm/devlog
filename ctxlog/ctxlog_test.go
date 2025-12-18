@@ -191,13 +191,8 @@ Want: %v
 }
 
 func getLogOutput(logFunc func()) string {
-	options := &slog.HandlerOptions{Level: slog.LevelDebug}
-	return getLogOutputWithOptions(options, logFunc)
-}
-
-func getLogOutputWithOptions(options *slog.HandlerOptions, logFunc func()) string {
 	var buffer bytes.Buffer
-	slog.SetDefault(slog.New(slog.NewJSONHandler(&buffer, options)))
+	slog.SetDefault(slog.New(ctxlog.ContextAttrHandler(slog.NewJSONHandler(&buffer, nil))))
 	logFunc()
 	return buffer.String()
 }

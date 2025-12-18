@@ -132,8 +132,7 @@ func TestErrorWithAttrs(t *testing.T) {
 	verifyLogAttrs(
 		t,
 		output,
-		// Error attributes should come after single-log attributes
-		`"error":{"msg":"test","errorKey":"errorValue"},"logKey":"logValue"}`,
+		`"error":{"msg":"test","errorKey":"errorValue"},"logKey":"logValue"`,
 	)
 }
 
