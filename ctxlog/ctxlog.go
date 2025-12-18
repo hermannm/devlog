@@ -7,8 +7,8 @@ import (
 )
 
 // AddContextAttrs returns a copy of the given parent context, with log attributes attached. When
-// the context is passed to one of the log functions in this library, these attributes are added to
-// the log output.
+// the context is passed to one of the logging functions from [slog], and your handler is wrapped
+// with [ctxlog.ContextAttrHandler], then these attributes will be added
 //
 // If AddContextAttrs has been called previously on the parent context (or any of its parents), then
 // those attributes will be included as well. But if a previous context attribute has the same key
@@ -54,12 +54,12 @@ import (
 // When using AddContextAttrs, context attributes are added to the log output when you use the
 // logging functions provided by this package. But you may have places in your application that use
 // [log/slog] directly (such as an SDK that does request logging). To add context attributes to
-// those logs as well, you can wrap your slog.Handler with [log.ContextHandler], as follows:
+// those logs as well, you can wrap your slog.Handler with [log.ContextAttrHandler], as follows:
 //
 //	logHandler := devlog.NewHandler(os.Stdout, nil) // Or any other Handler
-//	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
+//	slog.SetDefault(slog.New(ctxlog.ContextAttrHandler(logHandler)))
 //
-// Alternatively, you can use [log.SetDefault], which applies [log.ContextHandler] for you:
+// Alternatively, you can use [log.SetDefault], which applies [log.ContextAttrHandler] for you:
 //
 //	log.SetDefault(devlog.NewHandler(os.Stdout, nil))
 //
@@ -79,30 +79,23 @@ func AddContextAttrs(parent context.Context, logAttributes ...any) context.Conte
 	return context.WithValue(parent, contextAttrsKey, attrs)
 }
 
-// ContextHandler wraps a [slog.Handler], adding context attributes from [log.AddContextAttrs]
-// before forwarding logs to the wrapped handler.
-//
-// The logging functions in this library already add context attributes. But logs made outside of
-// this library (for example, a call to plain [slog.InfoContext]) won't add these attributes. That's
-// why you may want to use this to wrap your [slog.Handler], so that context attributes are added
-// regardless of how the log is made (as long as a [context.Context] is passed to the logger).
+// ContextAttrHandler wraps a [slog.Handler], adding context attributes from
+// [ctxlog.AddContextAttrs] before forwarding logs to the wrapped handler.
 //
 // Example of how to set up your handler with this:
 //
-//	logHandler := devlog.NewHandler(os.Stdout, nil)
-//	slog.SetDefault(slog.New(log.ContextHandler(logHandler)))
+//	logHandler := slog.NewJSONHandler(os.Stdout, nil)
+//	slog.SetDefault(slog.New(ctxlog.ContextAttrHandler(logHandler)))
 //
-// Alternatively, you can use [log.SetDefault], which applies [log.ContextHandler] for you:
+// Alternatively, you can use one of the initialization functions from the
+// [hermannm.dev/devlog/slogconfig] package, which automatically wraps the log handler with this.
 //
-//	log.SetDefault(devlog.NewHandler(os.Stdout, nil))
-//
-// ContextHandler panics if the given handler is nil. If the handler is already wrapped by
-// ContextHandler, then it's returned as-is.
-func ContextHandler(wrapped slog.Handler) slog.Handler {
+// ContextAttrHandler panics if the given handler is nil.
+func ContextAttrHandler(wrapped slog.Handler) slog.Handler {
 	if wrapped == nil {
-		panic("nil slog.Handler given to ContextHandler")
+		panic("nil slog.Handler given to ContextAttrHandler")
 	}
-	// If the given log handler is already wrapped by ContextHandler, then we return it as-is
+	// If the given log handler is already wrapped by ContextAttrHandler, then we return it as-is
 	if _, alreadyWrapped := wrapped.(contextHandler); alreadyWrapped {
 		return wrapped
 	}

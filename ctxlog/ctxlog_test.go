@@ -107,9 +107,9 @@ func TestAddContextAttrsNilParent(t *testing.T) {
 
 func TestContextHandler(t *testing.T) {
 	var output bytes.Buffer
-	// Use plain slog.Logger, since we want to test that ContextHandler works when we don't log
+	// Use plain slog.Logger, since we want to test that ContextAttrHandler works when we don't log
 	// through this library
-	logger := slog.New(ctxlog.ContextHandler(slog.NewJSONHandler(&output, nil)))
+	logger := slog.New(ctxlog.ContextAttrHandler(slog.NewJSONHandler(&output, nil)))
 
 	ctx := ctxlog.AddContextAttrs(
 		context.Background(),
@@ -138,12 +138,12 @@ func TestContextHandler(t *testing.T) {
 }
 
 func TestAlreadyWrappedContextHandler(t *testing.T) {
-	handler1 := ctxlog.ContextHandler(slog.NewJSONHandler(os.Stdout, nil))
-	handler2 := ctxlog.ContextHandler(handler1)
+	handler1 := ctxlog.ContextAttrHandler(slog.NewJSONHandler(os.Stdout, nil))
+	handler2 := ctxlog.ContextAttrHandler(handler1)
 
 	if !reflect.DeepEqual(handler1, handler2) {
 		t.Errorf(
-			`Expected nested ContextHandler calls to not wrap multiple times
+			`Expected nested ContextAttrHandler calls to not wrap multiple times
 Handler 1: %+v
 Handler 2: %+v`,
 			handler1,
@@ -153,9 +153,9 @@ Handler 2: %+v`,
 }
 
 // We do a defensive check for nil context in getContextAttrs. We want to verify that this works, so
-// we invoke ContextHandler (which calls getContextAttrs) with a nil context here.
+// we invoke ContextAttrHandler (which calls getContextAttrs) with a nil context here.
 func TestNilContextInContextHandler(t *testing.T) {
-	handler := ctxlog.ContextHandler(slog.NewJSONHandler(os.Stdout, nil))
+	handler := ctxlog.ContextAttrHandler(slog.NewJSONHandler(os.Stdout, nil))
 
 	var programCounters [1]uintptr
 	runtime.Callers(0, programCounters[:])
@@ -174,11 +174,11 @@ func TestNilContextHandler(t *testing.T) {
 			panicValue = recover()
 		}()
 
-		ctxlog.ContextHandler(nil)
+		ctxlog.ContextAttrHandler(nil)
 	}
 	passNilToContextHandler()
 
-	expectedPanicValue := "nil slog.Handler given to ContextHandler"
+	expectedPanicValue := "nil slog.Handler given to ContextAttrHandler"
 	if panicValue != expectedPanicValue {
 		t.Errorf(
 			`Unexpected panic value
