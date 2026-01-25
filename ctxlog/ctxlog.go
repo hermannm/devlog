@@ -96,17 +96,17 @@ func ContextAttrHandler(wrapped slog.Handler) slog.Handler {
 		panic("nil slog.Handler given to ContextAttrHandler")
 	}
 	// If the given log handler is already wrapped by ContextAttrHandler, then we return it as-is
-	if _, alreadyWrapped := wrapped.(contextHandler); alreadyWrapped {
+	if _, alreadyWrapped := wrapped.(contextAttrHandler); alreadyWrapped {
 		return wrapped
 	}
-	return contextHandler{wrapped}
+	return contextAttrHandler{wrapped}
 }
 
-type contextHandler struct {
+type contextAttrHandler struct {
 	wrapped slog.Handler
 }
 
-func (handler contextHandler) Handle(ctx context.Context, record slog.Record) error {
+func (handler contextAttrHandler) Handle(ctx context.Context, record slog.Record) error {
 	contextAttrs := getContextAttrs(ctx)
 
 ContextAttrLoop:
@@ -124,16 +124,16 @@ ContextAttrLoop:
 	return handler.wrapped.Handle(ctx, record)
 }
 
-func (handler contextHandler) Enabled(ctx context.Context, level slog.Level) bool {
+func (handler contextAttrHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return handler.wrapped.Enabled(ctx, level)
 }
 
-func (handler contextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return contextHandler{handler.wrapped.WithAttrs(attrs)}
+func (handler contextAttrHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return contextAttrHandler{handler.wrapped.WithAttrs(attrs)}
 }
 
-func (handler contextHandler) WithGroup(name string) slog.Handler {
-	return contextHandler{handler.wrapped.WithGroup(name)}
+func (handler contextAttrHandler) WithGroup(name string) slog.Handler {
+	return contextAttrHandler{handler.wrapped.WithGroup(name)}
 }
 
 // Use struct{} to avoid allocations, as recommended by [context.WithValue].
