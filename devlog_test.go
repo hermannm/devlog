@@ -216,50 +216,6 @@ func TestSource(t *testing.T) {
 	assert.Contains(t, output, "devlog_test.go:221")
 }
 
-func TestReplaceAttrWithGroups(t *testing.T) {
-	type GroupsAndAttr struct {
-		groups []string
-		attr   slog.Attr
-	}
-
-	var replaceCalls []GroupsAndAttr
-
-	_ = getLogOutputWithOptions(
-		&devlog.Options{
-			ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
-				replaceCalls = append(replaceCalls, GroupsAndAttr{groups, attr})
-				return attr
-			},
-		},
-		func() {
-			slog.Info(
-				"Test",
-				slog.String("key1", "value1"),
-				slog.Group(
-					"group1",
-					slog.String("key2", "value2"),
-					slog.Group(
-						"group2",
-						slog.String("key3", "value3"),
-					),
-					slog.String("key4", "value4"),
-				),
-			)
-		},
-	)
-
-	assert.Equal(
-		t,
-		[]GroupsAndAttr{
-			{groups: nil, attr: slog.String("key1", "value1")},
-			{groups: []string{"group1"}, attr: slog.String("key2", "value2")},
-			{groups: []string{"group1", "group2"}, attr: slog.String("key3", "value3")},
-			{groups: []string{"group1"}, attr: slog.String("key4", "value4")},
-		},
-		replaceCalls,
-	)
-}
-
 func getLogOutput(logFunc func()) string {
 	options := &devlog.Options{Level: slog.LevelDebug}
 	return getLogOutputWithOptions(options, logFunc)

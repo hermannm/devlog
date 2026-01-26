@@ -5,7 +5,6 @@ import (
 	"io"
 	"log/slog"
 	"runtime"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -23,9 +22,6 @@ type Handler struct {
 
 	// Current indent for new attributes, based on the current number of preformatted groups.
 	indent int
-
-	// Groups opened by [Handler.WithGroup]. Nil if needsGroups is false.
-	groups []string
 
 	preformattedAttrs           byteBuffer
 	preformattedGroups          byteBuffer
@@ -57,32 +53,6 @@ type Options struct {
 	// [TimeFormatShort], showing just the time and not the date, but can be set to [TimeFormatFull]
 	// to include the date as well.
 	TimeFormat TimeFormat
-
-	// ReplaceAttr is called to rewrite each non-group attribute before it is logged.
-	// The attribute's value has been resolved (see [slog.Value.Resolve]).
-	// If ReplaceAttr returns a zero Attr (slog.Attr{}), the attribute is discarded.
-	//
-	// Unlike the standard [slog.HandlerOptions.ReplaceAttr], devlog does not pass the built-in
-	// attributes "time", "level", "source", and "msg" to this function. This is because it does not
-	// make sense for a devlog Handler to modify time/level/message with this. You can still use the
-	// same ReplaceAttr function that you would pass to a JSON handler.
-	//
-	// The first argument is a list of currently open groups that contain the attribute. It must not
-	// be retained or modified. ReplaceAttr is never called for Group attributes, only their
-	// contents. For example, this attribute list:
-	//
-	//     Int("a", 1), Group("g", Int("b", 2)), Int("c", 3)
-	//
-	// ...results in consecutive calls to ReplaceAttr with the following arguments:
-	//
-	//     nil, Int("a", 1)
-	//     []string{"g"}, Int("b", 2)
-	//     nil, Int("c", 3)
-	//
-	// ReplaceAttr can be used to convert types (for example, to replace a `time.Time` with the
-	// integer seconds since the Unix epoch), sanitize personal information, or remove attributes
-	// from the output.
-	ReplaceAttr func(groups []string, attr slog.Attr) slog.Attr
 }
 
 // TimeFormat is the type for valid constants for [Options.TimeFormat].
@@ -109,7 +79,6 @@ func NewHandler(output io.Writer, options *Options) *Handler {
 		outputLock:                  &sync.Mutex{},
 		options:                     Options{},
 		indent:                      0,
-		groups:                      nil,
 		preformattedAttrs:           nil,
 		preformattedGroups:          nil,
 		preformattedGroupsWithAttrs: nil,
@@ -162,10 +131,8 @@ func (handler *Handler) Handle(_ context.Context, record slog.Record) error {
 		// record has attributes - otherwise we end up with writing groups with no attributes
 		buffer.join(handler.preformattedGroups)
 
-		groups := handler.copyGroupsIfNecessary()
-
 		for attr := range record.Attrs {
-			handler.writeAttribute(buffer, attr, handler.indent, groups)
+			handler.writeAttribute(buffer, attr, handler.indent)
 		}
 	}
 
@@ -191,8 +158,6 @@ func (handler *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	// Copies the old handler, but keeps the same mutex since we hold a pointer to it
 	newHandler := *handler
 
-	groups := newHandler.copyGroupsIfNecessary()
-
 	// We want to show newer attributes before old ones, so we write the new ones first before
 	// joining the previous ones below
 	newHandler.preformattedAttrs = nil
@@ -201,7 +166,6 @@ func (handler *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 			&newHandler.preformattedAttrs,
 			attr,
 			newHandler.indent,
-			groups,
 		)
 	}
 	newHandler.preformattedAttrs.join(handler.preformattedAttrs)
@@ -224,18 +188,11 @@ func (handler *Handler) WithGroup(name string) slog.Handler {
 	// Copies the old handler, but keeps the same mutex since we hold a pointer to it
 	newHandler := *handler
 
-	if newHandler.needsGroups() {
-		// Copy groups slice, so we don't mutate the old underlying array
-		newHandler.groups = make([]string, len(handler.groups), len(handler.groups)+1)
-		copy(newHandler.groups, handler.groups)
-		newHandler.groups = append(newHandler.groups, name)
-	}
-
 	// Copy old preformattedGroups so we don't mutate the previous ones
 	newHandler.preformattedGroups = handler.preformattedGroups.copy()
 
-	// We then write the new group key to preformattedGroups, and increase the indent on
-	// newHandler so future attributes will display under the new group
+	// We then write the new group key to preformattedGroups, and increase the indent on newHandler
+	// so future attributes will display under the new group
 	newHandler.preformattedGroups.writeIndent(newHandler.indent)
 	newHandler.writeAttributeKey(&newHandler.preformattedGroups, name)
 	newHandler.preformattedGroups.writeByte('\n')
@@ -290,23 +247,8 @@ func (handler *Handler) writeLevel(buffer *byteBuffer, level slog.Level) {
 	handler.resetColor(buffer)
 }
 
-func (handler *Handler) writeAttribute(
-	buffer *byteBuffer,
-	attr slog.Attr,
-	indent int,
-	groups *[]string,
-) {
+func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, indent int) {
 	attr.Value = attr.Value.Resolve()
-	if replaceAttr := handler.options.ReplaceAttr; replaceAttr != nil && attr.Value.Kind() != slog.KindGroup {
-		var groupsSlice []string
-		if groups != nil {
-			groupsSlice = *groups
-		}
-		// attr.Value is resolved before calling ReplaceAttr, so the user doesn't have to
-		attr = replaceAttr(groupsSlice, attr)
-		// ReplaceAttr may return an unresolved Attr
-		attr.Value = attr.Value.Resolve()
-	}
 
 	// Discard empty attr
 	if isEmpty(attr) {
@@ -328,11 +270,9 @@ func (handler *Handler) writeAttribute(
 			indent++
 		}
 
-		pushGroup(groups, attr.Key)
 		for _, groupAttr := range attrs {
-			handler.writeAttribute(buffer, groupAttr, indent, groups)
+			handler.writeAttribute(buffer, groupAttr, indent)
 		}
-		popGroup(groups)
 	case slog.KindTime:
 		handler.writeAttributeKey(buffer, attr.Key)
 		buffer.writeByte(' ')
@@ -476,35 +416,4 @@ const causeErrorAttrKey = "cause"
 
 func isEmpty(attr slog.Attr) bool {
 	return attr.Key == "" && attr.Value.Equal(slog.Value{}) //nolint:exhaustruct
-}
-
-func (handler *Handler) copyGroupsIfNecessary() *[]string {
-	if !handler.needsGroups() {
-		return nil
-	}
-
-	groups := handler.groups
-	copiedGroups := make([]string, len(groups)+4)
-	copy(copiedGroups, groups)
-	return &copiedGroups
-}
-
-// Returns false if [Options.ReplaceAttr] is nil, because then we don't need to maintain the groups
-// slice.
-func (handler *Handler) needsGroups() bool {
-	return handler.options.ReplaceAttr != nil
-}
-
-func pushGroup(groups *[]string, newGroup string) {
-	if groups != nil {
-		*groups = append(*groups, newGroup)
-	}
-}
-
-func popGroup(groups *[]string) {
-	if groups != nil {
-		groupsSlice := *groups
-		length := len(groupsSlice)
-		*groups = slices.Delete(groupsSlice, length-1, length)
-	}
 }
