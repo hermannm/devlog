@@ -199,7 +199,7 @@ type hasWrappingMessage interface {
 //
 // [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
 type hasLogAttributes interface {
-	LogAttrs() []slog.Attr
+	Attrs() []slog.Attr
 }
 
 func unwrapError(err error) (
@@ -295,7 +295,7 @@ func unwrapWrappedErrors(err wrappedErrors) (
 
 func getErrorAttrs(err error) []slog.Attr {
 	if err, ok := err.(hasLogAttributes); ok {
-		return err.LogAttrs()
+		return err.Attrs()
 	} else {
 		return nil
 	}

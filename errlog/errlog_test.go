@@ -442,7 +442,7 @@ func (err wrappedErrorWithMsgAndAttrs) Unwrap() error {
 	return err.cause
 }
 
-func (err wrappedErrorWithMsgAndAttrs) LogAttrs() []slog.Attr {
+func (err wrappedErrorWithMsgAndAttrs) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -465,7 +465,7 @@ func (err wrappedErrorsWithMsgAndAttrs) Unwrap() []error {
 	return err.causes
 }
 
-func (err wrappedErrorsWithMsgAndAttrs) LogAttrs() []slog.Attr {
+func (err wrappedErrorsWithMsgAndAttrs) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -535,7 +535,7 @@ func (err wrappedErrorWithMsgAttrsAndCtx) Unwrap() error {
 	return err.cause
 }
 
-func (err wrappedErrorWithMsgAttrsAndCtx) LogAttrs() []slog.Attr {
+func (err wrappedErrorWithMsgAttrsAndCtx) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -563,7 +563,7 @@ func (err wrappedErrorsWithMsgAttrsAndCtx) Unwrap() []error {
 	return err.causes
 }
 
-func (err wrappedErrorsWithMsgAttrsAndCtx) LogAttrs() []slog.Attr {
+func (err wrappedErrorsWithMsgAttrsAndCtx) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -611,7 +611,7 @@ func (err wrappedErrorWithAttrs) Unwrap() error {
 	return err.cause
 }
 
-func (err wrappedErrorWithAttrs) LogAttrs() []slog.Attr {
+func (err wrappedErrorWithAttrs) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -629,7 +629,7 @@ func (err wrappedErrorsWithAttrs) Unwrap() []error {
 	return err.causes
 }
 
-func (err wrappedErrorsWithAttrs) LogAttrs() []slog.Attr {
+func (err wrappedErrorsWithAttrs) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -684,7 +684,7 @@ func (err wrappedErrorWithAttrsAndCtx) Unwrap() error {
 	return err.cause
 }
 
-func (err wrappedErrorWithAttrsAndCtx) LogAttrs() []slog.Attr {
+func (err wrappedErrorWithAttrsAndCtx) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -707,7 +707,7 @@ func (err wrappedErrorsWithAttrsAndCtx) Unwrap() []error {
 	return err.causes
 }
 
-func (err wrappedErrorsWithAttrsAndCtx) LogAttrs() []slog.Attr {
+func (err wrappedErrorsWithAttrsAndCtx) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -724,7 +724,7 @@ func (err errorWithAttrs) Error() string {
 	return "test"
 }
 
-func (err errorWithAttrs) LogAttrs() []slog.Attr {
+func (err errorWithAttrs) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -751,7 +751,7 @@ func (err errorWithAttrsAndCtx) Error() string {
 	return "test"
 }
 
-func (err errorWithAttrsAndCtx) LogAttrs() []slog.Attr {
+func (err errorWithAttrsAndCtx) Attrs() []slog.Attr {
 	return err.attrs
 }
 
@@ -804,7 +804,7 @@ var _ = []interface{ WrappingMessage() string }{
 // Verify that the errors we expect to implement the hasLogAttributes interface actually do.
 //
 //nolint:exhaustruct
-var _ = []interface{ LogAttrs() []slog.Attr }{
+var _ = []interface{ Attrs() []slog.Attr }{
 	wrappedErrorWithMsgAndAttrs{},
 	wrappedErrorsWithMsgAndAttrs{},
 	wrappedErrorWithMsgAttrsAndCtx{},
