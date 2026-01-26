@@ -216,6 +216,24 @@ func TestSource(t *testing.T) {
 	assert.Contains(t, output, "devlog_test.go:221")
 }
 
+func TestRenameErrorAttrKey(t *testing.T) {
+	output := getLogOutputWithOptions(
+		&devlog.Options{RenameErrorAttrKey: "cause"},
+		func() {
+			slog.Error(
+				"Test",
+				slog.String("error", "something went wrong"),
+				// Only top-level keys should be renamed, so this nested key should be kept as-is
+				slog.Group("group", slog.String("error", "error inside group")),
+			)
+		},
+	)
+
+	assert.Contains(t, output, "\n  cause: something went wrong")
+	assert.Contains(t, output, "error: error inside group")
+	assert.NotContains(t, output, "cause: error inside group")
+}
+
 func getLogOutput(logFunc func()) string {
 	options := &devlog.Options{Level: slog.LevelDebug}
 	return getLogOutputWithOptions(options, logFunc)

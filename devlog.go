@@ -53,6 +53,19 @@ type Options struct {
 	// [TimeFormatShort], showing just the time and not the date, but can be set to [TimeFormatFull]
 	// to include the date as well.
 	TimeFormat TimeFormat
+
+	// RenameErrorAttrKey looks for attrs with key "error", and replaces the key with the given
+	// string.
+	//
+	// This can be useful when you use "error" as the default error attr key, but you don't want the
+	// repetition of ERROR logs with "error" attributes in your pretty-formatted log output. For
+	// example, you can set this option to "cause", so that ERROR logs get a "cause" attr instead.
+	//
+	// Only top-level error attrs are renamed, since nested keys in attr groups are more likely part
+	// of an intentional structure.
+	//
+	// No renaming is done when this option is an empty string (the default).
+	RenameErrorAttrKey string
 }
 
 // TimeFormat is the type for valid constants for [Options.TimeFormat].
@@ -253,6 +266,11 @@ func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, inden
 	// Discard empty attr
 	if isEmpty(attr) {
 		return
+	}
+
+	renameErrorAttrKey := handler.options.RenameErrorAttrKey
+	if renameErrorAttrKey != "" && attr.Key == "error" && indent == handler.indent {
+		attr.Key = renameErrorAttrKey
 	}
 
 	buffer.writeIndent(indent)
