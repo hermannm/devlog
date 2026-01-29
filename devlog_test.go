@@ -87,7 +87,7 @@ func TestTimeFormatNone(t *testing.T) {
 	var buffer bytes.Buffer
 	handler := devlog.NewHandler(
 		&buffer,
-		&devlog.Options{DisableColors: true, TimeFormat: devlog.TimeFormatFull},
+		&devlog.Options{DisableColors: true, TimeFormat: devlog.TimeFormatNone},
 	)
 
 	if err := handler.Handle(
@@ -213,7 +213,7 @@ func TestSource(t *testing.T) {
 	)
 
 	assert.Contains(t, output, "\n  source: hermannm.dev/devlog_test.TestSource")
-	assert.Contains(t, output, "devlog_test.go:221")
+	assert.Contains(t, output, "devlog_test.go:211")
 }
 
 func TestRenameErrorAttrKey(t *testing.T) {
