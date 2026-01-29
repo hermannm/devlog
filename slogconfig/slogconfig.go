@@ -20,16 +20,16 @@ import (
 //
 //	slog.SetDefault(
 //		slog.New(
-//			ctxlog.ContextAttrHandler(
-//				errlog.ErrorAttrHandler(handler),
+//			errlog.ErrorAttrHandler(
+//				ctxlog.ContextAttrHandler(handler),
 //			),
 //		),
 //	)
 func InitDefaultLogHandler(handler slog.Handler) {
 	slog.SetDefault(
 		slog.New(
-			ctxlog.ContextAttrHandler(
-				errlog.ErrorAttrHandler(handler),
+			errlog.ErrorAttrHandler(
+				ctxlog.ContextAttrHandler(handler),
 			),
 		),
 	)

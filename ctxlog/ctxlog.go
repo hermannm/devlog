@@ -69,7 +69,7 @@ func AddContextAttrs(parent context.Context, logAttributes ...any) context.Conte
 		parent = context.Background()
 	}
 
-	existingAttrs := getContextAttrs(parent)
+	existingAttrs := GetContextAttrs(parent)
 
 	attrs := make([]slog.Attr, 0, len(existingAttrs)+len(logAttributes))
 	// Add new attrs first, so the most recent attrs show up first in the logs
@@ -107,7 +107,7 @@ type contextAttrHandler struct {
 }
 
 func (handler contextAttrHandler) Handle(ctx context.Context, record slog.Record) error {
-	contextAttrs := getContextAttrs(ctx)
+	contextAttrs := GetContextAttrs(ctx)
 
 ContextAttrLoop:
 	for _, contextAttr := range contextAttrs {
@@ -141,7 +141,9 @@ type contextAttrsKeyType struct{}
 
 var contextAttrsKey = contextAttrsKeyType{}
 
-func getContextAttrs(ctx context.Context) []slog.Attr {
+// GetContextAttrs returns a slice of attrs if any have been added to the given context (or any of
+// its parent contexts) with [AddContextAttrs]. If not, a nil slice is returned.
+func GetContextAttrs(ctx context.Context) []slog.Attr {
 	// We want to avoid a possible nil pointer dereference on Context.Value below
 	if ctx == nil {
 		return nil
@@ -192,6 +194,15 @@ func parseAttrs(parsed []slog.Attr, unparsed []any) []slog.Attr {
 // https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/slog/record.go#L160
 const badKey = "!BADKEY"
 
+func appendAttrsDiscardDuplicateKeys(attrs []slog.Attr, newAttrs []slog.Attr) []slog.Attr {
+	// Duplicate keys should be rare, so we optimistally grow the slice here to reduce allocations
+	attrs = slices.Grow(attrs, len(newAttrs))
+	for _, newAttr := range newAttrs {
+		attrs = appendAttrDiscardDuplicateKey(attrs, newAttr)
+	}
+	return attrs
+}
+
 func appendAttrDiscardDuplicateKey(attrs []slog.Attr, newAttr slog.Attr) []slog.Attr {
 	for _, existingAttr := range attrs {
 		if existingAttr.Key == newAttr.Key {
@@ -200,12 +211,4 @@ func appendAttrDiscardDuplicateKey(attrs []slog.Attr, newAttr slog.Attr) []slog.
 	}
 
 	return append(attrs, newAttr)
-}
-
-func appendAttrsDiscardDuplicateKeys(attrs []slog.Attr, newAttrs []slog.Attr) []slog.Attr {
-	attrs = slices.Grow(attrs, len(newAttrs))
-	for _, newAttr := range newAttrs {
-		attrs = appendAttrDiscardDuplicateKey(attrs, newAttr)
-	}
-	return attrs
 }

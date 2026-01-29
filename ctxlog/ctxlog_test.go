@@ -152,8 +152,8 @@ Handler 2: %+v`,
 	}
 }
 
-// We do a defensive check for nil context in getContextAttrs. We want to verify that this works, so
-// we invoke ContextAttrHandler (which calls getContextAttrs) with a nil context here.
+// We do a defensive check for nil context in GetContextAttrs. We want to verify that this works, so
+// we invoke ContextAttrHandler (which calls GetContextAttrs) with a nil context here.
 func TestNilContextInContextHandler(t *testing.T) {
 	handler := ctxlog.ContextAttrHandler(slog.NewJSONHandler(os.Stdout, nil))
 

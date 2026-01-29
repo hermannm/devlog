@@ -22,9 +22,11 @@ func TestInitDefaultLogHandler(t *testing.T) {
 	assertWrappedHandlers(
 		t,
 		slog.Default().Handler(),
-		[...]string{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
-		[...]string{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
-		[...]string{"log/slog", "TextHandler"},
+		[]packageAndType{
+			{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
+			{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
+			{"log/slog", "TextHandler"},
+		},
 	)
 }
 
@@ -39,9 +41,11 @@ func TestInitPrettyLogHandler(t *testing.T) {
 	assertWrappedHandlers(
 		t,
 		slog.Default().Handler(),
-		[...]string{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
-		[...]string{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
-		[...]string{"hermannm.dev/devlog", "Handler"},
+		[]packageAndType{
+			{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
+			{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
+			{"hermannm.dev/devlog", "Handler"},
+		},
 	)
 }
 
@@ -56,32 +60,37 @@ func TestInitJSONLogHandler(t *testing.T) {
 	assertWrappedHandlers(
 		t,
 		slog.Default().Handler(),
-		[...]string{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
-		[...]string{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
-		[...]string{"log/slog", "JSONHandler"},
+		[]packageAndType{
+			{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
+			{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
+			{"log/slog", "JSONHandler"},
+		},
 	)
+}
+
+type packageAndType struct {
+	pkg      string
+	typeName string
 }
 
 // Asserts that the given handler consists of all the given wrapped handlers.
 func assertWrappedHandlers(
 	t *testing.T,
 	handler slog.Handler,
-	expectedHandlerPkgAndType ...[2]string,
+	expectedHandlerPkgsAndTypes []packageAndType,
 ) {
 	t.Helper()
 
 	handlerValue := reflect.ValueOf(handler)
-	for i, expected := range expectedHandlerPkgAndType {
-		expectedPkg, expectedType := expected[0], expected[1]
-
+	for i, expected := range expectedHandlerPkgsAndTypes {
 		handlerType := handlerValue.Type()
-		require.Equal(t, expectedType, handlerType.Name())
-		require.Equal(t, expectedPkg, handlerType.PkgPath())
+		require.Equal(t, expected.pkg, handlerType.PkgPath())
+		require.Equal(t, expected.typeName, handlerType.Name())
 
 		// If we're not at the last handler: Unwrap inner handler. Both ctxlog and errlog keep their
 		// wrapped handler as the first field, so we can check it with Field(0).
 		// Interfaces and pointers must be further unwrapped with Elem().
-		if i != len(expectedHandlerPkgAndType)-1 {
+		if i != len(expectedHandlerPkgsAndTypes)-1 {
 			handlerValue = handlerValue.Field(0)
 			if handlerValue.Kind() == reflect.Interface {
 				handlerValue = handlerValue.Elem()

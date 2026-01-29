@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"hermannm.dev/devlog/ctxlog"
 	"hermannm.dev/devlog/errlog"
 )
 
@@ -99,27 +100,6 @@ func TestErrorWrappedWithFmt(t *testing.T) {
 	)
 }
 
-func TestErrorLoggedWithBlankMessage(t *testing.T) {
-	err := wrappedErrorWithMsg{
-		"wrapping message 1",
-		wrappedErrorWithMsg{"wrapping message 2", errors.New("wrapped error")},
-	}
-
-	output := getLogOutput(
-		func() {
-			slog.Error("", errlog.Cause(err))
-		},
-	)
-
-	verifyLogOutput(
-		t,
-		output,
-		"ERROR",
-		"wrapping message 1",
-		`"cause":["wrapping message 2","wrapped error"]`,
-	)
-}
-
 func TestErrorWithAttrs(t *testing.T) {
 	err := errorWithAttrs{attrs("errorKey", "errorValue")}
 
@@ -138,7 +118,7 @@ func TestErrorWithAttrs(t *testing.T) {
 
 func TestNestedErrorsWithAttrs(t *testing.T) {
 	// Test a variety of different error types, implementing a mix of the wrappedError /
-	// wrappedErrors / hasWrappingMessage / hasLogAttributes interfaces, to verify that we traverse
+	// wrappedErrors / hasWrappingMessage / hasAttrs interfaces, to verify that we traverse
 	// them all
 	err := wrappedErrorWithMsgAndAttrs{
 		msg:   "test",
@@ -236,9 +216,291 @@ func TestNestedErrorsWithAttrs(t *testing.T) {
 	)
 }
 
+func TestErrorWithContext(t *testing.T) {
+	baseCtx := ctxlog.AddContextAttrs(context.Background(), "contextKey", "value1")
+	errorCtx := ctxlog.AddContextAttrs(baseCtx, "errorContextKey", "value2")
+	err := errorWithAttrsAndCtx{attrs("errorKey", "value3"), errorCtx}
+
+	output := getLogOutput(
+		func() {
+			// Pass baseCtx, since we want errorCtx to be applied only through the given error
+			slog.ErrorContext(baseCtx, "Test", errlog.Cause(err), "logKey", "value4")
+		},
+	)
+
+	verifyLogAttrs(
+		t,
+		output,
+		// Expected order: single-log attrs > error attrs > error context attrs > context attrs
+		`"error":{"msg":"test","errorKey":"value3"},"logKey":"value4","errorContextKey":"value2","contextKey":"value1"`,
+	)
+}
+
+func TestNestedErrorContextAttrs(t *testing.T) {
+	ctx := context.Background()
+
+	// Test a variety of different error types, implementing a mix of the wrappedError /
+	// wrappedErrors / hasWrappingMessage / hasLogAttributes / hasContext interfaces, to verify that
+	// we traverse them all
+	err := wrappedErrorWithMsgAttrsAndCtx{
+		msg:   "test",
+		attrs: attrs("err1", "value1"),
+		ctx:   ctxlog.AddContextAttrs(ctx, "ctx1", "value2"),
+		cause: wrappedErrorsWithMsgAttrsAndCtx{
+			msg:   "test",
+			attrs: attrs("err1_1", "value3"),
+			ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1", "value4"),
+			causes: []error{
+				wrappedErrorWithMsg{
+					msg: "test",
+					cause: errorWithAttrsAndCtx{
+						attrs: attrs("err1_1_1", "value5"),
+						ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_1", "value6"),
+					},
+				},
+				wrappedErrorWithAttrsAndCtx{
+					attrs: attrs("err1_1_2", "value7"),
+					ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_2", "value8"),
+					cause: fmt.Errorf(
+						"formatted with fmt: %w",
+						errorWithCtx{
+							ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_2_1", "value9"),
+						},
+					),
+				},
+				wrappedErrorsWithMsg{
+					msg: "test",
+					causes: []error{
+						fmt.Errorf(
+							"error %w in middle",
+							errorWithCtx{
+								ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_3_1", "value10"),
+							},
+						),
+						wrappedErrorWithCtx{
+							ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_3_2", "value11"),
+							cause: errors.New("plain error"),
+						},
+					},
+				},
+				wrappedErrorsWithAttrsAndCtx{
+					attrs: attrs("err1_1_4", "value12"),
+					ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_4", "value13"),
+					causes: []error{
+						errors.New("plain error 1"),
+						errors.New("plain error 2"),
+					},
+				},
+				wrappedError{
+					cause: errorWithCtx{
+						ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_5", "value14"),
+					},
+				},
+				wrappedErrors{
+					causes: []error{
+						errorWithCtx{
+							ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_6_1", "value15"),
+						},
+						wrappedErrorWithCtx{
+							ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_6_2", "value16"),
+							cause: errors.New("plain error"),
+						},
+					},
+				},
+				fmt.Errorf(
+					"multiple errors formatted with fmt: %w, %w",
+					errorWithCtx{
+						ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_7_1", "value17"),
+					},
+					wrappedErrorsWithCtx{
+						ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_7_2", "value18"),
+						causes: []error{
+							errorWithCtx{
+								ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_7_2_1", "value19"),
+							},
+							wrappedErrorsWithMsgAndCtx{
+								msg: "test",
+								ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_7_2_2", "value20"),
+								causes: []error{
+									errors.New("plain error 1"),
+									errors.New("plain error 2"),
+								},
+							},
+						},
+					},
+				),
+			},
+		},
+	}
+
+	output := getLogOutput(
+		func() {
+			slog.Error("Test", errlog.Cause(err))
+		},
+	)
+
+	verifyLogAttrs(
+		t,
+		output,
+		// Context attributes are added _after_ all nested error attributes, so we expect attributes
+		// to be ordered like:
+		// - Err attr 1
+		//   - Err attr 2
+		//     - Err attr 3
+		// - Ctx attr 3
+		// - Ctx attr 2
+		// - Ctx attr 1
+		`"error":{`+
+			`"msg":"test",`+
+			`"err1":"value1",`+
+			`"cause":{`+
+			`"msg":"test",`+
+			`"err1_1":"value3",`+
+			`"cause":{`+
+			`"0":{`+
+			`"msg":"test",`+
+			`"cause":{`+
+			`"msg":"test",`+
+			`"err1_1_1":"value5"`+
+			`}`+
+			`},`+
+			`"1":{`+
+			`"msg":"test",`+
+			`"err1_1_2":"value7"`+
+			`},`+
+			`"2":{`+
+			`"msg":"test",`+
+			`"cause":`+
+			`{"0":`+
+			`{"msg":`+
+			`"error test in middle"},`+
+			`"1":{"msg":"test"}`+
+			`}`+
+			`},`+
+			`"3":{`+
+			`"msg":"test",`+
+			`"err1_1_4":"value12"`+
+			`},`+
+			`"4":{`+
+			`"msg":"test"`+
+			`},`+
+			`"5":{`+
+			`"msg":"test"`+
+			`},`+
+			`"6":{`+
+			`"msg":"multiple errors formatted with fmt: test, test"`+
+			`}`+
+			`}`+
+			`}`+
+			`},`+
+			`"ctx1_1_1":"value6",`+
+			`"ctx1_1_2_1":"value9",`+
+			`"ctx1_1_2":"value8",`+
+			`"ctx1_1_3_1":"value10",`+
+			`"ctx1_1_3_2":"value11",`+
+			`"ctx1_1_4":"value13",`+
+			`"ctx1_1_5":"value14",`+
+			`"ctx1_1_6_1":"value15",`+
+			`"ctx1_1_6_2":"value16",`+
+			`"ctx1_1_7_1":"value17",`+
+			`"ctx1_1_7_2_1":"value19",`+
+			`"ctx1_1_7_2_2":"value20",`+
+			`"ctx1_1_7_2":"value18",`+
+			`"ctx1_1":"value4",`+
+			`"ctx1":"value2"`,
+	)
+}
+
+func TestDuplicateErrorAndContextAttrKeys(t *testing.T) {
+	baseCtx := ctxlog.AddContextAttrs(
+		context.Background(),
+		"baseContextKey", "value6",
+		"duplicateContextKey", "baseContextValue",
+		"duplicateLogKey", "baseContextValue",
+	)
+	err := wrappedErrorWithMsgAttrsAndCtx{
+		msg: "test",
+		attrs: attrs(
+			"outerErrorKey", "value2",
+			"duplicateErrorKey", "outerErrorValue",
+			"duplicateLogKey", "outerErrorValue",
+		),
+		ctx: ctxlog.AddContextAttrs(
+			context.Background(),
+			"outerErrorContextKey", "value5",
+			"duplicateContextKey", "outerErrorContextValue",
+			"duplicateErrorKey", "outerErrorContextValue",
+			"duplicateLogKey", "outerErrorContextValue",
+		),
+		cause: errorWithAttrsAndCtx{
+			attrs: attrs(
+				"innerErrorKey", "value3",
+				"duplicateErrorKey", "innerErrorValue",
+				"duplicateLogKey", "innerErrorValue",
+			),
+			ctx: ctxlog.AddContextAttrs(
+				context.Background(),
+				"innerErrorContextKey", "value4",
+				"duplicateContextKey", "innerErrorContextValue",
+				"duplicateErrorKey", "innerErrorContextValue",
+				"duplicateLogKey", "innerErrorContextValue",
+			),
+		},
+	}
+
+	output := getLogOutput(
+		func() {
+			slog.ErrorContext(
+				baseCtx,
+				"Test",
+				errlog.Cause(err),
+				"logKey", "value1",
+				"duplicateLogKey", "logValue",
+			)
+		},
+	)
+
+	verifyLogAttrs(
+		t,
+		output,
+		`"error":{`+
+			`"msg":"test",`+
+			`"outerErrorKey":"value2",`+
+			// Duplicate error attribute keys should be unaffected, since they're grouped on the
+			// error attribute, not at the top level, so there's no key conflict
+			`"duplicateErrorKey":"outerErrorValue",`+
+			`"duplicateLogKey":"outerErrorValue",`+
+			`"cause":{`+
+			`"msg":"test",`+
+			`"innerErrorKey":"value3",`+
+			`"duplicateErrorKey":"innerErrorValue",`+
+			`"duplicateLogKey":"innerErrorValue"`+
+			`}`+
+			`},`+
+			`"logKey":"value1",`+
+			// Attrs added directly to the log line should take priority over error/context attrs
+			`"duplicateLogKey":"logValue",`+
+			`"innerErrorContextKey":"value4",`+
+			// Innermost error context attrs should take priority, since they're presumably more
+			// relevant to the error than more general context attrs
+			`"duplicateContextKey":"innerErrorContextValue",`+
+			`"duplicateErrorKey":"innerErrorContextValue",`+
+			`"outerErrorContextKey":"value5",`+
+			`"baseContextKey":"value6"`,
+	)
+}
+
 func getLogOutput(logFunc func()) string {
 	var buffer bytes.Buffer
-	slog.SetDefault(slog.New(errlog.ErrorAttrHandler(slog.NewJSONHandler(&buffer, nil))))
+	slog.SetDefault(
+		slog.New(
+			errlog.ErrorAttrHandler(
+				ctxlog.ContextAttrHandler(
+					slog.NewJSONHandler(&buffer, nil),
+				),
+			),
+		),
+	)
 	logFunc()
 	return buffer.String()
 }
@@ -353,7 +615,7 @@ func verifyErrorLogAttrs(t *testing.T, output string, expectedAttrsWithoutCause 
 }
 
 var logOutputRegex = regexp.MustCompile(
-	`^\{"time":"[^"]+","level":"([^"]+)","msg":"([^"]+)",?(.*)}\n$`,
+	`^\{"time":"[^"]+","level":"([^"]+)","msg":"([^"]*)",?(.*)}\n$`,
 )
 
 func parseLogOutput(t *testing.T, output string) (level string, message string, attrs string) {
@@ -423,7 +685,7 @@ func (err wrappedErrorsWithMsg) Unwrap() []error {
 	return err.causes
 }
 
-// Implements the wrappedError, hasWrappingMessage and hasLogAttributes interfaces.
+// Implements the wrappedError, hasWrappingMessage and hasAttrs interfaces.
 type wrappedErrorWithMsgAndAttrs struct {
 	msg   string
 	attrs []slog.Attr
@@ -446,7 +708,7 @@ func (err wrappedErrorWithMsgAndAttrs) Attrs() []slog.Attr {
 	return err.attrs
 }
 
-// Implements the wrappedErrors, hasWrappingMessage and hasLogAttributes interfaces.
+// Implements the wrappedErrors, hasWrappingMessage and hasAttrs interfaces.
 type wrappedErrorsWithMsgAndAttrs struct {
 	msg    string
 	attrs  []slog.Attr
@@ -515,7 +777,7 @@ func (err wrappedErrorsWithMsgAndCtx) Context() context.Context {
 	return err.ctx
 }
 
-// Implements the wrappedError, hasWrappingMessage, hasLogAttributes and hasContext interfaces.
+// Implements the wrappedError, hasWrappingMessage, hasAttrs and hasContext interfaces.
 type wrappedErrorWithMsgAttrsAndCtx struct {
 	msg   string
 	attrs []slog.Attr
@@ -543,7 +805,7 @@ func (err wrappedErrorWithMsgAttrsAndCtx) Context() context.Context {
 	return err.ctx
 }
 
-// Implements the wrappedError, hasWrappingMessage, hasLogAttributes and hasContext interfaces.
+// Implements the wrappedError, hasWrappingMessage, hasAttrs and hasContext interfaces.
 type wrappedErrorsWithMsgAttrsAndCtx struct {
 	msg    string
 	attrs  []slog.Attr
@@ -597,7 +859,7 @@ func (err wrappedErrors) Unwrap() []error {
 	return err.causes
 }
 
-// Implements the wrappedError and hasLogAttributes interfaces.
+// Implements the wrappedError and hasAttrs interfaces.
 type wrappedErrorWithAttrs struct {
 	attrs []slog.Attr
 	cause error
@@ -615,7 +877,7 @@ func (err wrappedErrorWithAttrs) Attrs() []slog.Attr {
 	return err.attrs
 }
 
-// Implements the wrappedErrors and hasLogAttributes interfaces.
+// Implements the wrappedErrors and hasAttrs interfaces.
 type wrappedErrorsWithAttrs struct {
 	attrs  []slog.Attr
 	causes []error
@@ -669,7 +931,7 @@ func (err wrappedErrorsWithCtx) Context() context.Context {
 	return err.ctx
 }
 
-// Implements the wrappedError, hasLogAttributes and hasContext interfaces.
+// Implements the wrappedError, hasAttrs and hasContext interfaces.
 type wrappedErrorWithAttrsAndCtx struct {
 	attrs []slog.Attr
 	ctx   context.Context
@@ -692,7 +954,7 @@ func (err wrappedErrorWithAttrsAndCtx) Context() context.Context {
 	return err.ctx
 }
 
-// Implements the wrappedErrors, hasLogAttributes and hasContext interfaces.
+// Implements the wrappedErrors, hasAttrs and hasContext interfaces.
 type wrappedErrorsWithAttrsAndCtx struct {
 	attrs  []slog.Attr
 	ctx    context.Context
@@ -715,7 +977,7 @@ func (err wrappedErrorsWithAttrsAndCtx) Context() context.Context {
 	return err.ctx
 }
 
-// Implements the hasLogAttributes interface.
+// Implements the hasAttrs interface.
 type errorWithAttrs struct {
 	attrs []slog.Attr
 }
@@ -741,7 +1003,7 @@ func (err errorWithCtx) Context() context.Context {
 	return err.ctx
 }
 
-// Implements the hasLogAttributes and hasContext interfaces.
+// Implements the hasAttrs and hasContext interfaces.
 type errorWithAttrsAndCtx struct {
 	attrs []slog.Attr
 	ctx   context.Context
@@ -801,7 +1063,7 @@ var _ = []interface{ WrappingMessage() string }{
 	wrappedErrorsWithMsgAttrsAndCtx{},
 }
 
-// Verify that the errors we expect to implement the hasLogAttributes interface actually do.
+// Verify that the errors we expect to implement the hasAttrs interface actually do.
 //
 //nolint:exhaustruct
 var _ = []interface{ Attrs() []slog.Attr }{

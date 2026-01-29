@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"hermannm.dev/devlog/ctxlog"
 )
 
 func Cause(err error) slog.Attr {
@@ -47,13 +49,17 @@ func (handler errorAttrHandler) Handle(ctx context.Context, record slog.Record) 
 		return handler.wrapped.Handle(ctx, record)
 	}
 
-	// Record does not support changing attrs in-place. So we have to transform the record's attrs,
-	// and then create a new record with these attrs
+	// slog.Record does not support changing attrs in-place. So we have to transform the record's
+	// attrs, and then create a new record with these attrs
 	attrs := make([]slog.Attr, 0, numAttrs)
+	// Errors may carry context with more attributes (see [hasContext] interface), which we append
+	// to the top-level attributes
+	var contextAttrs []slog.Attr
 	for attr := range record.Attrs {
-		newAttr, _ := replaceErrorAttr(attr)
-		attrs = append(attrs, newAttr)
+		attr, _, contextAttrs = replaceErrorAttr(attr, contextAttrs)
+		attrs = append(attrs, attr)
 	}
+	attrs = appendAttrsDiscardDuplicateKeys(attrs, contextAttrs)
 
 	newRecord := slog.NewRecord(record.Time, record.Level, record.Message, record.PC)
 	newRecord.AddAttrs(attrs...)
@@ -93,17 +99,26 @@ func isErrorAttr(attr slog.Attr) bool {
 	return false
 }
 
-func replaceErrorAttr(attr slog.Attr) (newAttr slog.Attr, replaced bool) {
+func replaceErrorAttr(
+	attr slog.Attr,
+	topLevelAttrs []slog.Attr,
+) (newAttr slog.Attr, replaced bool, newTopLevelAttrs []slog.Attr) {
 	switch attr.Value.Kind() {
 	case slog.KindAny:
 		if err, isErr := attr.Value.Any().(error); isErr {
-			return createErrorAttr(attr.Key, err), true
+			errAttr, topLevelAttrs := createErrorAttr(attr.Key, err, topLevelAttrs)
+			return errAttr, true, topLevelAttrs
 		}
 	case slog.KindGroup:
 		group := attr.Value.Group()
 		var newGroup []slog.Attr
 		for i, childAttr := range group {
-			newChildAttr, childReplaced := replaceErrorAttr(childAttr)
+			newChildAttr, childReplaced, newTopLevelAttrs := replaceErrorAttr(
+				childAttr,
+				topLevelAttrs,
+			)
+			topLevelAttrs = newTopLevelAttrs
+
 			if childReplaced {
 				if newGroup == nil {
 					newGroup = make([]slog.Attr, len(group))
@@ -115,16 +130,20 @@ func replaceErrorAttr(attr slog.Attr) (newAttr slog.Attr, replaced bool) {
 		}
 
 		if newGroup != nil {
-			return slog.GroupAttrs(attr.Key, newGroup...), true
+			return slog.GroupAttrs(attr.Key, newGroup...), true, topLevelAttrs
 		}
 	default:
 		// Other kinds not relevant
 	}
 
-	return attr, false
+	return attr, false, topLevelAttrs
 }
 
-func createErrorAttr(key string, err error) slog.Attr {
+func createErrorAttr(
+	key string,
+	err error,
+	contextAttrs []slog.Attr,
+) (errorAttr slog.Attr, newContextAttrs []slog.Attr) {
 	message, isWrappingMessage, cause, causes := unwrapError(err)
 
 	errAttrs := getErrorAttrs(err)
@@ -140,26 +159,33 @@ func createErrorAttr(key string, err error) slog.Attr {
 
 	if cause != nil {
 		if isWrappingMessage {
-			attrs = append(attrs, createErrorAttr("cause", cause))
+			causeAttr, newTopLevelAttrs := createErrorAttr("cause", cause, contextAttrs)
+			attrs = append(attrs, causeAttr)
+			contextAttrs = newTopLevelAttrs
 		} else {
-			attrs = traverseErrorChainForAttrs(attrs, cause)
+			attrs, contextAttrs = traverseErrorChainForAttrs(attrs, cause, contextAttrs)
 		}
 	} else if len(causes) != 0 {
 		if isWrappingMessage {
 			causeAttrs := make([]slog.Attr, 0, len(causes))
 			for i, cause := range causes {
 				key := strconv.Itoa(i)
-				causeAttrs = append(causeAttrs, createErrorAttr(key, cause))
+				causeAttr, newTopLevelAttrs := createErrorAttr(key, cause, contextAttrs)
+				causeAttrs = append(causeAttrs, causeAttr)
+				contextAttrs = newTopLevelAttrs
 			}
 			attrs = append(attrs, slog.GroupAttrs("cause", causeAttrs...))
 		} else {
 			for _, cause := range causes {
-				attrs = traverseErrorChainForAttrs(attrs, cause)
+				attrs, contextAttrs = traverseErrorChainForAttrs(attrs, cause, contextAttrs)
 			}
 		}
 	}
 
-	return slog.GroupAttrs(key, attrs...)
+	// Append context attrs at the end, so that inner-most error attrs are prioritized
+	contextAttrs = appendErrorContextAttrs(contextAttrs, err)
+
+	return slog.GroupAttrs(key, attrs...), contextAttrs
 }
 
 // Same interface that the standard [errors] package uses to support error wrapping.
@@ -190,16 +216,32 @@ type hasWrappingMessage interface {
 	WrappingMessage() string
 }
 
-// hasLogAttributes is an interface for errors that carry log attributes, to provide structured
-// context when the error is logged.
+// hasAttrs is an interface for errors that carry log attributes, to provide structured context when
+// the error is logged.
 //
 // We don't export this interface, for the same reason as [hasWrappingMessage].
 //
 // This interface is implemented by the [hermannm.dev/wrap] library.
 //
 // [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
-type hasLogAttributes interface {
+type hasAttrs interface {
 	Attrs() []slog.Attr
+}
+
+// hasContext is an interface for errors that carry a [context.Context] from where they were
+// created. We use this to add context attributes (see [ctxlog.AddContextAttrs]) from the error's
+// context, not just the context in which the log is made. This is useful when error is produced
+// somewhere down in the stack, and then propagated up multiple levels before it is logged. By
+// letting the error carry its context, we don't lose the original context of the error as it's
+// propagated up.
+//
+// We don't export this interface, for the same reason as [hasWrappingMessage].
+//
+// This interface is implemented by the [hermannm.dev/wrap] library.
+//
+// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
+type hasContext interface {
+	Context() context.Context
 }
 
 func unwrapError(err error) (
@@ -230,7 +272,7 @@ func unwrapError(err error) (
 //
 // Same implementation that the [hermannm.dev/wrap] library uses for formatting error messages.
 //
-// [hermannm.dev/wrap]: https://github.com/hermannm/wrap/blob/v0.4.0/internal/error_message.go
+// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
 func unwrapWrappedError(err wrappedError) (
 	message string,
 	isWrappingMessage bool,
@@ -278,7 +320,7 @@ func unwrapWrappedError(err wrappedError) (
 //
 // Same implementation that the [hermannm.dev/wrap] library uses for formatting error messages.
 //
-// [hermannm.dev/wrap]: https://github.com/hermannm/wrap/blob/v0.4.0/internal/error_message.go
+// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
 func unwrapWrappedErrors(err wrappedErrors) (
 	message string,
 	isWrappingMessage bool,
@@ -294,7 +336,7 @@ func unwrapWrappedErrors(err wrappedErrors) (
 }
 
 func getErrorAttrs(err error) []slog.Attr {
-	if err, ok := err.(hasLogAttributes); ok {
+	if err, ok := err.(hasAttrs); ok {
 		return err.Attrs()
 	} else {
 		return nil
@@ -302,36 +344,85 @@ func getErrorAttrs(err error) []slog.Attr {
 }
 
 func traverseErrorChainForAttrs(
-	attrs []slog.Attr,
+	groupAttrs []slog.Attr,
 	err error,
-) []slog.Attr {
+	contextAttrs []slog.Attr,
+) (newGroupAttrs []slog.Attr, newContextAttrs []slog.Attr) {
 	errAttrs := getErrorAttrs(err)
 
-	attrs = slices.Grow(attrs, len(errAttrs))
-	for _, errAttr := range errAttrs {
-		if !hasKey(attrs, errAttr.Key) {
-			attrs = append(attrs, errAttr)
-		}
-	}
+	groupAttrs = appendAttrsDiscardDuplicateKeys(groupAttrs, errAttrs)
 
 	//goland:noinspection GoTypeAssertionOnErrors - We check wrapped errors ourselves
 	switch err := err.(type) {
 	case wrappedError:
-		attrs = traverseErrorChainForAttrs(attrs, err.Unwrap())
+		groupAttrs, contextAttrs = traverseErrorChainForAttrs(
+			groupAttrs,
+			err.Unwrap(),
+			contextAttrs,
+		)
 	case wrappedErrors:
 		for _, err := range err.Unwrap() {
-			attrs = traverseErrorChainForAttrs(attrs, err)
+			groupAttrs, contextAttrs = traverseErrorChainForAttrs(groupAttrs, err, contextAttrs)
 		}
 	}
 
+	contextAttrs = appendErrorContextAttrs(contextAttrs, err)
+
+	return groupAttrs, contextAttrs
+}
+
+func appendErrorContextAttrs(existingAttrs []slog.Attr, err error) []slog.Attr {
+	errWithContext, ok := err.(hasContext)
+	if !ok {
+		return existingAttrs
+	}
+
+	contextAttrs := ctxlog.GetContextAttrs(errWithContext.Context())
+	contextAttrCount := len(contextAttrs)
+	if contextAttrCount == 0 {
+		return existingAttrs
+	}
+
+	// If existing attrs are empty: no need to merge, just return context attrs
+	existingAttrCount := len(existingAttrs)
+	if existingAttrCount == 0 {
+		return contextAttrs
+	}
+
+	// If there are fewer or same number of context attrs, then there's a good chance that this is
+	// a parent context of a child context whose attrs have already been added, so we check for that
+	// here to avoid a redundant allocation from merging the slices
+	if contextAttrCount <= existingAttrCount {
+		hasNewAttrs := false
+		for i, contextAttr := range contextAttrs {
+			if contextAttr.Key != existingAttrs[i].Key {
+				hasNewAttrs = true
+				break
+			}
+		}
+		if !hasNewAttrs {
+			return existingAttrs
+		}
+	}
+
+	return appendAttrsDiscardDuplicateKeys(existingAttrs, contextAttrs)
+}
+
+func appendAttrsDiscardDuplicateKeys(attrs []slog.Attr, newAttrs []slog.Attr) []slog.Attr {
+	// Duplicate keys should be rare, so we optimistally grow the slice here to reduce allocations
+	attrs = slices.Grow(attrs, len(newAttrs))
+	for _, newAttr := range newAttrs {
+		attrs = appendAttrDiscardDuplicateKey(attrs, newAttr)
+	}
 	return attrs
 }
 
-func hasKey(attrs []slog.Attr, key string) bool {
-	for _, attr := range attrs {
-		if attr.Key == key {
-			return true
+func appendAttrDiscardDuplicateKey(attrs []slog.Attr, newAttr slog.Attr) []slog.Attr {
+	for _, existingAttr := range attrs {
+		if existingAttr.Key == newAttr.Key {
+			return attrs
 		}
 	}
-	return false
+
+	return append(attrs, newAttr)
 }
