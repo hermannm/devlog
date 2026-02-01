@@ -176,31 +176,110 @@ func TestListAttrs(t *testing.T) {
 }
 
 func TestCauseError(t *testing.T) {
-	// This follows the structure that the devlog/log subpackage uses for logged errors
-	errorLog := []any{
-		"something went wrong",
-		"cause error 1",
-		[]any{"underlying cause 1"},
-		"cause error 2",
-		[]any{"underlying cause 2", "underlying cause 3"},
-	}
+	// This follows the structure that the errlog subpackage uses for logged errors
+	errorAttr := slog.GroupValue(
+		slog.String("msg", "something went wrong"),
+		slog.String("attr", "value"),
+		slog.GroupAttrs(
+			"cause",
+			slog.String("msg", "cause error"),
+			slog.String("causeAttr", "value"),
+			slog.GroupAttrs(
+				"cause",
+				slog.String("msg", "root cause"),
+			),
+		),
+	)
 
 	output := getLogOutput(
 		func() {
-			slog.Error("", "cause", errorLog)
+			slog.Error("Test", "error", errorAttr, "otherAttr", "value")
 		},
 	)
 
 	assert.Contains(
 		t,
 		output,
-		`  cause:
+		`
+  error:
     - something went wrong
-    - cause error 1
-      - underlying cause 1
-    - cause error 2
-      - underlying cause 2
-      - underlying cause 3`,
+      attr: value
+    - cause error
+      causeAttr: value
+    - root cause
+  otherAttr: value`,
+	)
+}
+
+func TestCauseErrorList(t *testing.T) {
+	// This follows the structure that the errlog subpackage uses errors with multiple causes
+	errorAttr := slog.GroupValue(
+		slog.String("msg", "something went wrong"),
+		slog.GroupAttrs(
+			"cause",
+			// First error in list, no nested cause error
+			slog.GroupAttrs(
+				"0",
+				slog.String("msg", "error 1"),
+			),
+			// Second error, with single cause error, which itself has a cause error
+			slog.GroupAttrs(
+				"1",
+				slog.String("msg", "error 2"),
+				slog.GroupAttrs(
+					"cause",
+					slog.String("msg", "cause error"),
+					slog.String("attr1", "value1"),
+					slog.GroupAttrs(
+						"cause",
+						slog.String("msg", "root cause"),
+					),
+				),
+			),
+			// Third error, with multiple cause errors of its own
+			slog.GroupAttrs(
+				"2",
+				slog.String("msg", "error 3"),
+				slog.String("attr2", "value2"),
+				slog.GroupAttrs(
+					"cause",
+					slog.GroupAttrs(
+						"0",
+						slog.String("msg", "cause error 1"),
+					),
+					slog.GroupAttrs(
+						"1",
+						slog.String("msg", "cause error 2"),
+						slog.String("attr3", "value3"),
+					),
+				),
+			),
+		),
+	)
+
+	output := getLogOutput(
+		func() {
+			slog.Error("Test", "error", errorAttr, "otherAttr", "value")
+		},
+	)
+
+	assert.Contains(
+		t,
+		output,
+		`
+  error:
+    - something went wrong
+    - error 1
+    - error 2
+      - cause error
+        attr1: value1
+      - root cause
+    - error 3
+      attr2: value2
+      - cause error 1
+      - cause error 2
+        attr3: value3
+  otherAttr: value`,
 	)
 }
 

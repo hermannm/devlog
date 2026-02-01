@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -286,6 +287,18 @@ func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, inden
 			handler.writeAttributeKey(buffer, attr.Key)
 			buffer.writeByte('\n')
 			indent++
+
+			// We keep the check for error attrs inside this if block, since we only want to write
+			// error attrs with non-empty keys.
+			// Also, we check for len == 0 above, so this indexing is safe.
+			if isErrorMessageAttr(attrs[0]) {
+				handler.writeErrorAttr(buffer, attrs, indent, false)
+				return
+			}
+			if isErrorListAttr(attrs) {
+				handler.writeErrorListAttr(buffer, attrs, indent)
+				return
+			}
 		}
 
 		for _, groupAttr := range attrs {
@@ -298,20 +311,15 @@ func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, inden
 		buffer.writeByte('\n')
 	case slog.KindAny:
 		handler.writeAttributeKey(buffer, attr.Key)
+		buffer.writeByte(' ')
 
 		value := attr.Value.Any()
-		if attr.Key == causeErrorAttrKey {
-			handler.writeCauseError(buffer, value, indent)
+		if stringValue, ok := value.(string); ok {
+			buffer.writeString(stringValue)
 			buffer.writeByte('\n')
 		} else {
-			buffer.writeByte(' ')
-			if stringValue, ok := value.(string); ok {
-				buffer.writeString(stringValue)
-				buffer.writeByte('\n')
-			} else {
-				// JSON encoder adds its own trailing newline, so we don't need to add it here
-				handler.writeJSON(buffer, value, indent)
-			}
+			// JSON encoder adds its own trailing newline, so we don't need to add it here
+			handler.writeJSON(buffer, value, indent)
 		}
 	default:
 		handler.writeAttributeKey(buffer, attr.Key)
@@ -358,29 +366,7 @@ func (handler *Handler) writeJSON(buffer *byteBuffer, jsonValue any, indent int)
 	}
 }
 
-func (handler *Handler) writeCauseError(buffer *byteBuffer, errorLogValue any, indent int) {
-	switch errorLogValue := errorLogValue.(type) {
-	case string:
-		handler.writeListItemPrefix(buffer, indent)
-		buffer.writeString(errorLogValue)
-	case []any:
-		indent++
-		for _, errorItem := range errorLogValue {
-			handler.writeCauseError(buffer, errorItem, indent)
-		}
-	default:
-		handler.writeListItemPrefix(buffer, indent)
-		handler.writeJSON(buffer, errorLogValue, indent)
-	}
-}
-
 func (handler *Handler) writeListItemPrefix(buffer *byteBuffer, indent int) {
-	if indent == 0 {
-		buffer.writeByte(' ')
-		return
-	}
-
-	buffer.writeByte('\n')
 	buffer.writeIndent(indent)
 	handler.writeByteWithColor(buffer, '-', colorGray)
 	buffer.writeByte(' ')
@@ -428,9 +414,90 @@ func (handler *Handler) writeLogSource(buffer *byteBuffer, programCounter uintpt
 	buffer.writeByte('\n')
 }
 
-// Should be the same key as in log/errors.go (we don't import this across packages, as that would
-// require a dependency between them, whereas they're currently independent from each other).
-const causeErrorAttrKey = "cause"
+// Assumes that [isErrorMessageAttr] has been checked for the first attr in the slice.
+func (handler *Handler) writeErrorAttr(
+	buffer *byteBuffer,
+	attrs []slog.Attr,
+	indent int,
+	partOfList bool,
+) {
+	handler.writeListItemPrefix(buffer, indent)
+
+	errMsg := attrs[0].Value.String()
+	buffer.writeString(errMsg)
+	buffer.writeByte('\n')
+
+	indent++
+
+	attrsLen := len(attrs)
+	for i, attr := range attrs[1:] {
+		if i == attrsLen-2 && attr.Key == "cause" && attr.Value.Kind() == slog.KindGroup {
+			causeAttrGroup := attr.Value.Group()
+
+			if len(causeAttrGroup) != 0 {
+				if isErrorMessageAttr(causeAttrGroup[0]) {
+					if !partOfList {
+						indent--
+					}
+					handler.writeErrorAttr(buffer, causeAttrGroup, indent, false)
+					return
+				}
+				if isErrorListAttr(causeAttrGroup) {
+					if !partOfList {
+						indent--
+					}
+					handler.writeErrorListAttr(buffer, causeAttrGroup, indent)
+					return
+				}
+			}
+		}
+
+		handler.writeAttribute(buffer, attr, indent)
+	}
+}
+
+// Assumes that [isErrorListAttr] has been checked for the given attrs.
+func (handler *Handler) writeErrorListAttr(
+	buffer *byteBuffer,
+	attrs []slog.Attr,
+	indent int,
+) {
+	for _, groupAttr := range attrs {
+		errorAttrs := groupAttr.Value.Group()
+
+		handler.writeErrorAttr(buffer, errorAttrs, indent, true)
+	}
+}
+
+func isErrorMessageAttr(attr slog.Attr) bool {
+	return attr.Key == "msg" && attr.Value.Kind() == slog.KindString
+}
+
+func isErrorListAttr(groupAttrs []slog.Attr) bool {
+	for i, attr := range groupAttrs {
+		// Each attr in the list should be a Group (the kind we use for error attrs in errlog)
+		if attr.Value.Kind() != slog.KindGroup {
+			return false
+		}
+
+		// Every attr key in the error list should be the stringified index in the group (since we
+		// use strconv.Itoa when writing multiple wrapped errors in errlog)
+		if attr.Key != strconv.Itoa(i) {
+			return false
+		}
+
+		subgroup := attr.Value.Group()
+		if len(subgroup) == 0 {
+			return false
+		}
+
+		if !isErrorMessageAttr(subgroup[0]) {
+			return false
+		}
+	}
+
+	return true
+}
 
 func isEmpty(attr slog.Attr) bool {
 	return attr.Key == "" && attr.Value.Equal(slog.Value{}) //nolint:exhaustruct
