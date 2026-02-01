@@ -292,7 +292,7 @@ func TestSource(t *testing.T) {
 	)
 
 	assert.Contains(t, output, "\n  source: hermannm.dev/devlog_test.TestSource")
-	assert.Contains(t, output, "devlog_test.go:211")
+	assert.Contains(t, output, "devlog_test.go:290")
 }
 
 func TestRenameErrorAttrKey(t *testing.T) {
