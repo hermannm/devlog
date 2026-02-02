@@ -292,11 +292,11 @@ func (handler *Handler) writeAttribute(buffer *byteBuffer, attr slog.Attr, inden
 			// error attrs with non-empty keys.
 			// Also, we check for len == 0 above, so this indexing is safe.
 			if isErrorMessageAttr(attrs[0]) {
-				handler.writeErrorAttr(buffer, attrs, indent, false)
+				handler.writeErrorAttrAndCauses(buffer, attrs, indent, false)
 				return
 			} else if isErrorListAttr(attrs) {
-				for _, errorAttr := range attrs {
-					handler.writeErrorAttr(buffer, errorAttr.Value.Group(), indent, true)
+				for _, attr := range attrs {
+					handler.writeErrorAttrAndCauses(buffer, attr.Value.Group(), indent, true)
 				}
 				return
 			}
@@ -416,9 +416,7 @@ func (handler *Handler) writeLogSource(buffer *byteBuffer, programCounter uintpt
 }
 
 // Writes error attrs on the structure produced by
-// [hermannm.dev/devlog/errlog.ErrorAttrHandler].
-//
-// Follows the following format:
+// [hermannm.dev/devlog/errlog.ErrorAttrHandler], on the following format:
 //
 //	error:
 //	  - something went wrong   <-- Error messages are formatted as a list of their `Unwrap` chain
@@ -429,70 +427,85 @@ func (handler *Handler) writeLogSource(buffer *byteBuffer, programCounter uintpt
 //	    - multi cause error 2
 //
 // Assumes that isErrorMessageAttr has been checked for the first attr in the attrs slice.
+func (handler *Handler) writeErrorAttrAndCauses(
+	buffer *byteBuffer,
+	attrs []slog.Attr,
+	indent int,
+	attrsArePartOfErrorList bool,
+) {
+	attrsAreErrorList := false
+
+	// Use loop to avoid deep recursion. We reassign attrs to any potential cause attrs, and keep
+	// iterating until we've hit the end of the error cause chain
+	for len(attrs) != 0 {
+		// If there was a cause error attr among the attrs given to writeErrorAttr, then it's
+		// returned here, and we'll write the cause error on the next loop iteration
+		attrs, attrsAreErrorList = handler.writeErrorAttr(buffer, attrs, indent)
+
+		// If the error attr we just wrote was part of an error list, then we bump the indent
+		// for any potential cause error attr, as we don't want to mix cause errors with other
+		// errors in the error list
+		if attrsArePartOfErrorList {
+			indent++
+			attrsArePartOfErrorList = false
+		}
+
+		// If the cause attrs were a list of errors, then we must fall back to recursion
+		if attrsAreErrorList {
+			for _, attr := range attrs {
+				handler.writeErrorAttrAndCauses(buffer, attr.Value.Group(), indent, true)
+			}
+			return
+		}
+	}
+}
+
+// Writes a single error attr in the error cause chain, and returns any further cause error attr (or
+// nil, if there was none). If the cause error was a list of errors, returns causeAttrIsList = true.
 func (handler *Handler) writeErrorAttr(
 	buffer *byteBuffer,
 	attrs []slog.Attr,
 	indent int,
-	partOfList bool,
-) {
-	// To avoid deep recursion, we use a loop for cause error attrs
-CauseAttrLoop:
-	for {
-		handler.writeListItemPrefix(buffer, indent)
+) (causeAttrs []slog.Attr, causeAttrIsList bool) {
+	handler.writeListItemPrefix(buffer, indent)
 
-		errMsg := attrs[0].Value.String()
-		buffer.writeString(errMsg)
-		buffer.writeByte('\n')
+	errMsg := attrs[0].Value.String()
+	buffer.writeString(errMsg)
+	buffer.writeByte('\n')
 
-		attrsLen := len(attrs)
-		// If error message was the only attr, return early to avoid out-of-bounds below
-		if attrsLen == 1 {
-			return
-		}
+	attrsLen := len(attrs)
+	// If error message was the only attr, return early to avoid out-of-bounds below
+	if attrsLen == 1 {
+		return nil, false
+	}
 
-		// All extra error attrs should be further indented than the error message
-		indent++
+	// All extra error attrs should be further indented than the error message
+	indent++
 
-		// Go through all extra attrs on the error except for the last one, as the last one may be a
-		// cause error, which has special handling below
-		lastIndex := attrsLen - 1
-		for _, attr := range attrs[1:lastIndex] {
-			handler.writeAttribute(buffer, attr, indent)
-		}
+	// Go through all extra attrs on the error except for the last one, as the last one may be a
+	// cause error, which has special handling below
+	lastIndex := attrsLen - 1
+	for _, attr := range attrs[1:lastIndex] {
+		handler.writeAttribute(buffer, attr, indent)
+	}
 
-		// Check if the last attr is a cause error attr, and handle it accordingly
-		lastAttr := attrs[attrsLen-1]
-		if lastAttr.Key == "cause" && lastAttr.Value.Kind() == slog.KindGroup {
-			causeAttrGroup := lastAttr.Value.Group()
+	// Check if the last attr is a cause error attr - if so, return it to be handled after
+	lastAttr := attrs[lastIndex]
+	if lastAttr.Key == "cause" && lastAttr.Value.Kind() == slog.KindGroup {
+		causeAttrs := lastAttr.Value.Group()
 
-			if len(causeAttrGroup) != 0 {
-				if isErrorMessageAttr(causeAttrGroup[0]) {
-					// Cause error attr should have same indent as its parent error, unless we're
-					// already in an erorr list
-					if !partOfList {
-						indent--
-					}
-					// To avoid deep recursion, we reassign top-level args and continue loop
-					attrs = causeAttrGroup
-					partOfList = false
-					continue CauseAttrLoop
-				} else if isErrorListAttr(causeAttrGroup) {
-					// Same logic as above
-					if !partOfList {
-						indent--
-					}
-					for _, groupAttr := range causeAttrGroup {
-						handler.writeErrorAttr(buffer, groupAttr.Value.Group(), indent, true)
-					}
-					return
-				}
+		if len(causeAttrs) != 0 {
+			if isErrorMessageAttr(causeAttrs[0]) {
+				return causeAttrs, false
+			} else if isErrorListAttr(causeAttrs) {
+				return causeAttrs, true
 			}
 		}
-
-		// If last attr was not a cause error attr: handle it normally, then exit
-		handler.writeAttribute(buffer, lastAttr, indent)
-		return
 	}
+
+	// If last attr was not a cause error attr: handle it normally, then exit
+	handler.writeAttribute(buffer, lastAttr, indent)
+	return nil, false
 }
 
 func isErrorMessageAttr(attr slog.Attr) bool {
