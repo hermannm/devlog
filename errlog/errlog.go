@@ -10,10 +10,67 @@ import (
 	"hermannm.dev/devlog/ctxlog"
 )
 
+// Cause returns a [slog] attribute with key "error" and the given error as the value.
+//
+// Usage:
+//
+//	if err != nil {
+//		slog.Error("Something went wrong", errlog.Cause(err))
+//	}
+//
+// You can use this function for consistent error logging, instead of manually typing out the
+// "error" key whenever you log an error, which may risk inconsistencies.
+//
+// If you use this, you'll typically want to wrap your [slog.Handler] with [ErrorAttrHandler], which
+// transforms errors into structured attributes. This is already handled for you if you use the
+// [hermannm.dev/devlog/slogconfig] package to configure your handler.
 func Cause(err error) slog.Attr {
 	return slog.Any("error", err)
 }
 
+// ErrorAttrHandler wraps a [slog.Handler], transforming log attributes with error values into more
+// structured attributes, for better readability and analysis when reading logs.
+//
+// # Example
+//
+//	// Configure slog.JSONHandler wrapped with ErrorAttrHandler:
+//	slog.SetDefault(slog.New(errlog.ErrorAttrHandler(slog.NewJSONHandler(os.Stdout, nil))))
+//	// Alternatively, the slogconfig package can do the wrapping for you:
+//	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+//
+//	cause := errors.New("cause error")
+//	err := fmt.Errorf("wrapping error: %w", cause)
+//	slog.Error("Something went wrong", "error", err)
+//
+// This gives the following output:
+//
+//	{
+//	  "time": "...",
+//	  "level": "ERROR",
+//	  "msg": "Something went wrong",
+//	  "error": {
+//	    "msg": "wrapping error",
+//	    "cause": {
+//	      "msg": "cause error"
+//	    }
+//	  }
+//	}
+//
+// If you configure your handler with the [hermannm.dev/devlog/slogconfig] package, then
+// ErrorAttrHandler is already applied.
+//
+// If you're using [hermannm.dev/devlog.Handler] (pretty-formatted log handler), this structured
+// error format is recognized, and displayed as a list of the error cause chain:
+//
+//	[09:16:14] ERROR: Something went wrong
+//	  error:
+//	    - wrapping error
+//	    - cause error
+//
+// You can use [hermannm.dev/devlog.Options.RenameErrorAttrKey] to avoid the repetition of having
+// ERROR logs with "error" attributes.
+//
+// ErrorAttrHandler panics if the given handler is nil.
 func ErrorAttrHandler(wrapped slog.Handler) slog.Handler {
 	if wrapped == nil {
 		panic("nil slog.Handler given to ErrorAttrHandler")

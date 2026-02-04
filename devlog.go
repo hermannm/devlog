@@ -55,12 +55,26 @@ type Options struct {
 	// to include the date as well.
 	TimeFormat TimeFormat
 
-	// RenameErrorAttrKey looks for attrs with key "error", and replaces the key with the given
+	// RenameErrorAttrKey looks for attrs with key "error", and replaces those keys with the given
 	// string.
 	//
-	// This can be useful when you use "error" as the default error attr key, but you don't want the
-	// repetition of ERROR logs with "error" attributes in your pretty-formatted log output. For
-	// example, you can set this option to "cause", so that ERROR logs get a "cause" attr instead.
+	// Using attr key "error" is fine (and generally preferable) for structured JSON output, but for
+	// pretty-formatted logs, you may want to avoid the repetition of ERROR logs with "error" attrs,
+	// like:
+	//
+	//	[09:16:14] ERROR: Something went wrong
+	//	  error:
+	//	    - an error occurred
+	//
+	// With this option, we can rename the "error" attr to e.g. "cause", giving us a more intuitive
+	// output:
+	//
+	//	[09:16:14] ERROR: Something went wrong
+	//	  cause:
+	//	    - an error occurred
+	//
+	// ...while still keeping the "error" key in JSON output, which you may want for production
+	// environments.
 	//
 	// Only top-level error attrs are renamed, since nested keys in attr groups are more likely part
 	// of an intentional structure.
