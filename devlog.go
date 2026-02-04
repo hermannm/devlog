@@ -447,7 +447,7 @@ func (handler *Handler) writeErrorAttrAndCauses(
 	indent int,
 	attrsArePartOfErrorList bool,
 ) {
-	attrsAreErrorList := false
+	var attrsAreErrorList bool
 
 	// Use loop to avoid deep recursion. We reassign attrs to any potential cause attrs, and keep
 	// iterating until we've hit the end of the error cause chain
@@ -554,5 +554,5 @@ func isErrorListAttr(groupAttrs []slog.Attr) bool {
 }
 
 func isEmpty(attr slog.Attr) bool {
-	return attr.Key == "" && attr.Value.Equal(slog.Value{}) //nolint:exhaustruct
+	return attr.Key == "" && attr.Value.Equal(slog.Value{})
 }

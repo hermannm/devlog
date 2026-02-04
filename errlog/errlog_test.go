@@ -523,29 +523,6 @@ func attrs(keyValuePairs ...any) []slog.Attr {
 	return attrs
 }
 
-func verifyLogOutput(
-	t *testing.T,
-	output string,
-	expectedLevel string,
-	expectedMessage string,
-	expectedAttrs string,
-) {
-	t.Helper()
-
-	t.Log(strings.TrimSuffix(output, "\n"))
-
-	level, message, attrs := parseLogOutput(t, output)
-	if level != expectedLevel {
-		unexpectedLogOutput(t, "log level", level, expectedLevel)
-	}
-	if message != expectedMessage {
-		unexpectedLogOutput(t, "log message", message, expectedMessage)
-	}
-	if attrs != expectedAttrs {
-		unexpectedLogOutput(t, "log attrs", attrs, expectedAttrs)
-	}
-}
-
 func verifyLogAttrs(t *testing.T, output string, expectedAttrs string) {
 	t.Helper()
 
@@ -554,63 +531,6 @@ func verifyLogAttrs(t *testing.T, output string, expectedAttrs string) {
 	_, _, attrs := parseLogOutput(t, output)
 	if attrs != expectedAttrs {
 		unexpectedLogOutput(t, "log attributes", attrs, expectedAttrs)
-	}
-}
-
-// Verifies attributes in log output except the "cause" attribute from error logs.
-func verifyErrorLogAttrs(t *testing.T, output string, expectedAttrsWithoutCause string) {
-	t.Helper()
-
-	t.Log(strings.TrimSuffix(output, "\n"))
-
-	_, _, attrs := parseLogOutput(t, output)
-
-	causeAttrKey := `"cause":`
-	if !strings.HasPrefix(attrs, causeAttrKey) {
-		t.Fatalf(
-			"Expected attributes in log output to include 'cause' attribute, but got:\n%s",
-			attrs,
-		)
-	}
-
-	attrBytes := []byte(attrs)
-
-	startIndex := len(causeAttrKey)
-	causeAttrEndIndex := 0
-	delimiter := attrBytes[startIndex]
-
-	switch delimiter {
-	case '"':
-		for i, char := range attrBytes[startIndex+1:] {
-			if char == '"' {
-				causeAttrEndIndex = i + startIndex + 1
-				break
-			}
-		}
-	case '[':
-		openBracketCount := 1
-		for i, char := range attrBytes[startIndex+1:] {
-			if char == '[' {
-				openBracketCount++
-			} else if char == ']' {
-				openBracketCount--
-				if openBracketCount == 0 {
-					causeAttrEndIndex = i + startIndex + 1
-					break
-				}
-			}
-		}
-	default:
-		t.Fatalf("Expected cause attribute value to start with \" or [, but got:\n%s", attrs)
-	}
-	if causeAttrEndIndex == 0 {
-		t.Fatalf("Failed to strip 'cause' attribute from error log output:\n%s", attrs)
-	}
-
-	attrsWithoutCause := string(attrBytes[causeAttrEndIndex+2:])
-
-	if attrsWithoutCause != expectedAttrsWithoutCause {
-		unexpectedLogOutput(t, "log attributes", attrsWithoutCause, expectedAttrsWithoutCause)
 	}
 }
 
