@@ -1,3 +1,7 @@
+// Package ctxlog provides [ctxlog.AddContextAttrs], which lets you attach structured log attributes
+// to a [context.Context]. When wrapping your [log/slog] handler with [ctxlog.ContextAttrHandler],
+// these context attributes will be added to all logs made with [log/slog] functions that take that
+// context.
 package ctxlog
 
 import (
@@ -87,8 +91,9 @@ func AddContextAttrs(parent context.Context, logAttributes ...any) context.Conte
 //	logHandler := slog.NewJSONHandler(os.Stdout, nil)
 //	slog.SetDefault(slog.New(ctxlog.ContextAttrHandler(logHandler)))
 //
-// Alternatively, you can use one of the initialization functions from the
-// [hermannm.dev/devlog/slogconfig] package, which automatically wraps the log handler with this.
+// Alternatively, the [hermannm.dev/devlog/slogconfig] package can do the wrapping for you:
+//
+//	slogconfig.InitJSONLogHandler(os.Stdout, nil)
 //
 // ContextAttrHandler panics if the given handler is nil.
 func ContextAttrHandler(wrapped slog.Handler) slog.Handler {

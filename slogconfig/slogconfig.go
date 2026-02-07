@@ -1,6 +1,6 @@
 // Package slogconfig provides utility functions for configuring a default [log/slog] handler
 // wrapped with [hermannm.dev/devlog/errlog.ErrorAttrHandler] for structured error formatting and
-// [hermannm.dev/devlog/ctxlog.ContextAttrHandler] to allow attaching log attributes to context.
+// [hermannm.dev/devlog/ctxlog.ContextAttrHandler] for attaching log attributes to context.
 package slogconfig
 
 import (
@@ -14,7 +14,7 @@ import (
 
 // InitDefaultLogHandler sets the given structured log handler as the default [log/slog] handler. It
 // also configures [hermannm.dev/devlog/errlog.ErrorAttrHandler] for structured error formatting,
-// and [hermannm.dev/devlog/ctxlog.ContextAttrHandler] to allow attaching log attributes to context.
+// and [hermannm.dev/devlog/ctxlog.ContextAttrHandler] for attaching log attributes to context.
 //
 // It is equivalent to the following:
 //
@@ -38,7 +38,7 @@ func InitDefaultLogHandler(handler slog.Handler) {
 // InitPrettyLogHandler sets the default [log/slog] handler to [hermannm.dev/devlog.Handler], a
 // pretty-formatted log handler designed for local development and CLI tools. It also configures
 // [hermannm.dev/devlog/errlog.ErrorAttrHandler] for structured error formatting, and
-// [hermannm.dev/devlog/ctxlog.ContextAttrHandler] to allow attaching log attributes to context.
+// [hermannm.dev/devlog/ctxlog.ContextAttrHandler] for attaching log attributes to context.
 //
 // Example (using nil for default options):
 //
@@ -48,8 +48,8 @@ func InitDefaultLogHandler(handler slog.Handler) {
 //
 //	slog.SetDefault(
 //		slog.New(
-//			ctxlog.ContextAttrHandler(
-//				errlog.ErrorAttrHandler(
+//			errlog.ErrorAttrHandler(
+//				ctxlog.ContextAttrHandler(
 //					devlog.NewHandler(os.Stdout, nil),
 //				),
 //			),
@@ -62,7 +62,7 @@ func InitPrettyLogHandler(output io.Writer, options *devlog.Options) {
 // InitJSONLogHandler sets the default [log/slog] handler to [log/slog.JSONHandler], which outputs
 // logs in a structured JSON format. It also configures
 // [hermannm.dev/devlog/errlog.ErrorAttrHandler] for structured error formatting, and
-// [hermannm.dev/devlog/ctxlog.ContextAttrHandler] to allow attaching log attributes to context.
+// [hermannm.dev/devlog/ctxlog.ContextAttrHandler] for attaching log attributes to context.
 //
 // Example (using nil for default options):
 //
@@ -72,8 +72,8 @@ func InitPrettyLogHandler(output io.Writer, options *devlog.Options) {
 //
 //	slog.SetDefault(
 //		slog.New(
-//			ctxlog.ContextAttrHandler(
-//				errlog.ErrorAttrHandler(
+//			errlog.ErrorAttrHandler(
+//				ctxlog.ContextAttrHandler(
 //					slog.NewJSONHandler(os.Stdout, nil),
 //				),
 //			),

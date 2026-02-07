@@ -33,9 +33,12 @@ func Cause(err error) slog.Attr {
 //
 // # Example
 //
-//	// Configure slog.JSONHandler wrapped with ErrorAttrHandler:
+// Configure slog.JSONHandler wrapped with ErrorAttrHandler:
+//
 //	slog.SetDefault(slog.New(errlog.ErrorAttrHandler(slog.NewJSONHandler(os.Stdout, nil))))
-//	// Alternatively, the slogconfig package can do the wrapping for you:
+//
+// Alternatively, the [hermannm.dev/devlog/slogconfig] package can do the wrapping for you:
+//
 //	slogconfig.InitJSONLogHandler(os.Stdout, nil)
 //
 //	cause := errors.New("cause error")
@@ -55,9 +58,6 @@ func Cause(err error) slog.Attr {
 //	    }
 //	  }
 //	}
-//
-// If you configure your handler with the [hermannm.dev/devlog/slogconfig] package, then
-// ErrorAttrHandler is already applied.
 //
 // If you're using [hermannm.dev/devlog.Handler] (pretty-formatted log handler), this structured
 // error format is recognized, and displayed as a list of the error cause chain:
