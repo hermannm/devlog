@@ -1,3 +1,8 @@
+// Package errlog provides [errlog.ErrorAttrHandler], a [slog.Handler] that wraps another handler,
+// transforming error log attributes to make them more structured.
+//
+// It also provides [errlog.Cause], a utility function for constructing error log attributes with a
+// consistent attr key.
 package errlog
 
 import (
