@@ -5,7 +5,6 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
@@ -135,21 +134,6 @@ func TestContextHandler(t *testing.T) {
 			`"contextKey1":"contextValue1",`+
 			`"contextKey2":"contextValue2"`,
 	)
-}
-
-func TestAlreadyWrappedContextHandler(t *testing.T) {
-	handler1 := ctxlog.ContextAttrHandler(slog.NewJSONHandler(os.Stdout, nil))
-	handler2 := ctxlog.ContextAttrHandler(handler1)
-
-	if !reflect.DeepEqual(handler1, handler2) {
-		t.Errorf(
-			`Expected nested ContextAttrHandler calls to not wrap multiple times
-Handler 1: %+v
-Handler 2: %+v`,
-			handler1,
-			handler2,
-		)
-	}
 }
 
 // We do a defensive check for nil context in GetContextAttrs. We want to verify that this works, so

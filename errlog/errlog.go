@@ -75,10 +75,6 @@ func ErrorAttrHandler(wrapped slog.Handler) slog.Handler {
 	if wrapped == nil {
 		panic("nil slog.Handler given to ErrorAttrHandler")
 	}
-	// If the given log handler is already wrapped by errorAttrHandler, then we return it as-is
-	if _, alreadyWrapped := wrapped.(errorAttrHandler); alreadyWrapped {
-		return wrapped
-	}
 	return errorAttrHandler{wrapped}
 }
 

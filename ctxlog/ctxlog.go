@@ -100,10 +100,6 @@ func ContextAttrHandler(wrapped slog.Handler) slog.Handler {
 	if wrapped == nil {
 		panic("nil slog.Handler given to ContextAttrHandler")
 	}
-	// If the given log handler is already wrapped by ContextAttrHandler, then we return it as-is
-	if _, alreadyWrapped := wrapped.(contextAttrHandler); alreadyWrapped {
-		return wrapped
-	}
 	return contextAttrHandler{wrapped}
 }
 
