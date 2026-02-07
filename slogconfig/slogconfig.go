@@ -25,7 +25,12 @@ import (
 //			),
 //		),
 //	)
+//
+// InitDefaultLogHandler panics if the given handler is nil.
 func InitDefaultLogHandler(handler slog.Handler) {
+	if handler == nil {
+		panic("nil slog.Handler given to InitDefaultLogHandler")
+	}
 	slog.SetDefault(
 		slog.New(
 			errlog.ErrorAttrHandler(

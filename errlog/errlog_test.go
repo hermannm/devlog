@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"hermannm.dev/devlog/ctxlog"
 	"hermannm.dev/devlog/errlog"
 )
@@ -487,6 +489,16 @@ func TestDuplicateErrorAndContextAttrKeys(t *testing.T) {
 			`"duplicateErrorKey":"innerErrorContextValue",`+
 			`"outerErrorContextKey":"value5",`+
 			`"baseContextKey":"value6"`,
+	)
+}
+
+func TestNilHandler(t *testing.T) {
+	assert.PanicsWithValue(
+		t,
+		"nil slog.Handler given to ErrorAttrHandler",
+		func() {
+			errlog.ErrorAttrHandler(nil)
+		},
 	)
 }
 

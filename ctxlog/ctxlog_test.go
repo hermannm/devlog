@@ -104,7 +104,7 @@ func TestAddContextAttrsNilParent(t *testing.T) {
 	verifyLogAttrs(t, output, `"ctxKey":"value"`)
 }
 
-func TestContextHandler(t *testing.T) {
+func TestContextAttrHandler(t *testing.T) {
 	var output bytes.Buffer
 	// Use plain slog.Logger, since we want to test that ContextAttrHandler works when we don't log
 	// through this library
@@ -138,40 +138,25 @@ func TestContextHandler(t *testing.T) {
 
 // We do a defensive check for nil context in GetContextAttrs. We want to verify that this works, so
 // we invoke ContextAttrHandler (which calls GetContextAttrs) with a nil context here.
-func TestNilContextInContextHandler(t *testing.T) {
+func TestNilContextInContextAttrHandler(t *testing.T) {
 	handler := ctxlog.ContextAttrHandler(slog.NewJSONHandler(os.Stdout, nil))
 
 	var programCounters [1]uintptr
 	runtime.Callers(0, programCounters[:])
 	record := slog.NewRecord(time.Now(), slog.LevelInfo, "Test", programCounters[0])
 
-	if err := handler.Handle(nil, record); err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
+	err := handler.Handle(nil, record)
+	assert.NoError(t, err)
 }
 
-func TestNilContextHandler(t *testing.T) {
-	var panicValue any
-
-	passNilToContextHandler := func() {
-		defer func() {
-			panicValue = recover()
-		}()
-
-		ctxlog.ContextAttrHandler(nil)
-	}
-	passNilToContextHandler()
-
-	expectedPanicValue := "nil slog.Handler given to ContextAttrHandler"
-	if panicValue != expectedPanicValue {
-		t.Errorf(
-			`Unexpected panic value
-Want: %v
- Got: %v`,
-			expectedPanicValue,
-			panicValue,
-		)
-	}
+func TestNilHandler(t *testing.T) {
+	assert.PanicsWithValue(
+		t,
+		"nil slog.Handler given to ContextAttrHandler",
+		func() {
+			ctxlog.ContextAttrHandler(nil)
+		},
+	)
 }
 
 func getLogOutput(logFunc func()) string {

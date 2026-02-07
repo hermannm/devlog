@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"hermannm.dev/devlog/slogconfig"
@@ -64,6 +65,16 @@ func TestInitJSONLogHandler(t *testing.T) {
 			{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
 			{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
 			{"log/slog", "JSONHandler"},
+		},
+	)
+}
+
+func TestNilDefaultHandler(t *testing.T) {
+	assert.PanicsWithValue(
+		t,
+		"nil slog.Handler given to InitDefaultLogHandler",
+		func() {
+			slogconfig.InitDefaultLogHandler(nil)
 		},
 	)
 }
