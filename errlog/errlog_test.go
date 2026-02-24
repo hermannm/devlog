@@ -492,6 +492,28 @@ func TestDuplicateErrorAndContextAttrKeys(t *testing.T) {
 	)
 }
 
+func TestErrorInGroup(t *testing.T) {
+	innerErr := errors.New("root cause")
+	wrappedErr := fmt.Errorf("something went wrong: %w", innerErr)
+	group := slog.Group(
+		"groupKey",
+		slog.String("nonErrorAttr", "nonError"),
+		slog.Any("error", wrappedErr),
+	)
+
+	output := getLogOutput(
+		func() {
+			slog.Error("Test", group)
+		},
+	)
+
+	verifyLogAttrs(
+		t,
+		output,
+		`"groupKey":{"nonErrorAttr":"nonError","error":{"msg":"something went wrong","cause":{"msg":"root cause"}}}`,
+	)
+}
+
 func TestNilHandler(t *testing.T) {
 	assert.PanicsWithValue(
 		t,
