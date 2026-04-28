@@ -1,17 +1,17 @@
 # devlog
 
 Go library that provides utilities for structured logging, building on the standard
-[`log/slog`](https://pkg.go.dev/log/slog) package. It provides two independent packages:
+[`log/slog`](https://pkg.go.dev/log/slog) package. It provides the following packages:
 
-- `devlog` implements a [`slog.Handler`](https://pkg.go.dev/log/slog#Handler) with a human-readable
-  output format, designed for local development and CLI tools
-- `devlog/log` is a thin wrapper over the logging API of `log/slog`, providing:
-    - Utility functions for log message formatting (`log.Infof`, `log.Errorf`, etc.)
-    - Error-aware logging functions, which structure errors to be formatted consistently as log
-      attributes
-    - `log.AddContextAttrs`, a function for adding log attributes to a
-      [`context.Context`](https://pkg.go.dev/context), applying the attributes to all logs made in
-      that context
+- `devlog` provides a [`slog.Handler`](https://pkg.go.dev/log/slog#Handler) with a human-readable
+  output format, designed for local development and CLI tools.
+- `errlog` provides `ErrorAttrHandler`, which transforms error log attributes to make them more
+  structured.
+- `ctxlog` provides a way to attach log attributes to a
+  [`context.Context`](https://pkg.go.dev/context), so that all logs in the scope of that context
+  get those attributes in their output.
+- `slogconfig` binds together the above independent packages, by providing `Init` functions to
+  configure the default `slog` handler with `errlog`'s and `ctxlog`'s wrapping handlers applied.
 
 Run `go get hermannm.dev/devlog` to add it to your project!
 
@@ -38,11 +38,14 @@ import (
 	"log/slog"
 
 	"hermannm.dev/devlog"
+	"hermannm.dev/devlog/slogconfig"
 )
 
 func main() {
-	logHandler := devlog.NewHandler(os.Stdout, nil)
-	slog.SetDefault(slog.New(logHandler))
+	slog.SetDefault(slog.New(devlog.NewHandler(os.Stdout, nil)))
+
+	// Alternatively, use the slogconfig package:
+	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
 }
 ```
 <!-- @formatter:on -->
@@ -84,18 +87,151 @@ conditionally choosing the log handler for your application, like this:
 
 <!-- @formatter:off -->
 ```go
-var logHandler slog.Handler
 switch os.Getenv("ENVIRONMENT") {
 case "LOCAL", "TEST":
 	// Pretty-formatted logs for local development and tests
-	logHandler = devlog.NewHandler(os.Stdout, nil)
+	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
 default:
 	// Structured JSON logs for deployed environments
-	logHandler = slog.NewJSONHandler(os.Stdout, nil)
+	slogconfig.InitJSONLogHandler(os.Stdout, nil)
 }
-slog.SetDefault(slog.New(logHandler))
 ```
 <!-- @formatter:on -->
+
+### Using `errlog` for structured error attributes
+
+`errlog` transforms `slog.Attr`s with `error` values to give them more structure. You use it by
+wrapping your `slog.Handler` with `errlog.ErrorAttrHandler`:
+
+<!-- @formatter:off -->
+```go
+import (
+	"log/slog"
+	"os"
+
+	"hermannm.dev/devlog/errlog"
+	"hermannm.dev/devlog/slogconfig"
+)
+
+func main() {
+	slog.SetDefault(
+		slog.New(
+			errlog.ErrorAttrHandler(
+				slog.NewJSONHandler(os.Stdout, nil),
+			),
+		),
+	)
+
+	// Alternatively, use slogconfig, which applies ErrorAttrHandler for you:
+	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+}
+```
+<!-- @formatter:on -->
+
+Now, when you log errors with `slog` like this:
+
+<!-- @formatter:off -->
+```go
+import (
+	"errors"
+	"fmt"
+	"log/slog"
+)
+
+func main() {
+	if err := fallibleFunction(); err != nil {
+		slog.Error("Something went wrong", "error", err)
+	}
+}
+
+func fallibleFunction() {
+	if err := innerFunction(); err != nil {
+		return fmt.Errorf("inner function failed: %w", err)
+	}
+}
+
+func innerFunction() {
+	return errors.New("root cause")
+}
+```
+<!-- @formatter:on -->
+
+...you get the following JSON output:
+
+<!-- @formatter:off -->
+```json
+{
+  "time": "...",
+  "level": "ERROR",
+  "msg": "Something went wrong",
+  "error": {
+    "msg": "inner function failed",
+    "cause": {
+      "msg": "root cause"
+    }
+  }
+}
+```
+<!-- @formatter:on -->
+
+### Using `ctxlog` for context attributes
+
+`ctxlog` provides `ctxlog.AddContextAttrs`, a function for adding log attributes to a
+[`context.Context`](https://pkg.go.dev/context). In order to use this, you must first wrap your
+`slog.Handler` with `ctxlog.ContextAttrHandler`:
+
+<!-- @formatter:off -->
+```go
+import (
+	"log/slog"
+	"os"
+
+	"hermannm.dev/devlog/ctxlog"
+	"hermannm.dev/devlog/slogconfig"
+)
+
+func main() {
+	slog.SetDefault(
+		slog.New(
+			ctxlog.ContextAttrHandler(
+				slog.NewJSONHandler(os.Stdout, nil),
+			),
+		),
+	)
+
+	// Alternatively, use slogconfig, which applies ContextAttrHandler for you:
+	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+}
+```
+<!-- @formatter:on -->
+
+Now you can add context attributes with `ctxlog.AddContextAttrs`:
+
+<!-- @formatter:off -->
+```go
+func processEvent(ctx context.Context, event Event) {
+	ctx = ctxlog.AddContextAttrs(ctx, "eventId", event.ID)
+
+	slog.InfoContext(ctx, "Processing event")
+	// ...
+	slog.InfoContext(ctx, "Successfully processed event")
+}
+```
+<!-- @formatter:on -->
+
+...giving this output:
+
+<!-- @formatter:off -->
+```json lines
+{ "time":"...", "level": "INFO", "msg": "Processing event", "eventId": 1000 }
+{ "time":"...", "level": "INFO", "msg": "Successfully processed event", "eventId": 1000 }
+```
+<!-- @formatter:on -->
+
+This can help you trace all logs in the scope of this event's processing, by filtering on the
+`eventId` in your log analysis tool. You may want to use [OpenTelemetry](https://opentelemetry.io/)
+for more comprehensive tracing, but `ctxlog` lets you get basic tracing with just the standard
+`slog` package.
 
 ### Using the `devlog/log` logging API
 
@@ -122,29 +258,6 @@ func example(ctx context.Context) {
 This gives the following output (using the `devlog` output handler):
 
 ![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/3089fbac4d2cecd3d55b422a7ba742f788d5dace/devlog-example-output-3.png?raw=true)
-
-The package also provides `log.AddContextAttrs`, a function for adding log attributes to a
-`context.Context`. These attributes are added to all logs where the context is passed, so this
-example:
-
-<!-- @formatter:off -->
-```go
-func processEvent(ctx context.Context, event Event) {
-	ctx = log.AddContextAttrs(ctx, "eventId", event.ID)
-
-	log.Debug(ctx, "Started processing event")
-	// ...
-	log.Debug(ctx, "Finished processing event")
-}
-```
-<!-- @formatter:on -->
-
-...gives this output:
-
-![Screenshot of log messages in a terminal](https://github.com/hermannm/devlog/blob/3089fbac4d2cecd3d55b422a7ba742f788d5dace/devlog-example-output-4.png?raw=true)
-
-This can help you trace connected logs in your system (especially when using a more structured JSON
-output in production, allowing you to filter on all logs with a specific `eventId`).
 
 In order to encourage propagating context attributes, all log functions in this package take a
 `context.Context`. If you're in a function without a context parameter, you may pass a `nil`
