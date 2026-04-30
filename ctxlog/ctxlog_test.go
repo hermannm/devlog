@@ -16,8 +16,8 @@ import (
 	"hermannm.dev/devlog/ctxlog"
 )
 
-func TestAddContextAttrs(t *testing.T) {
-	ctx := ctxlog.AddContextAttrs(
+func TestWithAttrs(t *testing.T) {
+	ctx := ctxlog.WithAttrs(
 		context.Background(),
 		"ctxKey1", "value1",
 		slog.String("ctxKey2", "value2"),
@@ -37,8 +37,8 @@ func TestAddContextAttrs(t *testing.T) {
 }
 
 func TestNestedContextAttrs(t *testing.T) {
-	ctx := ctxlog.AddContextAttrs(context.Background(), "ctxKey1", "value1", "ctxKey2", "value2")
-	ctx = ctxlog.AddContextAttrs(ctx, "ctxKey3", "value3", "ctxKey4", "value4")
+	ctx := ctxlog.WithAttrs(context.Background(), "ctxKey1", "value1", "ctxKey2", "value2")
+	ctx = ctxlog.WithAttrs(ctx, "ctxKey3", "value3", "ctxKey4", "value4")
 
 	output1 := getLogOutput(
 		func() {
@@ -55,12 +55,12 @@ func TestNestedContextAttrs(t *testing.T) {
 }
 
 func TestDuplicateContextAttrKeys(t *testing.T) {
-	ctx1 := ctxlog.AddContextAttrs(
+	ctx1 := ctxlog.WithAttrs(
 		context.Background(),
 		"uniqueKey1", "value1",
 		"duplicateKey", "value2",
 	)
-	ctx2 := ctxlog.AddContextAttrs(
+	ctx2 := ctxlog.WithAttrs(
 		ctx1,
 		"duplicateKey", "value3",
 		"uniqueKey2", "value4",
@@ -92,8 +92,8 @@ func TestDuplicateContextAttrKeys(t *testing.T) {
 	)
 }
 
-func TestAddContextAttrsNilParent(t *testing.T) {
-	ctx := ctxlog.AddContextAttrs(nil, "ctxKey", "value")
+func TestWithAttrsNilParent(t *testing.T) {
+	ctx := ctxlog.WithAttrs(nil, "ctxKey", "value")
 
 	output := getLogOutput(
 		func() {
@@ -104,13 +104,13 @@ func TestAddContextAttrsNilParent(t *testing.T) {
 	verifyLogAttrs(t, output, `"ctxKey":"value"`)
 }
 
-func TestContextAttrHandler(t *testing.T) {
+func TestNewHandler(t *testing.T) {
 	var output bytes.Buffer
-	// Use plain slog.Logger, since we want to test that ContextAttrHandler works when we don't log
-	// through this library
-	logger := slog.New(ctxlog.ContextAttrHandler(slog.NewJSONHandler(&output, nil)))
+	// Use plain slog.Logger, since we want to test that NewHandler works when we don't log through
+	// this library
+	logger := slog.New(ctxlog.NewHandler(slog.NewJSONHandler(&output, nil)))
 
-	ctx := ctxlog.AddContextAttrs(
+	ctx := ctxlog.WithAttrs(
 		context.Background(),
 		"contextKey1", "contextValue1",
 		"duplicateKey", "contextValue",
@@ -136,10 +136,10 @@ func TestContextAttrHandler(t *testing.T) {
 	)
 }
 
-// We do a defensive check for nil context in GetContextAttrs. We want to verify that this works, so
-// we invoke ContextAttrHandler (which calls GetContextAttrs) with a nil context here.
-func TestNilContextInContextAttrHandler(t *testing.T) {
-	handler := ctxlog.ContextAttrHandler(slog.NewJSONHandler(os.Stdout, nil))
+// We do a defensive check for nil context in GetAttrs. We want to verify that this works, so
+// we invoke ctxlog.handler.Handle (which calls GetAttrs) with a nil context here.
+func TestNilContextInNewHandler(t *testing.T) {
+	handler := ctxlog.NewHandler(slog.NewJSONHandler(os.Stdout, nil))
 
 	var programCounters [1]uintptr
 	runtime.Callers(0, programCounters[:])
@@ -152,16 +152,16 @@ func TestNilContextInContextAttrHandler(t *testing.T) {
 func TestNilHandler(t *testing.T) {
 	assert.PanicsWithValue(
 		t,
-		"nil slog.Handler given to ContextAttrHandler",
+		"nil slog.Handler given to ctxlog.NewHandler",
 		func() {
-			ctxlog.ContextAttrHandler(nil)
+			ctxlog.NewHandler(nil)
 		},
 	)
 }
 
 func getLogOutput(logFunc func()) string {
 	var buffer bytes.Buffer
-	slog.SetDefault(slog.New(ctxlog.ContextAttrHandler(slog.NewJSONHandler(&buffer, nil))))
+	slog.SetDefault(slog.New(ctxlog.NewHandler(slog.NewJSONHandler(&buffer, nil))))
 	logFunc()
 	return buffer.String()
 }

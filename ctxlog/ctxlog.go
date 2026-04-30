@@ -1,6 +1,6 @@
-// Package ctxlog provides [ctxlog.AddContextAttrs], which lets you attach structured log attributes
-// to a [context.Context]. When wrapping your [log/slog] handler with [ctxlog.ContextAttrHandler],
-// these context attributes will be added to all logs made with [log/slog] functions that take that
+// Package ctxlog provides [ctxlog.WithAttrs], which lets you attach structured log attributes to a
+// [context.Context]. When wrapping your [log/slog] handler with [ctxlog.NewHandler], these
+// context attributes will be added to all logs made with [log/slog] functions that take that
 // context.
 package ctxlog
 
@@ -10,14 +10,13 @@ import (
 	"slices"
 )
 
-// AddContextAttrs returns a copy of the given parent context, with log attributes attached. When
+// WithAttrs returns a copy of the given parent context, with log attributes attached. When
 // the context is passed to one of the logging functions from [slog], and your handler is wrapped
-// with [ctxlog.ContextAttrHandler], then these attributes will be added
+// with [ctxlog.NewHandler], then these attributes will be added to the log.
 //
-// If AddContextAttrs has been called previously on the parent context (or any of its parents), then
-// those attributes will be included as well. But if a previous context attribute has the same key
-// as one of the new attributes, then the newer attribute overwrites the previous one in the
-// returned context.
+// If WithAttrs has been called previously on the parent context (or any of its parents), then
+// those attributes will be included as well. If there are duplicate keys in the attributes, then
+// only the newest attribute is included.
 //
 // If you don't have an existing context when calling this, pass [context.Background] as the parent
 // context.
@@ -28,11 +27,11 @@ import (
 // attributes in the following ways:
 //
 //	// Pairs of string keys and corresponding values:
-//	ctx = log.AddContextAttrs(ctx, "key1", "value1", "key2", 2)
+//	ctx = ctxlog.WithAttrs(ctx, "key1", "value1", "key2", 2)
 //	// slog.Attr objects:
-//	ctx = log.AddContextAttrs(ctx, slog.String("key1", "value1"), slog.Int("key2", 2))
+//	ctx = ctxlog.WithAttrs(ctx, slog.String("key1", "value1"), slog.Int("key2", 2))
 //	// Or a mix of the two:
-//	ctx = log.AddContextAttrs(ctx, "key1", "value1", slog.Int("key2", 2))
+//	ctx = ctxlog.WithAttrs(ctx, "key1", "value1", slog.Int("key2", 2))
 //
 // When outputting logs as JSON (using e.g. [slog.JSONHandler]), these become fields in the logged
 // JSON object. This allows you to filter and query on the attributes in the log analysis tool of
@@ -55,25 +54,25 @@ import (
 //
 // # Adding context attributes to logs made by log/slog
 //
-// When using AddContextAttrs, context attributes are added to the log output when you use the
+// When using WithAttrs, context attributes are added to the log output when you use the
 // logging functions provided by this package. But you may have places in your application that use
 // [log/slog] directly (such as an SDK that does request logging). To add context attributes to
-// those logs as well, you can wrap your slog.Handler with [log.ContextAttrHandler], as follows:
+// those logs as well, you can wrap your slog.Handler with [ctxlog.NewHandler], as follows:
 //
 //	logHandler := devlog.NewHandler(os.Stdout, nil) // Or any other Handler
-//	slog.SetDefault(slog.New(ctxlog.ContextAttrHandler(logHandler)))
+//	slog.SetDefault(slog.New(ctxlog.NewHandler(logHandler)))
 //
-// Alternatively, you can use [log.SetDefault], which applies [log.ContextAttrHandler] for you:
+// Alternatively, you can use [log.SetDefault], which applies [ctxlog.NewHandler] for you:
 //
 //	log.SetDefault(devlog.NewHandler(os.Stdout, nil))
 //
 // [hermannm.dev/wrap/ctxwrap]: https://pkg.go.dev/hermannm.dev/wrap/ctxwrap
-func AddContextAttrs(parent context.Context, logAttributes ...any) context.Context {
+func WithAttrs(parent context.Context, logAttributes ...any) context.Context {
 	if parent == nil {
 		parent = context.Background()
 	}
 
-	existingAttrs := GetContextAttrs(parent)
+	existingAttrs := GetAttrs(parent)
 
 	attrs := make([]slog.Attr, 0, len(existingAttrs)+len(logAttributes))
 	// Add new attrs first, so the most recent attrs show up first in the logs
@@ -83,32 +82,32 @@ func AddContextAttrs(parent context.Context, logAttributes ...any) context.Conte
 	return context.WithValue(parent, contextAttrsKey, attrs)
 }
 
-// ContextAttrHandler wraps a [slog.Handler], adding context attributes from
-// [ctxlog.AddContextAttrs] before forwarding logs to the wrapped handler.
+// NewHandler wraps a [slog.Handler], adding context attributes from [ctxlog.WithAttrs] before
+// forwarding logs to the wrapped handler.
 //
 // Example of how to set up your handler with this:
 //
 //	logHandler := slog.NewJSONHandler(os.Stdout, nil)
-//	slog.SetDefault(slog.New(ctxlog.ContextAttrHandler(logHandler)))
+//	slog.SetDefault(slog.New(ctxlog.NewHandler(logHandler)))
 //
 // Alternatively, the [hermannm.dev/devlog/slogconfig] package can do the wrapping for you:
 //
 //	slogconfig.InitJSONLogHandler(os.Stdout, nil)
 //
-// ContextAttrHandler panics if the given handler is nil.
-func ContextAttrHandler(wrapped slog.Handler) slog.Handler {
+// NewHandler panics if the given handler is nil.
+func NewHandler(wrapped slog.Handler) slog.Handler {
 	if wrapped == nil {
-		panic("nil slog.Handler given to ContextAttrHandler")
+		panic("nil slog.Handler given to ctxlog.NewHandler")
 	}
-	return contextAttrHandler{wrapped}
+	return handler{wrapped}
 }
 
-type contextAttrHandler struct {
+type handler struct {
 	wrapped slog.Handler
 }
 
-func (handler contextAttrHandler) Handle(ctx context.Context, record slog.Record) error {
-	contextAttrs := GetContextAttrs(ctx)
+func (h handler) Handle(ctx context.Context, record slog.Record) error {
+	contextAttrs := GetAttrs(ctx)
 
 ContextAttrLoop:
 	for _, contextAttr := range contextAttrs {
@@ -122,19 +121,19 @@ ContextAttrLoop:
 		record.AddAttrs(contextAttr)
 	}
 
-	return handler.wrapped.Handle(ctx, record)
+	return h.wrapped.Handle(ctx, record)
 }
 
-func (handler contextAttrHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return handler.wrapped.Enabled(ctx, level)
+func (h handler) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.wrapped.Enabled(ctx, level)
 }
 
-func (handler contextAttrHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return contextAttrHandler{handler.wrapped.WithAttrs(attrs)}
+func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return handler{h.wrapped.WithAttrs(attrs)}
 }
 
-func (handler contextAttrHandler) WithGroup(name string) slog.Handler {
-	return contextAttrHandler{handler.wrapped.WithGroup(name)}
+func (h handler) WithGroup(name string) slog.Handler {
+	return handler{h.wrapped.WithGroup(name)}
 }
 
 // Use struct{} to avoid allocations, as recommended by [context.WithValue].
@@ -142,9 +141,9 @@ type contextAttrsKeyType struct{}
 
 var contextAttrsKey = contextAttrsKeyType{}
 
-// GetContextAttrs returns a slice of attrs if any have been added to the given context (or any of
-// its parent contexts) with [AddContextAttrs]. If not, a nil slice is returned.
-func GetContextAttrs(ctx context.Context) []slog.Attr {
+// GetAttrs returns a slice of attrs if any have been added to the given context (or any of
+// its parent contexts) with [WithAttrs]. If not, a nil slice is returned.
+func GetAttrs(ctx context.Context) []slog.Attr {
 	// We want to avoid a possible nil pointer dereference on Context.Value below
 	if ctx == nil {
 		return nil

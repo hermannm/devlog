@@ -5,8 +5,8 @@ Go library that provides utilities for structured logging, building on the stand
 
 - `devlog` provides a [`slog.Handler`](https://pkg.go.dev/log/slog#Handler) with a human-readable
   output format, designed for local development and CLI tools.
-- `errlog` provides `ErrorAttrHandler`, which transforms error log attributes to make them more
-  structured.
+- `errlog` provides a wrapping `slog.Handler` which transforms error log attributes to make them
+  more structured.
 - `ctxlog` provides a way to attach log attributes to a
   [`context.Context`](https://pkg.go.dev/context), so that all logs in the scope of that context
   get those attributes in their output.
@@ -101,7 +101,7 @@ default:
 ### Using `errlog` for structured error attributes
 
 `errlog` transforms `slog.Attr`s with `error` values to give them more structure. You use it by
-wrapping your `slog.Handler` with `errlog.ErrorAttrHandler`:
+wrapping your `slog.Handler` with `errlog.NewHandler`:
 
 <!-- @formatter:off -->
 ```go
@@ -116,13 +116,13 @@ import (
 func main() {
 	slog.SetDefault(
 		slog.New(
-			errlog.ErrorAttrHandler(
+			errlog.NewHandler(
 				slog.NewJSONHandler(os.Stdout, nil),
 			),
 		),
 	)
 
-	// Alternatively, use slogconfig, which applies ErrorAttrHandler for you:
+	// Alternatively, use slogconfig, which applies errlog.NewHandler for you:
 	slogconfig.InitJSONLogHandler(os.Stdout, nil)
 }
 ```
@@ -176,9 +176,9 @@ func innerFunction() {
 
 ### Using `ctxlog` for context attributes
 
-`ctxlog` provides `ctxlog.AddContextAttrs`, a function for adding log attributes to a
+`ctxlog` provides `ctxlog.WithAttrs`, a function for adding log attributes to a
 [`context.Context`](https://pkg.go.dev/context). In order to use this, you must first wrap your
-`slog.Handler` with `ctxlog.ContextAttrHandler`:
+`slog.Handler` with `ctxlog.NewHandler`:
 
 <!-- @formatter:off -->
 ```go
@@ -193,24 +193,24 @@ import (
 func main() {
 	slog.SetDefault(
 		slog.New(
-			ctxlog.ContextAttrHandler(
+			ctxlog.NewHandler(
 				slog.NewJSONHandler(os.Stdout, nil),
 			),
 		),
 	)
 
-	// Alternatively, use slogconfig, which applies ContextAttrHandler for you:
+	// Alternatively, use slogconfig, which applies ctxlog.NewHandler for you:
 	slogconfig.InitJSONLogHandler(os.Stdout, nil)
 }
 ```
 <!-- @formatter:on -->
 
-Now you can add context attributes with `ctxlog.AddContextAttrs`:
+Now you can add context attributes with `ctxlog.WithAttrs`:
 
 <!-- @formatter:off -->
 ```go
 func processEvent(ctx context.Context, event Event) {
-	ctx = ctxlog.AddContextAttrs(ctx, "eventId", event.ID)
+	ctx = ctxlog.WithAttrs(ctx, "eventId", event.ID)
 
 	slog.InfoContext(ctx, "Processing event")
 	// ...

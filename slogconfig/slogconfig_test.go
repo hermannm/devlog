@@ -24,8 +24,8 @@ func TestInitDefaultLogHandler(t *testing.T) {
 		t,
 		slog.Default().Handler(),
 		[]packageAndType{
-			{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
-			{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
+			{"hermannm.dev/devlog/errlog", "handler"},
+			{"hermannm.dev/devlog/ctxlog", "handler"},
 			{"log/slog", "TextHandler"},
 		},
 	)
@@ -43,8 +43,8 @@ func TestInitPrettyLogHandler(t *testing.T) {
 		t,
 		slog.Default().Handler(),
 		[]packageAndType{
-			{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
-			{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
+			{"hermannm.dev/devlog/errlog", "handler"},
+			{"hermannm.dev/devlog/ctxlog", "handler"},
 			{"hermannm.dev/devlog", "Handler"},
 		},
 	)
@@ -62,8 +62,8 @@ func TestInitJSONLogHandler(t *testing.T) {
 		t,
 		slog.Default().Handler(),
 		[]packageAndType{
-			{"hermannm.dev/devlog/errlog", "errorAttrHandler"},
-			{"hermannm.dev/devlog/ctxlog", "contextAttrHandler"},
+			{"hermannm.dev/devlog/errlog", "handler"},
+			{"hermannm.dev/devlog/ctxlog", "handler"},
 			{"log/slog", "JSONHandler"},
 		},
 	)

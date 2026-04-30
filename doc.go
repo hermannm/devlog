@@ -20,6 +20,6 @@
 //
 //	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
 //
-// ...which also configures [hermannm.dev/devlog/errlog.ErrorAttrHandler] and
-// [hermannm.dev/devlog/ctxlog.ContextAttrHandler].
+// ...which also configures [hermannm.dev/devlog/errlog.NewHandler] and
+// [hermannm.dev/devlog/ctxlog.NewHandler].
 package devlog

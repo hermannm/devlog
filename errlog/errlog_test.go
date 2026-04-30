@@ -219,8 +219,8 @@ func TestNestedErrorsWithAttrs(t *testing.T) {
 }
 
 func TestErrorWithContext(t *testing.T) {
-	baseCtx := ctxlog.AddContextAttrs(context.Background(), "contextKey", "value1")
-	errorCtx := ctxlog.AddContextAttrs(baseCtx, "errorContextKey", "value2")
+	baseCtx := ctxlog.WithAttrs(context.Background(), "contextKey", "value1")
+	errorCtx := ctxlog.WithAttrs(baseCtx, "errorContextKey", "value2")
 	err := errorWithAttrsAndCtx{attrs("errorKey", "value3"), errorCtx}
 
 	output := getLogOutput(
@@ -247,26 +247,26 @@ func TestNestedErrorContextAttrs(t *testing.T) {
 	err := wrappedErrorWithMsgAttrsAndCtx{
 		msg:   "test",
 		attrs: attrs("err1", "value1"),
-		ctx:   ctxlog.AddContextAttrs(ctx, "ctx1", "value2"),
+		ctx:   ctxlog.WithAttrs(ctx, "ctx1", "value2"),
 		cause: wrappedErrorsWithMsgAttrsAndCtx{
 			msg:   "test",
 			attrs: attrs("err1_1", "value3"),
-			ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1", "value4"),
+			ctx:   ctxlog.WithAttrs(ctx, "ctx1_1", "value4"),
 			causes: []error{
 				wrappedErrorWithMsg{
 					msg: "test",
 					cause: errorWithAttrsAndCtx{
 						attrs: attrs("err1_1_1", "value5"),
-						ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_1", "value6"),
+						ctx:   ctxlog.WithAttrs(ctx, "ctx1_1_1", "value6"),
 					},
 				},
 				wrappedErrorWithAttrsAndCtx{
 					attrs: attrs("err1_1_2", "value7"),
-					ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_2", "value8"),
+					ctx:   ctxlog.WithAttrs(ctx, "ctx1_1_2", "value8"),
 					cause: fmt.Errorf(
 						"formatted with fmt: %w",
 						errorWithCtx{
-							ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_2_1", "value9"),
+							ctx: ctxlog.WithAttrs(ctx, "ctx1_1_2_1", "value9"),
 						},
 					),
 				},
@@ -276,18 +276,18 @@ func TestNestedErrorContextAttrs(t *testing.T) {
 						fmt.Errorf(
 							"error %w in middle",
 							errorWithCtx{
-								ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_3_1", "value10"),
+								ctx: ctxlog.WithAttrs(ctx, "ctx1_1_3_1", "value10"),
 							},
 						),
 						wrappedErrorWithCtx{
-							ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_3_2", "value11"),
+							ctx:   ctxlog.WithAttrs(ctx, "ctx1_1_3_2", "value11"),
 							cause: errors.New("plain error"),
 						},
 					},
 				},
 				wrappedErrorsWithAttrsAndCtx{
 					attrs: attrs("err1_1_4", "value12"),
-					ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_4", "value13"),
+					ctx:   ctxlog.WithAttrs(ctx, "ctx1_1_4", "value13"),
 					causes: []error{
 						errors.New("plain error 1"),
 						errors.New("plain error 2"),
@@ -295,16 +295,16 @@ func TestNestedErrorContextAttrs(t *testing.T) {
 				},
 				wrappedError{
 					cause: errorWithCtx{
-						ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_5", "value14"),
+						ctx: ctxlog.WithAttrs(ctx, "ctx1_1_5", "value14"),
 					},
 				},
 				wrappedErrors{
 					causes: []error{
 						errorWithCtx{
-							ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_6_1", "value15"),
+							ctx: ctxlog.WithAttrs(ctx, "ctx1_1_6_1", "value15"),
 						},
 						wrappedErrorWithCtx{
-							ctx:   ctxlog.AddContextAttrs(ctx, "ctx1_1_6_2", "value16"),
+							ctx:   ctxlog.WithAttrs(ctx, "ctx1_1_6_2", "value16"),
 							cause: errors.New("plain error"),
 						},
 					},
@@ -312,17 +312,17 @@ func TestNestedErrorContextAttrs(t *testing.T) {
 				fmt.Errorf(
 					"multiple errors formatted with fmt: %w, %w",
 					errorWithCtx{
-						ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_7_1", "value17"),
+						ctx: ctxlog.WithAttrs(ctx, "ctx1_1_7_1", "value17"),
 					},
 					wrappedErrorsWithCtx{
-						ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_7_2", "value18"),
+						ctx: ctxlog.WithAttrs(ctx, "ctx1_1_7_2", "value18"),
 						causes: []error{
 							errorWithCtx{
-								ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_7_2_1", "value19"),
+								ctx: ctxlog.WithAttrs(ctx, "ctx1_1_7_2_1", "value19"),
 							},
 							wrappedErrorsWithMsgAndCtx{
 								msg: "test",
-								ctx: ctxlog.AddContextAttrs(ctx, "ctx1_1_7_2_2", "value20"),
+								ctx: ctxlog.WithAttrs(ctx, "ctx1_1_7_2_2", "value20"),
 								causes: []error{
 									errors.New("plain error 1"),
 									errors.New("plain error 2"),
@@ -414,7 +414,7 @@ func TestNestedErrorContextAttrs(t *testing.T) {
 }
 
 func TestDuplicateErrorAndContextAttrKeys(t *testing.T) {
-	baseCtx := ctxlog.AddContextAttrs(
+	baseCtx := ctxlog.WithAttrs(
 		context.Background(),
 		"baseContextKey", "value6",
 		"duplicateContextKey", "baseContextValue",
@@ -427,7 +427,7 @@ func TestDuplicateErrorAndContextAttrKeys(t *testing.T) {
 			"duplicateErrorKey", "outerErrorValue",
 			"duplicateLogKey", "outerErrorValue",
 		),
-		ctx: ctxlog.AddContextAttrs(
+		ctx: ctxlog.WithAttrs(
 			context.Background(),
 			"outerErrorContextKey", "value5",
 			"duplicateContextKey", "outerErrorContextValue",
@@ -440,7 +440,7 @@ func TestDuplicateErrorAndContextAttrKeys(t *testing.T) {
 				"duplicateErrorKey", "innerErrorValue",
 				"duplicateLogKey", "innerErrorValue",
 			),
-			ctx: ctxlog.AddContextAttrs(
+			ctx: ctxlog.WithAttrs(
 				context.Background(),
 				"innerErrorContextKey", "value4",
 				"duplicateContextKey", "innerErrorContextValue",
@@ -517,9 +517,9 @@ func TestErrorInGroup(t *testing.T) {
 func TestNilHandler(t *testing.T) {
 	assert.PanicsWithValue(
 		t,
-		"nil slog.Handler given to ErrorAttrHandler",
+		"nil slog.Handler given to errlog.NewHandler",
 		func() {
-			errlog.ErrorAttrHandler(nil)
+			errlog.NewHandler(nil)
 		},
 	)
 }
@@ -528,8 +528,8 @@ func getLogOutput(logFunc func()) string {
 	var buffer bytes.Buffer
 	slog.SetDefault(
 		slog.New(
-			errlog.ErrorAttrHandler(
-				ctxlog.ContextAttrHandler(
+			errlog.NewHandler(
+				ctxlog.NewHandler(
 					slog.NewJSONHandler(&buffer, nil),
 				),
 			),

@@ -1,4 +1,4 @@
-// Package errlog provides [errlog.ErrorAttrHandler], a [slog.Handler] that wraps another handler,
+// Package errlog provides [errlog.NewHandler], a [slog.Handler] that wraps another handler,
 // transforming error log attributes to make them more structured.
 //
 // It also provides [errlog.Cause], a utility function for constructing error log attributes with a
@@ -26,21 +26,21 @@ import (
 // You can use this function for consistent error logging, instead of manually typing out the
 // "error" key whenever you log an error, which may risk inconsistencies.
 //
-// If you use this, you'll typically want to wrap your [slog.Handler] with [ErrorAttrHandler], which
-// transforms errors into structured attributes. This is already handled for you if you use the
-// [hermannm.dev/devlog/slogconfig] package to configure your handler.
+// If you use this, you'll typically want to wrap your [slog.Handler] with [errlog.NewHandler],
+// which transforms errors into structured attributes. This is already handled for you if you use
+// the [hermannm.dev/devlog/slogconfig] package to configure your handler.
 func Cause(err error) slog.Attr {
 	return slog.Any("error", err)
 }
 
-// ErrorAttrHandler wraps a [slog.Handler], transforming log attributes with error values into more
+// NewHandler wraps a [slog.Handler], transforming log attributes with error values into more
 // structured attributes, for better readability and analysis when reading logs.
 //
 // # Example
 //
-// Configure slog.JSONHandler wrapped with ErrorAttrHandler:
+// Configure [slog.JSONHandler] wrapped with [errlog.NewHandler]:
 //
-//	slog.SetDefault(slog.New(errlog.ErrorAttrHandler(slog.NewJSONHandler(os.Stdout, nil))))
+//	slog.SetDefault(slog.New(errlog.NewHandler(slog.NewJSONHandler(os.Stdout, nil))))
 //
 // Alternatively, the [hermannm.dev/devlog/slogconfig] package can do the wrapping for you:
 //
@@ -75,23 +75,23 @@ func Cause(err error) slog.Attr {
 // You can use [hermannm.dev/devlog.Options.RenameErrorAttrKey] to avoid the repetition of having
 // ERROR logs with "error" attributes.
 //
-// ErrorAttrHandler panics if the given handler is nil.
-func ErrorAttrHandler(wrapped slog.Handler) slog.Handler {
+// NewHandler panics if the given handler is nil.
+func NewHandler(wrapped slog.Handler) slog.Handler {
 	if wrapped == nil {
-		panic("nil slog.Handler given to ErrorAttrHandler")
+		panic("nil slog.Handler given to errlog.NewHandler")
 	}
-	return errorAttrHandler{wrapped}
+	return handler{wrapped}
 }
 
-type errorAttrHandler struct {
+type handler struct {
 	wrapped slog.Handler
 }
 
-func (handler errorAttrHandler) Handle(ctx context.Context, record slog.Record) error {
+func (h handler) Handle(ctx context.Context, record slog.Record) error {
 	numAttrs := record.NumAttrs()
 	// Return early if record has no attrs
 	if numAttrs == 0 {
-		return handler.wrapped.Handle(ctx, record)
+		return h.wrapped.Handle(ctx, record)
 	}
 
 	// Check if there are any error attributes on the record: If there are none, we can return early
@@ -104,7 +104,7 @@ func (handler errorAttrHandler) Handle(ctx context.Context, record slog.Record) 
 		}
 	}
 	if !hasErrorAttr {
-		return handler.wrapped.Handle(ctx, record)
+		return h.wrapped.Handle(ctx, record)
 	}
 
 	// slog.Record does not support changing attrs in-place. So we have to transform the record's
@@ -121,21 +121,21 @@ func (handler errorAttrHandler) Handle(ctx context.Context, record slog.Record) 
 
 	newRecord := slog.NewRecord(record.Time, record.Level, record.Message, record.PC)
 	newRecord.AddAttrs(attrs...)
-	return handler.wrapped.Handle(ctx, newRecord)
+	return h.wrapped.Handle(ctx, newRecord)
 }
 
-func (handler errorAttrHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return handler.wrapped.Enabled(ctx, level)
+func (h handler) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.wrapped.Enabled(ctx, level)
 }
 
-func (handler errorAttrHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	// We don't replace error attrs here, as it would be strange to attach an error to an entire
 	// handler. So if the user does that, that's likely a deliberate choice we don't want to touch.
-	return errorAttrHandler{wrapped: handler.wrapped.WithAttrs(attrs)}
+	return handler{wrapped: h.wrapped.WithAttrs(attrs)}
 }
 
-func (handler errorAttrHandler) WithGroup(name string) slog.Handler {
-	return errorAttrHandler{wrapped: handler.wrapped.WithGroup(name)}
+func (h handler) WithGroup(name string) slog.Handler {
+	return handler{wrapped: h.wrapped.WithGroup(name)}
 }
 
 func isErrorAttr(attr slog.Attr) bool {
@@ -287,7 +287,7 @@ type hasAttrs interface {
 }
 
 // hasContext is an interface for errors that carry a [context.Context] from where they were
-// created. We use this to add context attributes (see [ctxlog.AddContextAttrs]) from the error's
+// created. We use this to add context attributes (see [ctxlog.WithAttrs]) from the error's
 // context, not just the context in which the log is made. This is useful when error is produced
 // somewhere down in the stack, and then propagated up multiple levels before it is logged. By
 // letting the error carry its context, we don't lose the original context of the error as it's
@@ -435,7 +435,7 @@ func appendErrorContextAttrs(existingAttrs []slog.Attr, err error) []slog.Attr {
 		return existingAttrs
 	}
 
-	contextAttrs := ctxlog.GetContextAttrs(errWithContext.Context())
+	contextAttrs := ctxlog.GetAttrs(errWithContext.Context())
 	contextAttrCount := len(contextAttrs)
 	if contextAttrCount == 0 {
 		return existingAttrs

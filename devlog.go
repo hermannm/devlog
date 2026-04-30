@@ -430,7 +430,7 @@ func (handler *Handler) writeLogSource(buffer *byteBuffer, programCounter uintpt
 }
 
 // Writes error attrs on the structure produced by
-// [hermannm.dev/devlog/errlog.ErrorAttrHandler], on the following format:
+// [hermannm.dev/devlog/errlog.NewHandler], on the following format:
 //
 //	error:
 //	  - something went wrong   <-- Error messages are formatted as a list of their `Unwrap` chain
