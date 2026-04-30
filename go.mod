@@ -3,9 +3,9 @@ module hermannm.dev/devlog
 go 1.25.0
 
 require (
-	github.com/neilotoole/jsoncolor v0.7.1
-	golang.org/x/sys v0.40.0
-	golang.org/x/term v0.39.0
+	github.com/neilotoole/jsoncolor v0.7.2
+	golang.org/x/sys v0.43.0
+	golang.org/x/term v0.42.0
 )
 
 // Testing dependencies
