@@ -1,4 +1,4 @@
-package slogconfig_test
+package sloginit_test
 
 import (
 	"log/slog"
@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"hermannm.dev/devlog/slogconfig"
+	"hermannm.dev/devlog/sloginit"
 )
 
 func TestInitDefaultLogHandler(t *testing.T) {
@@ -18,7 +18,7 @@ func TestInitDefaultLogHandler(t *testing.T) {
 		slog.SetDefault(original)
 	}()
 
-	slogconfig.InitDefaultLogHandler(slog.NewTextHandler(os.Stdout, nil))
+	sloginit.InitDefaultLogHandler(slog.NewTextHandler(os.Stdout, nil))
 
 	assertWrappedHandlers(
 		t,
@@ -37,7 +37,7 @@ func TestInitPrettyLogHandler(t *testing.T) {
 		slog.SetDefault(original)
 	}()
 
-	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
+	sloginit.InitPrettyLogHandler(os.Stdout, nil)
 
 	assertWrappedHandlers(
 		t,
@@ -56,7 +56,7 @@ func TestInitJSONLogHandler(t *testing.T) {
 		slog.SetDefault(original)
 	}()
 
-	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+	sloginit.InitJSONLogHandler(os.Stdout, nil)
 
 	assertWrappedHandlers(
 		t,
@@ -74,7 +74,7 @@ func TestNilDefaultHandler(t *testing.T) {
 		t,
 		"nil slog.Handler given to InitDefaultLogHandler",
 		func() {
-			slogconfig.InitDefaultLogHandler(nil)
+			sloginit.InitDefaultLogHandler(nil)
 		},
 	)
 }

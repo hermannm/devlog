@@ -16,9 +16,9 @@
 //
 // Check the [README] to see the output format with colors.
 //
-// You can also use the [hermannm.dev/devlog/slogconfig] package for shorter initialization:
+// You can also use the [hermannm.dev/devlog/sloginit] package for shorter initialization:
 //
-//	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
+//	sloginit.InitPrettyLogHandler(os.Stdout, nil)
 //
 // ...which also configures [hermannm.dev/devlog/errlog.NewHandler] and
 // [hermannm.dev/devlog/ctxlog.NewHandler].

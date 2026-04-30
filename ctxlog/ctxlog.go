@@ -87,12 +87,11 @@ func WithAttrs(parent context.Context, logAttributes ...any) context.Context {
 //
 // Example of how to set up your handler with this:
 //
-//	logHandler := slog.NewJSONHandler(os.Stdout, nil)
-//	slog.SetDefault(slog.New(ctxlog.NewHandler(logHandler)))
+//	slog.SetDefault(slog.New(ctxlog.NewHandler(slog.NewJSONHandler(os.Stdout, nil))))
 //
-// Alternatively, the [hermannm.dev/devlog/slogconfig] package can do the wrapping for you:
+// Alternatively, the [hermannm.dev/devlog/sloginit] package can do this wrapping for you:
 //
-//	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+//	sloginit.InitJSONLogHandler(os.Stdout, nil)
 //
 // NewHandler panics if the given handler is nil.
 func NewHandler(wrapped slog.Handler) slog.Handler {

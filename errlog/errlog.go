@@ -28,7 +28,7 @@ import (
 //
 // If you use this, you'll typically want to wrap your [slog.Handler] with [errlog.NewHandler],
 // which transforms errors into structured attributes. This is already handled for you if you use
-// the [hermannm.dev/devlog/slogconfig] package to configure your handler.
+// the [hermannm.dev/devlog/sloginit] package to configure your handler.
 func Cause(err error) slog.Attr {
 	return slog.Any("error", err)
 }
@@ -42,9 +42,9 @@ func Cause(err error) slog.Attr {
 //
 //	slog.SetDefault(slog.New(errlog.NewHandler(slog.NewJSONHandler(os.Stdout, nil))))
 //
-// Alternatively, the [hermannm.dev/devlog/slogconfig] package can do the wrapping for you:
+// Alternatively, the [hermannm.dev/devlog/sloginit] package can do this wrapping for you:
 //
-//	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+//	sloginit.InitJSONLogHandler(os.Stdout, nil)
 //
 //	cause := errors.New("cause error")
 //	err := fmt.Errorf("wrapping error: %w", cause)

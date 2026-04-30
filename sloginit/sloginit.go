@@ -1,7 +1,7 @@
-// Package slogconfig provides utility functions for configuring a default [log/slog] handler
+// Package sloginit provides utility functions for initializing a default [log/slog] handler,
 // wrapped with [hermannm.dev/devlog/errlog.NewHandler] for structured error formatting and
-// [hermannm.dev/devlog/ctxlog.NewHandler] for attaching log attributes to context.
-package slogconfig
+// [hermannm.dev/devlog/ctxlog.NewHandler] for context attributes.
+package sloginit
 
 import (
 	"io"
@@ -47,7 +47,7 @@ func InitDefaultLogHandler(handler slog.Handler) {
 //
 // Example (using nil for default options):
 //
-//	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
+//	sloginit.InitPrettyLogHandler(os.Stdout, nil)
 //
 // This is equivalent to the following:
 //
@@ -71,7 +71,7 @@ func InitPrettyLogHandler(output io.Writer, options *devlog.Options) {
 //
 // Example (using nil for default options):
 //
-//	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+//	sloginit.InitJSONLogHandler(os.Stdout, nil)
 //
 // This is equivalent to the following:
 //

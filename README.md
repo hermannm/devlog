@@ -1,7 +1,7 @@
 # devlog
 
 Go library that provides utilities for structured logging, building on the standard
-[`log/slog`](https://pkg.go.dev/log/slog) package. It provides the following packages:
+[`log/slog`](https://pkg.go.dev/log/slog) package. It consists of the following packages:
 
 - `devlog` provides a [`slog.Handler`](https://pkg.go.dev/log/slog#Handler) with a human-readable
   output format, designed for local development and CLI tools.
@@ -10,8 +10,8 @@ Go library that provides utilities for structured logging, building on the stand
 - `ctxlog` provides a way to attach log attributes to a
   [`context.Context`](https://pkg.go.dev/context), so that all logs in the scope of that context
   get those attributes in their output.
-- `slogconfig` binds together the above independent packages, by providing `Init` functions to
-  configure the default `slog` handler with `errlog`'s and `ctxlog`'s wrapping handlers applied.
+- `sloginit` provides utility functions for initializing the default `slog` handler with `errlog`'s
+  and `ctxlog`'s wrapping handlers applied.
 
 Run `go get hermannm.dev/devlog` to add it to your project!
 
@@ -38,14 +38,14 @@ import (
 	"log/slog"
 
 	"hermannm.dev/devlog"
-	"hermannm.dev/devlog/slogconfig"
+	"hermannm.dev/devlog/sloginit"
 )
 
 func main() {
 	slog.SetDefault(slog.New(devlog.NewHandler(os.Stdout, nil)))
 
-	// Alternatively, use the slogconfig package:
-	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
+	// Alternatively, use the sloginit package:
+	sloginit.InitPrettyLogHandler(os.Stdout, nil)
 }
 ```
 <!-- @formatter:on -->
@@ -90,10 +90,10 @@ conditionally choosing the log handler for your application, like this:
 switch os.Getenv("ENVIRONMENT") {
 case "LOCAL", "TEST":
 	// Pretty-formatted logs for local development and tests
-	slogconfig.InitPrettyLogHandler(os.Stdout, nil)
+	sloginit.InitPrettyLogHandler(os.Stdout, nil)
 default:
 	// Structured JSON logs for deployed environments
-	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+	sloginit.InitJSONLogHandler(os.Stdout, nil)
 }
 ```
 <!-- @formatter:on -->
@@ -110,7 +110,7 @@ import (
 	"os"
 
 	"hermannm.dev/devlog/errlog"
-	"hermannm.dev/devlog/slogconfig"
+	"hermannm.dev/devlog/sloginit"
 )
 
 func main() {
@@ -122,8 +122,8 @@ func main() {
 		),
 	)
 
-	// Alternatively, use slogconfig, which applies errlog.NewHandler for you:
-	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+	// Alternatively, use sloginit, which applies errlog.NewHandler for you:
+	sloginit.InitJSONLogHandler(os.Stdout, nil)
 }
 ```
 <!-- @formatter:on -->
@@ -187,7 +187,7 @@ import (
 	"os"
 
 	"hermannm.dev/devlog/ctxlog"
-	"hermannm.dev/devlog/slogconfig"
+	"hermannm.dev/devlog/sloginit"
 )
 
 func main() {
@@ -199,8 +199,8 @@ func main() {
 		),
 	)
 
-	// Alternatively, use slogconfig, which applies ctxlog.NewHandler for you:
-	slogconfig.InitJSONLogHandler(os.Stdout, nil)
+	// Alternatively, use sloginit, which applies ctxlog.NewHandler for you:
+	sloginit.InitJSONLogHandler(os.Stdout, nil)
 }
 ```
 <!-- @formatter:on -->
