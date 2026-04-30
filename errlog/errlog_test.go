@@ -525,18 +525,18 @@ func TestNilHandler(t *testing.T) {
 }
 
 func getLogOutput(logFunc func()) string {
-	var buffer bytes.Buffer
+	var buf bytes.Buffer
 	slog.SetDefault(
 		slog.New(
 			errlog.NewHandler(
 				ctxlog.NewHandler(
-					slog.NewJSONHandler(&buffer, nil),
+					slog.NewJSONHandler(&buf, nil),
 				),
 			),
 		),
 	)
 	logFunc()
-	return buffer.String()
+	return buf.String()
 }
 
 func getErrorLogOutput(err error) string {

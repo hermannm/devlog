@@ -45,7 +45,7 @@ func TestInitPrettyLogHandler(t *testing.T) {
 		[]packageAndType{
 			{"hermannm.dev/devlog/errlog", "handler"},
 			{"hermannm.dev/devlog/ctxlog", "handler"},
-			{"hermannm.dev/devlog", "Handler"},
+			{"hermannm.dev/devlog", "handler"},
 		},
 	)
 }

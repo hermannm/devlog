@@ -40,7 +40,7 @@ func InitDefaultLogHandler(handler slog.Handler) {
 	)
 }
 
-// InitPrettyLogHandler sets the default [log/slog] handler to [hermannm.dev/devlog.Handler], a
+// InitPrettyLogHandler sets the default [log/slog] handler to [hermannm.dev/devlog.NewHandler], a
 // pretty-formatted log handler designed for local development and CLI tools. It also configures
 // [hermannm.dev/devlog/errlog.NewHandler] for structured error formatting, and
 // [hermannm.dev/devlog/ctxlog.NewHandler] for attaching log attributes to context.

@@ -19,21 +19,21 @@ import (
 //
 //nolint:thelper // We don't need to mark these as helper functions
 func TestSlog(t *testing.T) {
-	var buffer bytes.Buffer
+	var buf bytes.Buffer
 
 	slogtest.Run(
 		t,
 		func(t *testing.T) slog.Handler {
-			buffer.Reset()
+			buf.Reset()
 			return devlog.NewHandler(
-				&buffer, &devlog.Options{
+				&buf, &devlog.Options{
 					DisableColors: true,
 					TimeFormat:    devlog.TimeFormatFull,
 				},
 			)
 		},
 		func(t *testing.T) map[string]any {
-			entries, err := parseLogEntry(buffer.String())
+			entries, err := parseLogEntry(buf.String())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -63,9 +63,9 @@ func TestTimeFormat(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		var buffer bytes.Buffer
+		var buf bytes.Buffer
 		handler := devlog.NewHandler(
-			&buffer,
+			&buf,
 			&devlog.Options{DisableColors: true, TimeFormat: testCase.format},
 		)
 
@@ -74,7 +74,7 @@ func TestTimeFormat(t *testing.T) {
 			t.Fatalf("Handle failed: %v", err)
 		}
 
-		assert.Contains(t, buffer.String(), testCase.expectedOutput)
+		assert.Contains(t, buf.String(), testCase.expectedOutput)
 	}
 }
 
@@ -84,9 +84,9 @@ func TestTimeFormatNone(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var buffer bytes.Buffer
+	var buf bytes.Buffer
 	handler := devlog.NewHandler(
-		&buffer,
+		&buf,
 		&devlog.Options{DisableColors: true, TimeFormat: devlog.TimeFormatNone},
 	)
 
@@ -97,7 +97,7 @@ func TestTimeFormatNone(t *testing.T) {
 		t.Fatalf("Handle failed: %v", err)
 	}
 
-	output := buffer.String()
+	output := buf.String()
 
 	assert.NotContains(t, output, "[", "Should not contain brackets")
 	assert.NotContains(t, output, "]", "Should not contain brackets")
@@ -322,12 +322,12 @@ func getLogOutputWithOptions(handlerOptions *devlog.Options, logFunc func()) str
 	// Must disable color output to parse reliably
 	handlerOptions.DisableColors = true
 
-	var buffer bytes.Buffer
-	slog.SetDefault(slog.New(devlog.NewHandler(&buffer, handlerOptions)))
+	var buf bytes.Buffer
+	slog.SetDefault(slog.New(devlog.NewHandler(&buf, handlerOptions)))
 
 	logFunc()
 
-	output := buffer.String()
+	output := buf.String()
 
 	return output
 }

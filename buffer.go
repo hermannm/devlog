@@ -7,68 +7,68 @@ import (
 	"time"
 )
 
-type byteBuffer []byte
+type buffer []byte
 
-func (buffer *byteBuffer) write(bytes []byte) {
-	*buffer = append(*buffer, bytes...)
+func (buf *buffer) write(bytes []byte) {
+	*buf = append(*buf, bytes...)
 }
 
 // Always returns nil error (still has error in signature, to satisfy [io.Writer] interface).
-func (buffer *byteBuffer) Write(bytes []byte) (bytesWritten int, err error) {
-	*buffer = append(*buffer, bytes...)
+func (buf *buffer) Write(bytes []byte) (bytesWritten int, err error) {
+	*buf = append(*buf, bytes...)
 	return len(bytes), nil
 }
 
-func (buffer *byteBuffer) writeString(str string) {
-	*buffer = append(*buffer, str...)
+func (buf *buffer) writeString(str string) {
+	*buf = append(*buf, str...)
 }
 
-func (buffer *byteBuffer) writeByte(b byte) {
-	*buffer = append(*buffer, b)
+func (buf *buffer) writeByte(b byte) {
+	*buf = append(*buf, b)
 }
 
-func (buffer *byteBuffer) writeDecimal(decimal int) {
-	*buffer = strconv.AppendInt(*buffer, int64(decimal), 10)
+func (buf *buffer) writeDecimal(decimal int) {
+	*buf = strconv.AppendInt(*buf, int64(decimal), 10)
 }
 
-func (buffer *byteBuffer) writeIndent(indent int) {
+func (buf *buffer) writeIndent(indent int) {
 	for i := 0; i <= indent; i++ {
-		buffer.writeString("  ")
+		buf.writeString("  ")
 	}
 }
 
-func (buffer *byteBuffer) writeAny(value any) {
-	*buffer = fmt.Append(*buffer, value)
+func (buf *buffer) writeAny(value any) {
+	*buf = fmt.Append(*buf, value)
 }
 
 // Adapted from standard library log package:
 // https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/log.go#L114
-func (buffer *byteBuffer) writeTime(t time.Time) {
+func (buf *buffer) writeTime(t time.Time) {
 	hour, minute, second := t.Clock()
-	buffer.writeFixedWidthDecimal(hour, 2)
-	buffer.writeByte(':')
-	buffer.writeFixedWidthDecimal(minute, 2)
-	buffer.writeByte(':')
-	buffer.writeFixedWidthDecimal(second, 2)
+	buf.writeFixedWidthDecimal(hour, 2)
+	buf.writeByte(':')
+	buf.writeFixedWidthDecimal(minute, 2)
+	buf.writeByte(':')
+	buf.writeFixedWidthDecimal(second, 2)
 }
 
 // Adapted from standard library log package:
 // https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/log.go#L114
-func (buffer *byteBuffer) writeDateTime(t time.Time) {
+func (buf *buffer) writeDateTime(t time.Time) {
 	year, month, day := t.Date()
-	buffer.writeFixedWidthDecimal(year, 4)
-	buffer.writeByte('-')
-	buffer.writeFixedWidthDecimal(int(month), 2)
-	buffer.writeByte('-')
-	buffer.writeFixedWidthDecimal(day, 2)
-	buffer.writeByte(' ')
+	buf.writeFixedWidthDecimal(year, 4)
+	buf.writeByte('-')
+	buf.writeFixedWidthDecimal(int(month), 2)
+	buf.writeByte('-')
+	buf.writeFixedWidthDecimal(day, 2)
+	buf.writeByte(' ')
 
-	buffer.writeTime(t)
+	buf.writeTime(t)
 }
 
 // Adapted from standard library log package:
 // https://github.com/golang/go/blob/ab5bd15941f3cea3695338756d0b8be0ef2321fb/src/log/log.go#L93
-func (buffer *byteBuffer) writeFixedWidthDecimal(decimal int, width int) {
+func (buf *buffer) writeFixedWidthDecimal(decimal int, width int) {
 	var bytes [20]byte
 
 	index := len(bytes) - 1
@@ -81,16 +81,16 @@ func (buffer *byteBuffer) writeFixedWidthDecimal(decimal int, width int) {
 	}
 
 	bytes[index] = byte('0' + decimal)
-	*buffer = append(*buffer, bytes[index:]...)
+	*buf = append(*buf, bytes[index:]...)
 }
 
-func (buffer *byteBuffer) join(other byteBuffer) {
-	*buffer = append(*buffer, other...)
+func (buf *buffer) join(other buffer) {
+	*buf = append(*buf, other...)
 }
 
-func (buffer *byteBuffer) copy() byteBuffer {
-	oldBuffer := *buffer
-	newBuffer := make(byteBuffer, len(oldBuffer), cap(oldBuffer))
+func (buf *buffer) copy() buffer {
+	oldBuffer := *buf
+	newBuffer := make(buffer, len(oldBuffer), cap(oldBuffer))
 	copy(newBuffer, oldBuffer)
 	return newBuffer
 }
@@ -99,21 +99,21 @@ func (buffer *byteBuffer) copy() byteBuffer {
 // https://github.com/golang/example/blob/1d6d2400d4027025cb8edc86a139c9c581d672f7/slog-handler-guide/README.md#speed
 var bufferPool = sync.Pool{
 	New: func() any {
-		buffer := make(byteBuffer, 0, 1024)
-		return &buffer
+		buf := make(buffer, 0, 1024)
+		return &buf
 	},
 }
 
-func newBuffer() *byteBuffer {
-	//nolint:errcheck // We always pass a *byteBuffer in bufferPool.New
-	return bufferPool.Get().(*byteBuffer)
+func newBuffer() *buffer {
+	//nolint:errcheck // We always pass a *byteBuffer in bufPool.New
+	return bufferPool.Get().(*buffer)
 }
 
-func (buffer *byteBuffer) free() {
-	// To reduce peak allocation, return only smaller buffers to the pool.
+func (buf *buffer) free() {
+	// To reduce peak allocation, return only smaller bufs to the pool.
 	const maxBufferSize = 16 * 1024
-	if cap(*buffer) <= maxBufferSize {
-		*buffer = (*buffer)[:0]
-		bufferPool.Put(buffer)
+	if cap(*buf) <= maxBufferSize {
+		*buf = (*buf)[:0]
+		bufferPool.Put(buf)
 	}
 }

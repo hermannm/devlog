@@ -160,10 +160,10 @@ func TestNilHandler(t *testing.T) {
 }
 
 func getLogOutput(logFunc func()) string {
-	var buffer bytes.Buffer
-	slog.SetDefault(slog.New(ctxlog.NewHandler(slog.NewJSONHandler(&buffer, nil))))
+	var buf bytes.Buffer
+	slog.SetDefault(slog.New(ctxlog.NewHandler(slog.NewJSONHandler(&buf, nil))))
 	logFunc()
-	return buffer.String()
+	return buf.String()
 }
 
 func verifyLogAttrs(t *testing.T, output string, expectedAttrs string) {
