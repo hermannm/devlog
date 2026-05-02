@@ -89,7 +89,7 @@ type Options struct {
 	DisableColors bool
 
 	// ForceColors skips checking [IsColorTerminal] for color support, and includes colors in log
-	// output regardless. It overrides [Options.DisableColors].
+	// output regardless. It overrides [devlog.Options.DisableColors].
 	ForceColors bool
 
 	// TimeFormat controls how time is formatted for each log entry. It defaults to
@@ -125,7 +125,7 @@ type Options struct {
 	RenameErrorAttrKey string
 }
 
-// TimeFormat is the type for valid constants for [Options.TimeFormat].
+// TimeFormat is the type for valid constants for [devlog.Options.TimeFormat].
 type TimeFormat int8
 
 const (
