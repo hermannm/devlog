@@ -360,6 +360,7 @@ linters:
       # https://github.com/go-simpler/sloglint?tab=readme-ov-file#context-only
       # Default: ""
       context: scope
+      no-mixed-args: false
 
     staticcheck:
       # SAxxxx checks in https://staticcheck.dev/docs/configuration/options/#checks

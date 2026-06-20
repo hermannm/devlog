@@ -75,11 +75,13 @@ func (buf *buffer) writeFixedWidthDecimal(decimal int, width int) {
 	for decimal >= 10 || width > 1 {
 		width--
 		remainder := decimal / 10
+		//nolint:gosec // Used by standard library, so we trust this
 		bytes[index] = byte('0' + decimal - remainder*10)
 		index--
 		decimal = remainder
 	}
 
+	//nolint:gosec // Used by standard library, so we trust this
 	bytes[index] = byte('0' + decimal)
 	*buf = append(*buf, bytes[index:]...)
 }
