@@ -2,9 +2,9 @@
 # Copyright (c) 2021-2025 Marat Reymers
 
 # Based on https://gist.github.com/maratori/47a4d00457a92aa426dbd48a18776322
-# Some extra linters have been enabled, and some disabled if they are more annoying than helpful
+# Some extra linters have been enabled, and unhelpful have been disabled
 
-# Remember to update formatters.settings.goimports.local-prefixes!
+# Remember to update things marked with [project-specific]!
 
 version: "2"
 
@@ -28,9 +28,9 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - hermannm.dev/devlog
+        - hermannm.dev/devlog # [project-specific]
     golines:
-      # shorten-comments: true # Not helpful in this project
+      shorten-comments: true
       reformat-tags: false # Conflicts with default formatter
 
 linters:
@@ -41,12 +41,12 @@ linters:
     - bodyclose # checks whether HTTP response body is closed successfully
     - canonicalheader # checks whether net/http.Header uses canonical header
     - copyloopvar # detects places where loop variables are copied (Go 1.22+)
-    #- containedctx # [unhelpful in this project] detects struct contained context.Context field
+    #- containedctx # [unhelpful] [project-specific] detects struct contained context.Context field
     - depguard # checks if package imports are in a list of acceptable packages
     - durationcheck # checks for two durations multiplied together
     - errcheck # checking for unchecked errors, these unchecked errors can be critical bugs in some cases
-    #- errname # [unhelpful in this project] checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
-    #- errorlint # [unhelpful in this project] finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
+    #- errname # [unhelpful] [project-specific] checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
+    #- errorlint # [unhelpful] [project-specific] finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
     - exhaustive # checks exhaustiveness of enum switch statements
     - exhaustruct # checks if all structure fields are initialized
     - exptostd # detects functions from golang.org/x/exp/ that can be replaced by std functions
@@ -127,7 +127,7 @@ linters:
     #- gocognit # [unhelpful] computes and checks the cognitive complexity of functions
     #- goconst # [unhelpful] finds repeated strings that could be replaced by a constant
     #- gocyclo # [unhelpful] computes and checks the cyclomatic complexity of functions
-    #- godot # checks if comments end in a period
+    #- godot # [unhelpful] checks if comments end in a period
     #- gomodguard # [use more powerful depguard] allow and block lists linter for direct Go module dependencies
     #- gosmopolitan # reports certain i18n/l10n anti-patterns in your Go codebase
     #- grouper # analyzes expression groups
@@ -381,7 +381,7 @@ linters:
         # Do not pass a nil Context (we want to use nil contexts for our logging library)
         # https://staticcheck.dev/docs/checks/#SA1012
         - -SA1012
-        # Error should be returned as the last argument (unhelpful in this project)
+        # [project-specific] Error should be returned as the last argument
         - -ST1008
 
     usetesting:
