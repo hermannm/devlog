@@ -378,14 +378,18 @@ func (h *handler) writeAttributeKey(buf *buffer, attrKey string) {
 }
 
 var jsonColors = jsoncolor.Colors{
-	Key:           jsoncolor.Color(colorCyan),
-	Punc:          jsoncolor.Color(colorGray),
-	String:        jsoncolor.Color(noColor),
-	Number:        jsoncolor.Color(noColor),
+	Null:          jsoncolor.Color(noColor),
 	Bool:          jsoncolor.Color(noColor),
+	Number:        jsoncolor.Color(noColor),
+	String:        jsoncolor.Color(noColor),
+	Key:           jsoncolor.Color(colorCyan),
 	Bytes:         jsoncolor.Color(noColor),
 	Time:          jsoncolor.Color(noColor),
-	Null:          jsoncolor.Color(noColor),
+	Punc:          jsoncolor.Color(colorGray),
+	Brackets:      jsoncolor.Color(colorGray),
+	Braces:        jsoncolor.Color(colorGray),
+	Comma:         jsoncolor.Color(colorGray),
+	Colon:         jsoncolor.Color(colorGray),
 	TextMarshaler: jsoncolor.Color(noColor),
 }
 
