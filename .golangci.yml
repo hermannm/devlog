@@ -360,6 +360,7 @@ linters:
       # https://github.com/go-simpler/sloglint?tab=readme-ov-file#context-only
       # Default: ""
       context: scope
+      # Allow mixing key-value pairs and attributes (since we want to use `errlog.Cause`)
       no-mixed-args: false
 
     staticcheck:
