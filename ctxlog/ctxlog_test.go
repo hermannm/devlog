@@ -93,6 +93,7 @@ func TestDuplicateContextAttrKeys(t *testing.T) {
 }
 
 func TestWithAttrsNilParent(t *testing.T) {
+	//nolint:staticcheck // SA1012 - Wanna test nil context
 	ctx := ctxlog.WithAttrs(nil, "ctxKey", "value")
 
 	output := getLogOutput(
@@ -145,6 +146,7 @@ func TestNilContextInNewHandler(t *testing.T) {
 	runtime.Callers(0, programCounters[:])
 	record := slog.NewRecord(time.Now(), slog.LevelInfo, "Test", programCounters[0])
 
+	//nolint:staticcheck // SA1012 - Wanna test nil context
 	err := handler.Handle(nil, record)
 	assert.NoError(t, err)
 }
