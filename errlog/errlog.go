@@ -334,9 +334,8 @@ func unwrapError(err error) (
 	return message, isWrappingMessage, cause, causes
 }
 
-// If errMessageIsWrappingMessage is true, then the returned errMessage is the wrapping message
-// around the wrapped error. Otherwise, the returned errMessage is the full error message of the
-// given err.
+// If isWrappingMessage is true, then the returned message is the wrapping message around the
+// wrapped error. Otherwise, the returned message is the full error message of the given err.
 //
 // Same implementation that the [hermannm.dev/wrap] library uses for formatting error messages.
 //
@@ -382,9 +381,8 @@ func unwrapWrappedError(err wrappedError) (
 	return message, false, cause
 }
 
-// If errMessageIsWrappingMessage is true, then the returned errMessage is the wrapping message
-// around the wrapped errors. Otherwise, the returned errMessage is the full error message of the
-// given err.
+// If isWrappingMessage is true, then the returned message is the wrapping message around the
+// wrapped errors. Otherwise, the returned message is the full error message of the given err.
 //
 // Same implementation that the [hermannm.dev/wrap] library uses for formatting error messages.
 //
