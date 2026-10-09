@@ -64,6 +64,13 @@ func Cause(err error) slog.Attr {
 //	  }
 //	}
 //
+// If the error implements the following interface:
+//
+//	Attrs() []slog.Attr
+//
+// ...then the error's attributes will also be added to the log, next to `error.msg`. The
+// [hermannm.dev/wrap] package supports this with the [wrap.ErrorWithAttrs] function.
+//
 // If you're using [hermannm.dev/devlog.Handler] (pretty-formatted log handler), this structured
 // error format is recognized, and displayed as a list of the error cause chain:
 //
@@ -76,6 +83,9 @@ func Cause(err error) slog.Attr {
 // ERROR logs with "error" attributes.
 //
 // NewHandler panics if the given handler is nil.
+//
+// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
+// [wrap.ErrorWithAttrs]: https://pkg.go.dev/hermannm.dev/wrap#ErrorWithAttrs
 func NewHandler(wrapped slog.Handler) slog.Handler {
 	if wrapped == nil {
 		panic("nil slog.Handler given to errlog.NewHandler")
