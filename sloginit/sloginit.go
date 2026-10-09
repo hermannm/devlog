@@ -1,5 +1,5 @@
 // Package sloginit provides utility functions for initializing a default [log/slog] handler,
-// wrapped with [hermannm.dev/devlog/errlog.NewHandler] for structured error formatting and
+// wrapped with [hermannm.dev/devlog/errlog.NewHandler] for structured error attributes and
 // [hermannm.dev/devlog/ctxlog.NewHandler] for context attributes.
 package sloginit
 
@@ -13,8 +13,8 @@ import (
 )
 
 // InitDefaultLogHandler sets the given structured log handler as the default [log/slog] handler. It
-// also configures [hermannm.dev/devlog/errlog.NewHandler] for structured error formatting,
-// and [hermannm.dev/devlog/ctxlog.NewHandler] for attaching log attributes to context.
+// also configures [hermannm.dev/devlog/errlog.NewHandler] for structured error attributes, and
+// [hermannm.dev/devlog/ctxlog.NewHandler] for attaching log attributes to context.
 //
 // It is equivalent to the following:
 //
@@ -42,7 +42,7 @@ func InitDefaultLogHandler(handler slog.Handler) {
 
 // InitPrettyLogHandler sets the default [log/slog] handler to [hermannm.dev/devlog.NewHandler], a
 // pretty-formatted log handler designed for local development and CLI tools. It also configures
-// [hermannm.dev/devlog/errlog.NewHandler] for structured error formatting, and
+// [hermannm.dev/devlog/errlog.NewHandler] for structured error attributes, and
 // [hermannm.dev/devlog/ctxlog.NewHandler] for attaching log attributes to context.
 //
 // Example (using nil for default options):
@@ -65,9 +65,9 @@ func InitPrettyLogHandler(output io.Writer, options *devlog.Options) {
 }
 
 // InitJSONLogHandler sets the default [log/slog] handler to [log/slog.JSONHandler], which outputs
-// logs in a structured JSON format. It also configures
-// [hermannm.dev/devlog/errlog.NewHandler] for structured error formatting, and
-// [hermannm.dev/devlog/ctxlog.NewHandler] for attaching log attributes to context.
+// logs in a structured JSON format. It also configures [hermannm.dev/devlog/errlog.NewHandler] for
+// structured error attributes, and [hermannm.dev/devlog/ctxlog.NewHandler] for attaching log
+// attributes to context.
 //
 // Example (using nil for default options):
 //
