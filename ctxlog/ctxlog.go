@@ -11,15 +11,16 @@ import (
 )
 
 // WithAttrs returns a copy of the given parent context, with log attributes attached. When
-// the context is passed to one of the logging functions from [slog], and your handler is wrapped
-// with [ctxlog.NewHandler], then these attributes will be added to the log.
+// the context is passed to one of the logging functions from [slog] (e.g. [slog.InfoContext]), and
+// your handler is wrapped with [ctxlog.NewHandler], then these attributes will be added to the log.
 //
 // If WithAttrs has been called previously on the parent context (or any of its parents), then
 // those attributes will be included as well. If there are duplicate keys in the attributes, then
 // only the newest attribute is included.
 //
 // If you don't have an existing context when calling this, pass [context.Background] as the parent
-// context.
+// context. But context should ideally be propagated from the top layer of whatever processing
+// context you're in (e.g. [net/http.Request.Context]).
 //
 // # Log attributes
 //
@@ -49,24 +50,10 @@ import (
 // If an error implements this method, then we include any attributes from the error's context in
 // the log.
 //
-// The [hermannm.dev/wrap/ctxwrap] package supports this use-case by providing error-wrapping
-// functions that take a [context.Context] parameter.
+// The [hermannm.dev/wrap] package supports this use-case by providing error-wrapping functions that
+// take a [context.Context] parameter.
 //
-// # Adding context attributes to logs made by log/slog
-//
-// When using WithAttrs, context attributes are added to the log output when you use the
-// logging functions provided by this package. But you may have places in your application that use
-// [log/slog] directly (such as an SDK that does request logging). To add context attributes to
-// those logs as well, you can wrap your slog.Handler with [ctxlog.NewHandler], as follows:
-//
-//	logHandler := devlog.NewHandler(os.Stdout, nil) // Or any other Handler
-//	slog.SetDefault(slog.New(ctxlog.NewHandler(logHandler)))
-//
-// Alternatively, you can use [log.SetDefault], which applies [ctxlog.NewHandler] for you:
-//
-//	log.SetDefault(devlog.NewHandler(os.Stdout, nil))
-//
-// [hermannm.dev/wrap/ctxwrap]: https://pkg.go.dev/hermannm.dev/wrap/ctxwrap
+// [hermannm.dev/wrap]: https://pkg.go.dev/hermannm.dev/wrap
 func WithAttrs(parent context.Context, logAttributes ...any) context.Context {
 	if parent == nil {
 		parent = context.Background()
