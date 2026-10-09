@@ -1,19 +1,15 @@
 module hermannm.dev/devlog
 
-go 1.25.0
+go 1.26.0
 
 require (
-	github.com/neilotoole/jsoncolor v0.9.1
-	golang.org/x/sys v0.46.0
-	golang.org/x/term v0.44.0
+	github.com/neilotoole/jsoncolor v0.10.1
+	golang.org/x/sys v0.48.0
+	golang.org/x/term v0.46.0
 )
 
-// Testing dependencies
-require github.com/stretchr/testify v1.11.1
+// Test dependencies
+require github.com/stretchr/testify v1.12.1
 
-// Transitive testing dependencies
-require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
+// Transitive test dependencies
+require go.yaml.in/yaml/v3 v3.0.5 // indirect
