@@ -18,8 +18,8 @@ jobs:
     steps:
       # https://github.com/actions/checkout/releases
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Creates GitHub release from CHANGELOG.md entry for the pushed tag
       # https://github.com/hermannm/release-from-changelog/releases
       - name: Create release from changelog
-        uses: hermannm/release-from-changelog@a8773fa3f463cfeb711d8c683b7165fd9ba88caa # v0.2.7
+        uses: hermannm/release-from-changelog@45e4d3ca659ff31d666f6cb4a6741ffa151741e6 # v0.2.9
