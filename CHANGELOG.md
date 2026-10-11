@@ -1,5 +1,24 @@
 # Changelog
 
+## [v0.7.0] - 2026-10-11
+
+- **Breaking:** Remove `devlog/log` subpackage
+    - Users should migrate to using the standard library `log/slog` directly. This was done to make
+      this library less intrusive - instead of depending on `devlog/log` wherever you log, you'll
+      now only depend on the standard library. `devlog` now mostly plays a role in log
+      _configuration_ only
+    - In order to keep the functionality provided by `devlog/log`, two new subpackages are
+      introduced:
+        - `errlog` provides a wrapping `slog.Handler` to transform logged errors into more
+          structured attributes
+        - `ctxlog` provides `ctxlog.WithAttrs` to replace `log.AddContextAttrs`
+    - These packages are independent. A third subpackage, `sloginit`, is introduced to streamline
+      setup of your logger with `devlog`, `errlog` and `ctxlog`
+- `devlog`
+    - Add `TimeFormatNone` to exclude time from log output
+    - Add `Options.RenameErrorAttrKey` to avoid repetition when adding `error` attributes to `ERROR`
+      logs
+
 ## [v0.6.0] - 2025-08-27
 
 - `devlog`:
@@ -181,7 +200,9 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/hermannm/devlog/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/hermannm/devlog/compare/v0.7.0...HEAD
+
+[v0.7.0]: https://github.com/hermannm/devlog/compare/v0.6.0...v0.7.0
 
 [v0.6.0]: https://github.com/hermannm/devlog/compare/v0.5.0...v0.6.0
 
