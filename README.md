@@ -60,7 +60,7 @@ slog.Info("Server started", "port", 8000, "environment", "DEV")
 
 ...will give the following output (using a gruvbox terminal color scheme):
 
-![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/3089fbac4d2cecd3d55b422a7ba742f788d5dace/devlog-example-output.png?raw=true)
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/780458879f01afbdf3ef0dcad2439626d029cea8/devlog-example-output-1.png?raw=true)
 
 Structs, slices and other non-primitive types are encoded as pretty-formatted JSON, so this
 example:
@@ -79,7 +79,7 @@ slog.Error("Failed to process event", "event", event)
 
 ...gives this output:
 
-![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/3089fbac4d2cecd3d55b422a7ba742f788d5dace/devlog-example-output-2.png?raw=true)
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/780458879f01afbdf3ef0dcad2439626d029cea8/devlog-example-output-2.png?raw=true)
 
 `devlog`'s output is meant to be easily read by a developer working locally. However, you may want a
 more structured format for production systems. You can get both by conditionally choosing the log
@@ -144,13 +144,14 @@ func main() {
 	}
 }
 
-func fallibleFunction() {
+func fallibleFunction() error {
 	if err := innerFunction(); err != nil {
 		return fmt.Errorf("inner function failed: %w", err)
 	}
+    return nil
 }
 
-func innerFunction() {
+func innerFunction() error {
 	return errors.New("root cause")
 }
 ```
@@ -174,11 +175,18 @@ func innerFunction() {
 ```
 <!-- @formatter:on -->
 
+`devlog`'s pretty log handler recognizes `errlog`'s structure, and formats wrapped errors like this:
+
+![Screenshot of log message in a terminal](https://github.com/hermannm/devlog/blob/780458879f01afbdf3ef0dcad2439626d029cea8/devlog-example-output-3.png?raw=true)
+
+Here we've set `devlog.Options.RenameErrorAttrKey` to rename the `error` attribute to `cause`, to
+avoid the repetition of `ERROR` logs with `error` attributes.
+
 `errlog` also has special support for the
 [`hermannm.dev/wrap`](https://pkg.go.dev/hermannm.dev/wrap) library, which lets you attach
 `slog.Attr`s to errors (using
 [`wrap.ErrorWithAttrs`](https://pkg.go.dev/hermannm.dev/wrap#ErrorWithAttrs)). `errlog` includes
-such extra attrs next to `error.msg` in the log output.
+such extra attrs next to `error.msg` in the log output, and `devlog` formats them appropriately.
 
 ### Using `ctxlog` for context attributes
 
