@@ -358,8 +358,8 @@ func parseLogEntry(entryString string) (map[string]any, error) {
 	split = strings.SplitN(entryString, "\n", 2)
 	entry[slog.MessageKey] = split[0]
 
-	hasAttributes := len(split) == 2
-	if hasAttributes {
+	hasAttrs := len(split) == 2
+	if hasAttrs {
 		entryString = split[1]
 
 		var openGroups []string

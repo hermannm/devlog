@@ -189,7 +189,7 @@ func (h *handler) Handle(_ context.Context, record slog.Record) error {
 		buf.join(h.preformattedGroups)
 
 		for attr := range record.Attrs {
-			h.writeAttribute(buf, attr, h.indent)
+			h.writeAttr(buf, attr, h.indent)
 		}
 	}
 
@@ -219,7 +219,7 @@ func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	// joining the previous ones below
 	h2.preformattedAttrs = nil
 	for _, attr := range attrs {
-		h2.writeAttribute(
+		h2.writeAttr(
 			&h2.preformattedAttrs,
 			attr,
 			h2.indent,
@@ -250,7 +250,7 @@ func (h *handler) WithGroup(name string) slog.Handler {
 	// We then write the new group key to preformattedGroups, and increase the indent on newHandler
 	// so future attributes will display under the new group
 	h2.preformattedGroups.writeIndent(h2.indent)
-	h2.writeAttributeKey(&h2.preformattedGroups, name)
+	h2.writeAttrKey(&h2.preformattedGroups, name)
 	h2.preformattedGroups.writeByte('\n')
 	h2.indent++
 
@@ -302,7 +302,7 @@ func (h *handler) writeLevel(buf *buffer, level slog.Level) {
 	h.resetColor(buf)
 }
 
-func (h *handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) {
+func (h *handler) writeAttr(buf *buffer, attr slog.Attr, indent int) {
 	attr.Value = attr.Value.Resolve()
 
 	// Discard empty attr
@@ -325,7 +325,7 @@ func (h *handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) {
 		}
 
 		if attr.Key != "" {
-			h.writeAttributeKey(buf, attr.Key)
+			h.writeAttrKey(buf, attr.Key)
 			buf.writeByte('\n')
 			indent++
 
@@ -344,15 +344,15 @@ func (h *handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) {
 		}
 
 		for _, groupAttr := range attrs {
-			h.writeAttribute(buf, groupAttr, indent)
+			h.writeAttr(buf, groupAttr, indent)
 		}
 	case slog.KindTime:
-		h.writeAttributeKey(buf, attr.Key)
+		h.writeAttrKey(buf, attr.Key)
 		buf.writeByte(' ')
 		buf.writeDateTime(attr.Value.Time())
 		buf.writeByte('\n')
 	case slog.KindAny:
-		h.writeAttributeKey(buf, attr.Key)
+		h.writeAttrKey(buf, attr.Key)
 		buf.writeByte(' ')
 
 		value := attr.Value.Any()
@@ -364,14 +364,14 @@ func (h *handler) writeAttribute(buf *buffer, attr slog.Attr, indent int) {
 			h.writeJSON(buf, value, indent)
 		}
 	default:
-		h.writeAttributeKey(buf, attr.Key)
+		h.writeAttrKey(buf, attr.Key)
 		buf.writeByte(' ')
 		buf.writeString(attr.Value.String())
 		buf.writeByte('\n')
 	}
 }
 
-func (h *handler) writeAttributeKey(buf *buffer, attrKey string) {
+func (h *handler) writeAttrKey(buf *buffer, attrKey string) {
 	h.setColor(buf, colorCyan)
 	buf.writeString(attrKey)
 	h.writeByteWithColor(buf, ':', colorGray)
@@ -432,7 +432,7 @@ func (h *handler) writeLogSource(buf *buffer, programCounter uintptr) {
 	}
 
 	buf.writeIndent(0)
-	h.writeAttributeKey(buf, slog.SourceKey)
+	h.writeAttrKey(buf, slog.SourceKey)
 	buf.writeByte(' ')
 
 	// If we have the source function, we want to print that with file name in parentheses
@@ -531,7 +531,7 @@ func (h *handler) writeErrorAttr(
 	// cause error, which has special handling below
 	lastIndex := attrsLen - 1
 	for _, attr := range attrs[1:lastIndex] {
-		h.writeAttribute(buf, attr, indent)
+		h.writeAttr(buf, attr, indent)
 	}
 
 	// Check if the last attr is a cause error attr - if so, return it to be handled after
@@ -549,7 +549,7 @@ func (h *handler) writeErrorAttr(
 	}
 
 	// If last attr was not a cause error attr: handle it normally, then exit
-	h.writeAttribute(buf, lastAttr, indent)
+	h.writeAttr(buf, lastAttr, indent)
 	return nil, false
 }
 
