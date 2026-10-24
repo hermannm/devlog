@@ -76,8 +76,8 @@ func Cause(err error) slog.Attr {
 //
 //	[09:16:14] ERROR: Something went wrong
 //	  error:
-//	    - wrapping error
-//	    - cause error
+//	    > wrapping error
+//	    > cause error
 //
 // You can use [hermannm.dev/devlog.Options.RenameErrorAttrKey] to avoid the repetition of having
 // ERROR logs with "error" attributes.

@@ -106,14 +106,14 @@ type Options struct {
 	//
 	//	[09:16:14] ERROR: Something went wrong
 	//	  error:
-	//	    - an error occurred
+	//	    > an error occurred
 	//
 	// With this option, we can rename the "error" attr to e.g. "cause", giving us a more intuitive
 	// output:
 	//
 	//	[09:16:14] ERROR: Something went wrong
 	//	  cause:
-	//	    - an error occurred
+	//	    > an error occurred
 	//
 	// ...while still keeping the "error" key in JSON output, which you may want for production
 	// environments.
@@ -454,12 +454,12 @@ func (h *handler) writeLogSource(buf *buffer, programCounter uintptr) {
 // [hermannm.dev/devlog/errlog.NewHandler], on the following format:
 //
 //	error:
-//	  - something went wrong   <-- Error messages are formatted as a list of their `Unwrap` chain
-//	  - cause error
+//	  > something went wrong   <-- Error messages are formatted as a list of their `Unwrap` chain
+//	  > cause error
 //	    attrOnError: value     <-- Errors may have attrs attached, see docs on errlog.hasAttrs
-//	  - second cause error
-//	    - multi cause error 1  <-- Errors may have multiple cause errors, which are indented
-//	    - multi cause error 2
+//	  > second cause error
+//	    > multi cause error 1  <-- Errors may have multiple cause errors, which are indented
+//	    > multi cause error 2
 //
 // Assumes that isErrorMessageAttr has been checked for the first attr in the attrs slice.
 func (h *handler) writeErrorAttrAndCauses(
