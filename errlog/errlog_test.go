@@ -977,7 +977,7 @@ func (err errorWithAttrsAndCtx) Context() context.Context {
 
 // Verify that the errors we expect to implement the wrappedError interface actually do.
 //
-//nolint:exhaustruct
+//nolint:exhaustruct_v5
 var _ = []interface{ Unwrap() error }{
 	wrappedErrorWithMsg{},
 	wrappedErrorWithMsgAndAttrs{},
@@ -991,7 +991,7 @@ var _ = []interface{ Unwrap() error }{
 
 // Verify that the errors we expect to implement the wrappedErrors interface actually do.
 //
-//nolint:exhaustruct
+//nolint:exhaustruct_v5
 var _ = []interface{ Unwrap() []error }{
 	wrappedErrorsWithMsg{},
 	wrappedErrorsWithMsgAndAttrs{},
@@ -1005,7 +1005,7 @@ var _ = []interface{ Unwrap() []error }{
 
 // Verify that the errors we expect to implement the hasWrappingMessage interface actually do.
 //
-//nolint:exhaustruct
+//nolint:exhaustruct_v5
 var _ = []interface{ WrappingMessage() string }{
 	wrappedErrorWithMsg{},
 	wrappedErrorsWithMsg{},
@@ -1019,7 +1019,7 @@ var _ = []interface{ WrappingMessage() string }{
 
 // Verify that the errors we expect to implement the hasAttrs interface actually do.
 //
-//nolint:exhaustruct
+//nolint:exhaustruct_v5
 var _ = []interface{ Attrs() []slog.Attr }{
 	wrappedErrorWithMsgAndAttrs{},
 	wrappedErrorsWithMsgAndAttrs{},
@@ -1035,7 +1035,7 @@ var _ = []interface{ Attrs() []slog.Attr }{
 
 // Verify that the errors we expect to implement the hasContext interface actually do.
 //
-//nolint:exhaustruct
+//nolint:exhaustruct_v5
 var _ = []interface{ Context() context.Context }{
 	wrappedErrorWithMsgAndCtx{},
 	wrappedErrorsWithMsgAndCtx{},
