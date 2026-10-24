@@ -1,5 +1,25 @@
 # Changelog
 
+## [v0.7.1] - 2026-10-24
+
+- `devlog`
+    - Change list item prefix in error attributes from `-` to `>`, to emphasize that it's a cause
+      chain and not a list of simultaneous errors
+        - Old:
+          ```
+          [18:15:00] ERROR: Something went wrong
+            cause:
+              - inner function failed
+              - root cause
+          ```
+        - New:
+          ```
+          [18:15:00] ERROR: Something went wrong
+            cause:
+              > inner function failed
+              > root cause
+          ```
+
 ## [v0.7.0] - 2026-10-11
 
 - **Breaking:** Remove `devlog/log` subpackage
@@ -200,7 +220,9 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/hermannm/devlog/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/hermannm/devlog/compare/v0.7.1...HEAD
+
+[v0.7.1]: https://github.com/hermannm/devlog/compare/v0.7.0...v0.7.1
 
 [v0.7.0]: https://github.com/hermannm/devlog/compare/v0.6.0...v0.7.0
 
