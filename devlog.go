@@ -219,11 +219,7 @@ func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	// joining the previous ones below
 	h2.preformattedAttrs = nil
 	for _, attr := range attrs {
-		h2.writeAttr(
-			&h2.preformattedAttrs,
-			attr,
-			h2.indent,
-		)
+		h2.writeAttr(&h2.preformattedAttrs, attr, h2.indent)
 	}
 	h2.preformattedAttrs.join(h.preformattedAttrs)
 
@@ -412,12 +408,6 @@ func (h *handler) writeJSON(buf *buffer, jsonValue any, indent int) {
 	}
 }
 
-func (h *handler) writeListItemPrefix(buf *buffer, indent int) {
-	buf.writeIndent(indent)
-	h.writeByteWithColor(buf, '-', colorGray)
-	buf.writeByte(' ')
-}
-
 func (h *handler) writeLogSource(buf *buffer, programCounter uintptr) {
 	frames := runtime.CallersFrames([]uintptr{programCounter})
 	frame, _ := frames.Next()
@@ -507,13 +497,18 @@ func (h *handler) writeErrorAttrAndCauses(
 
 // Writes a single error attr in the error cause chain, and returns any further cause error attr (or
 // nil, if there was none). If the cause error was a list of errors, returns causeAttrIsList = true.
+//
+// Assumes that len(attrs) != 0.
 func (h *handler) writeErrorAttr(
 	buf *buffer,
 	attrs []slog.Attr,
 	indent int,
 ) (causeAttrs []slog.Attr, causeAttrIsList bool) {
-	h.writeListItemPrefix(buf, indent)
+	buf.writeIndent(indent)
+	h.writeByteWithColor(buf, '>', colorGray)
+	buf.writeByte(' ')
 
+	// Safe index: all callers check that len(attrs) != 0
 	errMsg := attrs[0].Value.String()
 	buf.writeString(errMsg)
 	buf.writeByte('\n')
@@ -524,7 +519,7 @@ func (h *handler) writeErrorAttr(
 		return nil, false
 	}
 
-	// All extra error attrs should be further indented than the error message
+	// Increase indent to line up error attrs with error message (since msg is prefixed by '> ')
 	indent++
 
 	// Go through all extra attrs on the error except for the last one, as the last one may be a

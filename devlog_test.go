@@ -202,11 +202,11 @@ func TestCauseError(t *testing.T) {
 		output,
 		`
   error:
-    - something went wrong
+    > something went wrong
       attr: value
-    - cause error
+    > cause error
       causeAttr: value
-    - root cause
+    > root cause
   otherAttr: value`,
 	)
 }
@@ -268,16 +268,16 @@ func TestCauseErrorList(t *testing.T) {
 		output,
 		`
   error:
-    - something went wrong
-    - error 1
-    - error 2
-      - cause error
+    > something went wrong
+    > error 1
+    > error 2
+      > cause error
         attr1: value1
-      - root cause
-    - error 3
+      > root cause
+    > error 3
       attr2: value2
-      - cause error 1
-      - cause error 2
+      > cause error 1
+      > cause error 2
         attr3: value3
   otherAttr: value`,
 	)
